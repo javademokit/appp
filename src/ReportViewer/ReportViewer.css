@@ -1,0 +1,46 @@
+.report-container {
+    padding: 20px;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  .report-controls {
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .report-controls select {
+    padding: 8px;
+    font-size: 16px;
+  }
+  
+  .report-controls button {
+    padding: 8px 12px;
+    background-color: #2a67cc;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .report-controls button:hover {
+    background-color: #1e4fa5;
+  }
+  
+  .report-table-wrapper table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .report-table-wrapper th,
+  .report-table-wrapper td {
+    border: 1px solid #ccc;
+    padding: 10px;
+    text-align: left;
+  }
+  
+  .report-table-wrapper th {
+    background-color: #f2f2f2;
+  }
+  

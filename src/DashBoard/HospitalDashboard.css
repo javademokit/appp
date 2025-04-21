@@ -1,0 +1,83 @@
+.dashboard-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+.dashboard-body {
+  display: flex;
+  flex: 1;
+}
+
+.sidebar {
+  width: 200px;
+  background-color: #2f3e46;
+  color: white;
+  padding-top: 20px;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar li {
+  padding: 15px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar li i {
+  margin-right: 10px;
+  font-size: 18px;
+}
+
+.sidebar li:hover {
+  background-color: #354f52;
+}
+
+.main-content {
+  flex: 1;
+  padding: 20px;
+  background-color: #f1f1f1;
+  overflow-y: auto;
+}
+
+/* Top-right icons section */
+.top-right-icons {
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+}
+
+.top-right-icons .user-profile {
+  margin-right: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.top-right-icons .user-profile i {
+  margin-right: 8px;
+  font-size: 24px;
+}
+
+.top-right-icons .logout {
+  cursor: pointer;
+}
+
+.top-right-icons .logout i {
+  font-size: 24px;
+}
+
+/* Footer styling */
+footer {
+  background-color: #2f3e46;
+  color: white;
+  padding: 10px;
+  text-align: center;
+  margin-top: 20px;
+}

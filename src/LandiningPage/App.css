@@ -1,0 +1,147 @@
+.homepage-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: ghostwhite;
+
+    padding: 1.5rem;
+    text-align: center;
+  }
+  
+  
+  .ambulance-icon {
+    font-size: 4rem;
+    text-shadow: 2px 2px 10px rgba(255, 255, 255, 0.5);
+    margin-bottom: 1rem;
+  }
+  
+  .title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+    margin-bottom: 0.5rem;
+  }
+  
+  .subtitle {
+    font-size: 1.2rem;
+    max-width: 600px;
+    opacity: 0.9;
+    margin-bottom: 1.5rem;
+  }
+  
+  .hospital-section {
+    background: white;
+    color: #1e40af;
+    padding: 1.5rem;
+    border-radius: 1rem;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+    max-width: 600px;
+    width: 100%;
+    margin-bottom: 1.5rem;
+  }
+  
+  .hospital-title {
+    font-size: 1.8rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+  }
+  
+  .hospital-icon {
+    margin-right: 0.5rem;
+    color: #2563eb;
+  }
+  
+  .hospital-list {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+  }
+  
+  .hospital-list li a {
+    color: #2563eb;
+    text-decoration: none;
+    transition: color 0.3s ease-in-out;
+  }
+  
+  .hospital-list li a:hover {
+    color: #9333ea;
+  }
+  
+  .ambulance-image {
+    width: 75%;
+    max-width: 400px;
+    border-radius: 1rem;
+    box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+    border: 4px solid white;
+    margin-bottom: 1.5rem;
+  }
+  
+  .button-group {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .button {
+    padding: 0.75rem 1.5rem;
+    border-radius: 1rem;
+    font-weight: bold;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease-in-out;
+  }
+  
+  .get-started {
+    background: #facc15;
+    color: black;
+  }
+  
+  .get-started:hover {
+    background: white;
+    transform: scale(1.05);
+  }
+  
+  .learn-more {
+    background: transparent;
+    border: 2px solid white;
+    color: white;
+  }
+  
+  .learn-more:hover {
+    background: white;
+    color: wheat;
+    transform: scale(1.05);
+  }
+  
+  .admin-login {
+    background: white;
+    color: white;
+    transform: scale(1.05);
+  }
+
+  .ambulance-run {
+    position: absolute;
+    top: 60px;
+    font-size: 4rem;
+    color: #dc2626;
+    text-shadow: 2px 2px 8px rgba(255, 255, 255, 0.5);
+    z-index: 10;
+  }
+  .twentyfour-seven {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 2.5rem;
+    color: #facc15;
+    margin-bottom: 1rem;
+    text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.3);
+  }
+  
+  .service-label {
+    font-size: 1rem;
+    margin-top: 0.5rem;
+    color: white;
+    font-weight: bold;
+  }
+  
