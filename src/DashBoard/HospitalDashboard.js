@@ -16,12 +16,12 @@ import Footer from "../company/Footer";
 import Patients from "../Patients/Patients";
 import Dashboard from "../Admin/Dashboard";
 import AppointmentsList from "../AppointmentsList/AppointmentsList";
-import Doctors from "../Doctors/Doctors";
-
 import SettingsPage from "../Settings/SettingsPage";
 import BookAppointment from "../Patients/BookAppointment"; 
 import ReportViewer from "../ReportViewer/ReportViewer";
 import "./HospitalDashboard.css";
+import DoctorProfile  from "../Doctors/DoctorProfile";
+import DoctorTimeSlots from "../Doctors/DoctorTimeSlots";
 
 const HospitalDashboard = () => {
   const [activePage, setActivePage] = useState("dashboard");
@@ -53,11 +53,13 @@ const HospitalDashboard = () => {
       case "appointments":
         return <AppointmentsList />;
       case "doctors":
-        return <Doctors />;
+        return <DoctorProfile />;
       case "reports":
         return <ReportViewer />;
+      case "DoctorTimeSlots":
+        return <DoctorTimeSlots />;
       case "settings":
-        return <SettingsPage />;
+          return <SettingsPage />;
       default:
         return <Dashboard />;
     }
@@ -88,6 +90,9 @@ const HospitalDashboard = () => {
             </li>
             <li onClick={() => setActivePage("reports")}>
               <FaFileAlt /> Reports
+            </li>
+            <li onClick={() => setActivePage("DoctorTimeSlots")}>
+              <FaCogs /> DoctorTimeSlots
             </li>
             <li onClick={() => setActivePage("settings")}>
               <FaCogs /> Settings

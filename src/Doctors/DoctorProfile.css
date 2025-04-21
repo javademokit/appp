@@ -1,0 +1,79 @@
+.doctor-profile-page {
+    padding: 2rem;
+    background-color: #f9f9f9;
+    font-family: Arial, sans-serif;
+  }
+  
+  .title {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .doctor-list {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  
+  .doctor-card {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    width: 250px;
+    text-align: center;
+    transition: transform 0.2s ease-in-out;
+  }
+  
+  .doctor-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .doctor-image {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 50%;
+    margin-bottom: 1rem;
+  }
+  
+  .specialty {
+    color: #007BFF;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+  
+  .profile-popup {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 220px;
+    background-color: #fff;
+    color: #333;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    margin-top: 0.5rem;
+    z-index: 10;
+    text-align: left;
+    font-size: 0.9rem;
+  }
+  .title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    gap: 10px;
+    color: #333;
+  }
+  
+  .title-icon {
+    width: 40px;
+    height: 40px;
+  }
+  

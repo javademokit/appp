@@ -6,8 +6,9 @@ import 'react-toastify/dist/ReactToastify.css';
 import './SignUpPage.css';
 
 const SignUpPage = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [userId, setName] = useState('');
+  const [emailId, setEmail] = useState('');
+  const [mobileNo, setMobileNo] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -19,17 +20,17 @@ const SignUpPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!name || !email || !password) {
+    if (!userId || !emailId || !password || !mobileNo) {
       toast.error('Please fill all fields');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch('https://yourapi.com/api/signup', {
+      const response = await fetch('http://localhost:7771/api/users/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ userId, emailId,mobileNo, password }),
       });
 
       const data = await response.json();
@@ -38,6 +39,7 @@ const SignUpPage = () => {
         toast.success('Sign up successful!');
         setName('');
         setEmail('');
+        setMobileNo('');
         setPassword('');
       } else {
         throw new Error(data.message || 'Sign up failed');
@@ -63,8 +65,8 @@ const SignUpPage = () => {
           <div className="input-group">
             <input
               type="text"
-              placeholder="Full Name"
-              value={name}
+              placeholder="UserId"
+              value={userId}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
@@ -72,8 +74,16 @@ const SignUpPage = () => {
             <input
               type="email"
               placeholder="Email"
-              value={email}
+              value={emailId}
               onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div className="input-group">
+            <input
+              type="MobileNo"
+              placeholder="MobileNo"
+              value={mobileNo}
+              onChange={(e) => setMobileNo(e.target.value)}
             />
           </div>
           <div className="input-group">
