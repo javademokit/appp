@@ -9,6 +9,7 @@ export default function HomePage() {
 
     <div className="homepage-container">
 
+
 {/* 24/7 Service Icon */}
 <motion.div
   className="twentyfour-seven"
@@ -28,7 +29,7 @@ export default function HomePage() {
         transition={{ duration: 1 }}
         className="title"
       >
-        MedSuite360
+        Ayurved Hospital Patna
       </motion.h1>
       
       {/* Subtitle Animation */}
