@@ -7,7 +7,7 @@ const Header = () => {
       <div className="top-nav">
         {/* Left: Logo or Title */}
         <div className="logo">
-          <h1>🏥 MedCare</h1>
+          <h1>🏥 MedSuite360</h1>
         </div>
 
         {/* Center: Search */}

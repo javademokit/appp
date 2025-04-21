@@ -9,8 +9,6 @@ export default function HomePage() {
 
     <div className="homepage-container">
 
-<h1 className="text-2xl font-bold text-blue-600 mb-8">Home</h1>
-
 {/* 24/7 Service Icon */}
 <motion.div
   className="twentyfour-seven"
@@ -30,7 +28,7 @@ export default function HomePage() {
         transition={{ duration: 1 }}
         className="title"
       >
-        Ambulance Management System
+        MedSuite360
       </motion.h1>
       
       {/* Subtitle Animation */}
