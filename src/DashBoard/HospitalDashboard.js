@@ -21,7 +21,7 @@ import BookAppointment from "../Patients/BookAppointment";
 import ReportViewer from "../ReportViewer/ReportViewer";
 import "./HospitalDashboard.css";
 import DoctorProfile  from "../Doctors/DoctorProfile";
-import DoctorTimeSlots from "../Doctors/DoctorTimeSlots";
+import Doctors from "../Doctors/Doctors";
 
 const HospitalDashboard = () => {
   const [activePage, setActivePage] = useState("dashboard");
@@ -52,12 +52,12 @@ const HospitalDashboard = () => {
         return <Patients />;
       case "appointments":
         return <AppointmentsList />;
-      case "doctors":
+      case "doctorsp":
         return <DoctorProfile />;
       case "reports":
         return <ReportViewer />;
       case "DoctorTimeSlots":
-        return <DoctorTimeSlots />;
+        return <Doctors />;
       case "settings":
           return <SettingsPage />;
       default:
@@ -85,7 +85,7 @@ const HospitalDashboard = () => {
             <li onClick={() => setActivePage("appointments")}>
               <FaCalendarCheck /> Appointments
             </li>
-            <li onClick={() => setActivePage("doctors")}>
+            <li onClick={() => setActivePage("doctorsp")}>
               <FaUserMd /> Doctors
             </li>
             <li onClick={() => setActivePage("reports")}>
