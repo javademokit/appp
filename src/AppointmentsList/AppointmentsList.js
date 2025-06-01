@@ -6,9 +6,10 @@ import './AppointmentsList.css';
 const AppointmentsList = () => {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false); // Modal visibility state
+  const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
-  const [modalType, setModalType] = useState('success'); // success or error
+  const [modalType, setModalType] = useState('success');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchAppointments = useCallback(async () => {
     try {
@@ -26,18 +27,16 @@ const AppointmentsList = () => {
     fetchAppointments();
   }, [fetchAppointments]);
 
-  // Show custom modal with message
   const showAlert = (message, type = 'success') => {
     setModalMessage(message);
     setModalType(type);
     setShowModal(true);
 
     setTimeout(() => {
-      setShowModal(false); // Hide modal after 3 seconds
+      setShowModal(false);
     }, 3000);
   };
 
-  // Update appointment status
   const updateAppointmentStatus = async (id, action) => {
     try {
       const response = await axios.patch(`http://localhost:7771/api/appointments1/${id}`, {
@@ -55,22 +54,41 @@ const AppointmentsList = () => {
     }
   };
 
+  const filteredAppointments = appointments.filter((appt) =>
+    appt.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    appt.doctor.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="appointments-container">
-      <h2 className="appointments-title">📋 All Appointments</h2>
+      <div className="appointments-header">
+        <h2 className="appointments-title">📋 All Appointments</h2>
+        <input
+          type="text"
+          placeholder="Search by patient or doctor..."
+          className="appointments-search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
 
       {loading ? (
         <div className="appointments-loading">Loading...</div>
-      ) : appointments.length === 0 ? (
-        <div className="appointments-empty">No appointments available.</div>
+      ) : filteredAppointments.length === 0 ? (
+        <div className="appointments-empty">No appointments found.</div>
       ) : (
         <div className="appointments-table-container">
           <table className="appointments-table">
             <thead>
               <tr>
-                <th>AId</th>
-                <th>Patient</th>
-                <th>Doctor</th>
+                <th>PatientsID</th>
+                <th>Patient Name</th>
+                <th>Patient Gender</th>
+                <th>Patient Age</th>
+                <th>Patient MobileNo</th>
+                <th>Patient EmailId</th>
+                <th>Patient Address</th>
+                <th>Doctor Name</th>
                 <th>Date</th>
                 <th>Time</th>
                 <th>Appointment Status</th>
@@ -78,12 +96,17 @@ const AppointmentsList = () => {
               </tr>
             </thead>
             <tbody>
-              {appointments.map((appt) => (
+              {filteredAppointments.map((appt) => (
                 <tr key={appt.id}>
                   <td>{appt.id}</td>
-                  <td >
+                  <td>
                     <FaUserInjured className="icon" /> {appt.patientName}
                   </td>
+                  <td>{appt.gender}</td>
+                  <td>{appt.patientAge}</td>
+                  <td>{appt.mobileNo}</td>
+                 <td>{appt.patientEmailId}</td>
+                  <td>{appt.patientAddress}</td>
                   <td>{appt.doctor}</td>
                   <td>{appt.date}</td>
                   <td>{appt.time}</td>
@@ -98,7 +121,7 @@ const AppointmentsList = () => {
                   </td>
                   <td>
                     <select
-                      onChange={(e) => updateAppointmentStatus(appt.id, e.target.value)} 
+                      onChange={(e) => updateAppointmentStatus(appt.id, e.target.value)}
                       defaultValue=""
                       className="action-dropdown"
                     >
@@ -116,7 +139,6 @@ const AppointmentsList = () => {
         </div>
       )}
 
-      {/* Custom Modal - Alert Box */}
       {showModal && (
         <div className="modal">
           <div className={`modal-content ${modalType}`}>

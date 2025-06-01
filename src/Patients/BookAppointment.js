@@ -13,6 +13,11 @@ import {
 const BookAppointment = () => {
   const [form, setForm] = useState({
     patientName: '',
+    gender: '',
+    patientAge: '',
+    mobileNo: '',
+    patientEmailId: '',
+    patientAddress: '',
     doctor: '',
     date: '',
     time: '',
@@ -31,7 +36,7 @@ const BookAppointment = () => {
       try {
         const res = await fetch('http://localhost:7771/api/doctors');
         const data = await res.json();
-        setDoctors(data.filter((d) => d.doctorName)); // Remove empty items
+        setDoctors(data.filter((d) => d.doctorName));
       } catch (error) {
         console.error('Failed to fetch doctors:', error);
       }
@@ -78,6 +83,11 @@ const BookAppointment = () => {
         setSequenceNo((prev) => prev + 1);
         setForm({
           patientName: '',
+          gender: '',
+          patientAge: '',
+          mobileNo: '',
+          patientEmailId: '',
+          patientAddress: '',
           doctor: '',
           date: '',
           time: '',
@@ -103,36 +113,13 @@ const BookAppointment = () => {
         <head>
           <title>Appointment Report</title>
           <style>
-            body {
-              font-family: Arial, sans-serif;
-              padding: 20px;
-            }
-            h2, h4 {
-              text-align: center;
-              margin: 5px 0;
-            }
-            p {
-              text-align: center;
-              margin: 2px 0;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin: 20px 0;
-            }
-            th, td {
-              border: 1px solid #333;
-              padding: 10px;
-              text-align: center;
-            }
-            .signature-block {
-              margin-top: 40px;
-              text-align: right;
-              font-size: 14px;
-            }
-            .signature-block p {
-              margin: 4px 0;
-            }
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h2, h4 { text-align: center; margin: 5px 0; }
+            p { text-align: center; margin: 2px 0; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #333; padding: 10px; text-align: center; }
+            .signature-block { margin-top: 40px; text-align: right; font-size: 14px; }
+            .signature-block p { margin: 4px 0; }
             .close-btn {
               display: block;
               margin: 30px auto 0;
@@ -175,6 +162,66 @@ const BookAppointment = () => {
         </div>
 
         <div className="form-group">
+          <FaUser className="form-icon" />
+          <select
+            name="gender"
+            value={form.gender}
+            onChange={handleChange}
+            required
+          >
+            <option value="">Select Gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <FaUser className="form-icon" />
+          <input
+            type="text"
+            name="patientAge"
+            placeholder="Patient Age"
+            value={form.patientAge}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <FaUser className="form-icon" />
+          <input
+            type="text"
+            name="mobileNo"
+            placeholder="Patient Mobile No"
+            value={form.mobileNo}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <FaUser className="form-icon" />
+          <input
+            type="text"
+            name="patientEmailId"
+            placeholder="Patient Email Id"
+            value={form.patientEmailId}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
+          <FaUser className="form-icon" />
+          <input
+            type="text"
+            name="patientAddress"
+            placeholder="Patient Address"
+            value={form.patientAddress}
+            onChange={handleChange}
+          />
+        </div>
+
+        <div className="form-group">
           <FaUserMd className="form-icon" />
           <select
             name="doctor"
@@ -185,7 +232,7 @@ const BookAppointment = () => {
             <option value="">Select Doctor</option>
             {doctors.map((doc) => (
               <option key={doc.id} value={doc.doctorName}>
-                {doc.doctorName} - {doc.doctorSpecialistName}
+                {doc.doctorName}
               </option>
             ))}
           </select>
