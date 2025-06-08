@@ -10,6 +10,9 @@
   align-items: center;
   justify-content: center;
   z-index: 1050;
+  padding: 10px;
+  box-sizing: border-box;
+  overflow-y: auto;
 }
 
 /* Modal Content */
@@ -23,6 +26,7 @@
   animation: fadeIn 0.3s ease-in-out;
   display: flex;
   flex-direction: column;
+  box-sizing: border-box;
 }
 
 /* Modal Title */
@@ -44,19 +48,33 @@
 .input-group label {
   font-weight: 500;
   margin-bottom: 5px;
+  font-size: 14px;
 }
 
 .input-group input {
-  padding: 8px 12px;
+  padding: 10px;
   border-radius: 6px;
   border: 1px solid #ccc;
   font-size: 14px;
+  width: 100%;
 }
 
 /* Add Slot Button */
 .add-slot-btn {
   margin-top: 6px;
   align-self: flex-start;
+  padding: 8px 12px;
+  background-color: #0d6efd;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.add-slot-btn:hover {
+  background-color: #0b5ed7;
 }
 
 /* Slot Table */
@@ -68,7 +86,7 @@
 }
 
 .slots-table th, .slots-table td {
-  padding: 8px;
+  padding: 10px;
   border: 1px solid #ddd;
   text-align: left;
 }
@@ -87,9 +105,37 @@
 /* Footer Buttons */
 .modal-footer {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 10px;
   margin-top: 20px;
+}
+
+.modal-footer button {
+  padding: 10px 16px;
+  font-size: 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.modal-footer button.primary {
+  background-color: #0d6efd;
+  color: #fff;
+}
+
+.modal-footer button.primary:hover {
+  background-color: #0b5ed7;
+}
+
+.modal-footer button.secondary {
+  background-color: #f1f1f1;
+  color: #333;
+}
+
+.modal-footer button.secondary:hover {
+  background-color: #e0e0e0;
 }
 
 /* Animation */
@@ -101,5 +147,27 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Responsive Adjustments */
+@media (max-width: 480px) {
+  .modal-content {
+    padding: 20px;
+    max-width: 95%;
+  }
+
+  .modal-content h4 {
+    font-size: 18px;
+  }
+
+  .input-group input,
+  .modal-footer button {
+    font-size: 13px;
+  }
+
+  .slots-table th, .slots-table td {
+    font-size: 13px;
+    padding: 6px;
   }
 }

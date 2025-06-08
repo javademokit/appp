@@ -76,3 +76,84 @@ const user = {
   role: "doctor"
 };
 localStorage.setItem("user", JSON.stringify(user));
+
+
+
+
+
+
+
+
+. Blood Tests
+Complete Blood Count (CBC): Measures red and white blood cells, hemoglobin, hematocrit, and platelets.
+
+Blood Chemistry Tests: Check for glucose, electrolytes, kidney and liver function (e.g., blood glucose, electrolytes, creatinine, ALT, AST).
+
+Lipid Profile: Measures cholesterol and triglycerides.
+
+Blood Culture: Detects infections in the bloodstream.
+
+Coagulation Tests: Assess blood clotting ability (e.g., PT, INR, aPTT).
+
+2. Urine Tests
+Urinalysis: Checks for infection, blood, protein, glucose, ketones, and other abnormalities.
+
+Urine Culture: Identifies bacteria causing urinary tract infections.
+
+24-Hour Urine Collection: Measures substances like protein or hormones over a day.
+
+3. Imaging Tests
+X-ray: Bone fractures, chest imaging, dental checks.
+
+Ultrasound: Soft tissue imaging, fetal monitoring during pregnancy.
+
+CT Scan (Computed Tomography): Detailed cross-sectional images of body.
+
+MRI (Magnetic Resonance Imaging): Soft tissue detail like brain, muscles, joints.
+
+Mammography: Breast tissue imaging for cancer screening.
+
+PET Scan: Shows metabolic activity of tissues, often for cancer detection.
+
+4. Pathology and Biopsy Tests
+Tissue Biopsy: Sampling tissue for cancer or infection diagnosis.
+
+Cytology: Examining cells (e.g., Pap smear for cervical cancer screening).
+
+Histopathology: Microscopic examination of biopsied tissue.
+
+5. Genetic Tests
+Detect genetic disorders, carrier status, or predisposition to diseases.
+
+Examples: BRCA gene test for breast cancer risk, prenatal genetic screening.
+
+6. Microbiological Tests
+Culture and Sensitivity: Identify bacteria/fungi and their antibiotic sensitivity.
+
+Rapid Antigen Tests: For infections like COVID-19, strep throat.
+
+PCR (Polymerase Chain Reaction): Detects DNA/RNA of pathogens, used widely in infectious diseases.
+
+7. Cardiac Tests
+Electrocardiogram (ECG/EKG): Heart electrical activity.
+
+Echocardiogram: Ultrasound of the heart.
+
+Stress Test: Assesses heart function under exercise.
+
+8. Allergy Tests
+Skin Prick Test: Detects allergic reactions to various substances.
+
+Blood Allergy Test (IgE): Measures specific allergic antibodies.
+
+9. Endocrine Tests
+Tests for hormone levels such as thyroid function tests (TSH, T3, T4), cortisol, insulin, etc.
+
+10. Other Specialized Tests
+Bone Density Test (DEXA Scan): Measures bone strength for osteoporosis.
+
+Pulmonary Function Tests: Measure lung capacity and airflow.
+
+Lumbar Puncture (Spinal Tap): Collect cerebrospinal fluid for neurological diseases.
+
+
