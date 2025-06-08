@@ -5,13 +5,13 @@ import HomePage from "./LandiningPage/homePage.js";
 import UserLogin from "./Login/UserLogin .js";
 import SignUpPage from "./Signup/SignUpPage";
 import HospitalDashboard from "./DashBoard/HospitalDashboard";
- // ✅ New import
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdmitForm from "./AdmitForm/AdmitForm.js";
 
 import Header from "./company/Header";
 import Footer from "./company/Footer";
-import { ROLES } from "./Admin/roles"; // ✅ Roles
-import AdminDashboard from "./Admin/AdminDashboard.js"
+import { ROLES } from "./Admin/roles";
+import AdminDashboard from "./Admin/AdminDashboard.js";
 
 const PageWithLayout = ({ children }) => (
   <>
@@ -51,6 +51,18 @@ function App() {
           element={
             <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* ✅ AdmitForm Route */}
+        <Route
+          path="/admit-form"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.DOCTOR]}>
+              <PageWithLayout>
+                <AdmitForm />
+              </PageWithLayout>
             </ProtectedRoute>
           }
         />

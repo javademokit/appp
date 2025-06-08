@@ -1,291 +1,626 @@
 /* BookAppointment.css */
 
+/* General container styling */
 .book-container {
-  max-width: 700px;
-  margin: 30px auto;
-  padding: 30px;
-  border-radius: 12px;
-  background: #f9f9f9;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  max-width: 800px; /* Increased max-width for a more spacious layout */
+  margin: 40px auto;
+  padding: 35px 45px; /* Increased padding */
+  border-radius: 16px;
+  background: #eaf6ff; /* Lighter, more modern blue background */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); /* Softer, more pronounced shadow */
+  font-family: 'Poppins', sans-serif; /* Modern, clean font */
+  color: #334e68; /* Darker, more readable text color */
+  position: relative; /* Needed for potential future absolute positioning */
+  overflow: hidden; /* Ensures no content spills out */
 }
 
+/* Enhancing the form title */
 .form-title {
   text-align: center;
-  color: #2b7a78;
-  margin-bottom: 20px;
-  font-size: 24px;
-  font-weight: 600;
+  color: #007bff; /* Vibrant blue for the title */
+  margin-bottom: 35px; /* More space below the title */
+  font-size: 32px; /* Larger font size */
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  user-select: none;
+  position: relative;
+  padding-bottom: 10px; /* Space for an underline effect */
 }
 
+.form-title::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 4px;
+  background-color: #007bff; /* Underline matching the title color */
+  border-radius: 2px;
+}
+
+/* Form layout with grid for responsiveness */
 .appointment-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  display: grid;
+  grid-template-columns: 1fr; /* Single column by default */
+  gap: 22px; /* Consistent spacing */
 }
 
+/* Two-column layout for larger screens */
+@media (min-width: 768px) {
+  .appointment-form {
+    grid-template-columns: 1fr 1fr; /* Two equal columns */
+    gap: 28px 35px; /* Increased vertical and horizontal gap */
+  }
+
+  /* Make textarea and submit button span both columns */
+  .appointment-form textarea,
+  .appointment-form .submit-btn {
+    grid-column: 1 / -1; /* Spans across all available columns */
+  }
+}
+
+/* Styling for each form group */
 .form-group {
   position: relative;
+  width: 100%;
 }
 
+/* Styling for icons within form inputs */
 .form-icon {
   position: absolute;
   top: 50%;
-  left: 10px;
+  left: 18px; /* Slightly increased left padding for icons */
   transform: translateY(-50%);
-  color: #2b7a78;
+  color: #007bff; /* Matching icon color with primary theme */
+  font-size: 20px; /* Larger icon size */
+  pointer-events: none;
+  opacity: 0.9;
 }
 
-input, select, textarea {
-  width: 100%;
-  padding: 10px 10px 10px 36px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 15px;
-}
-
+/* Styling for all input fields, selects, and textareas */
+input,
+select,
 textarea {
-  resize: vertical;
+  width: 100%;
+  padding: 14px 14px 14px 50px; /* Increased padding and space for icon */
+  border: 1px solid #cce0ff; /* Lighter, subtle border */
+  border-radius: 12px; /* More rounded corners */
+  font-size: 16px;
+  color: #334e68;
+  background-color: #ffffff;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+  outline: none; /* Remove default outline */
+  -webkit-appearance: none; /* For consistent select styling on iOS */
+  -moz-appearance: none; /* For consistent select styling on Firefox */
+  appearance: none;
 }
 
+/* Placeholder styling */
+input::placeholder,
+textarea::placeholder {
+  color: #9bb0c4;
+}
+
+/* Focus states for input fields */
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #007bff; /* Primary blue on focus */
+  box-shadow: 0 0 12px rgba(0, 123, 255, 0.25); /* More prominent shadow on focus */
+  background-color: #f7fcff; /* Very light blue on focus */
+}
+
+/* Specific styling for the fee input when present */
+.form-group input[readOnly] {
+  background-color: #e9f0f6; /* Distinct background for read-only fee */
+  color: #007bff; /* Primary color for fee text */
+  font-weight: 600;
+  cursor: default;
+}
+
+/* Textarea specific styling */
+textarea {
+  resize: vertical; /* Allow vertical resizing */
+  min-height: 90px; /* Slightly increased min-height */
+  font-family: 'Poppins', sans-serif; /* Ensure font consistency */
+  line-height: 1.6; /* Better readability for text */
+}
+
+/* Submit button styling */
 .submit-btn {
-  background-color: #2b7a78;
+  background: linear-gradient(45deg, #007bff, #0056b3); /* Smooth gradient */
   color: #fff;
-  padding: 12px;
+  padding: 16px; /* Larger padding */
   border: none;
-  border-radius: 6px;
-  font-size: 16px;
+  border-radius: 12px;
+  font-size: 20px; /* Larger font size */
+  font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4); /* Enhanced shadow */
+  transition: all 0.3s ease; /* Smoother transitions */
+  user-select: none;
+  letter-spacing: 0.5px;
 }
 
 .submit-btn:hover {
-  background-color: #205e5a;
+  background: linear-gradient(45deg, #0056b3, #004085); /* Darker gradient on hover */
+  box-shadow: 0 10px 25px rgba(0, 123, 255, 0.6); /* More intense shadow on hover */
+  transform: translateY(-2px); /* Slight lift effect */
 }
 
+.submit-btn:active {
+  transform: translateY(0); /* Press down effect */
+  box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+}
+
+/* Appointment Report Section */
 .appointment-report {
-  margin-top: 40px;
-  padding: 20px;
-  border: 1px solid #dcdcdc;
-  border-radius: 10px;
-  background-color: #fff;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  margin-top: 55px; /* More separation from the form */
+  padding: 35px 40px; /* Increased padding */
+  border-radius: 18px; /* More rounded corners */
+  background-color: #ffffff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08); /* Consistent shadow */
+  color: #334e68;
+  user-select: text;
+  border: 1px solid #e0e7ee; /* Subtle border */
 }
 
-.appointment-report h3 {
+.appointment-report h2 {
+  font-weight: 700;
+  color: #007bff;
+  margin-bottom: 8px; /* Slightly more space */
+  font-size: 28px;
+  letter-spacing: 1px;
   text-align: center;
-  margin-bottom: 20px;
-  color: #444;
 }
 
-#print-btn,
-.print-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: #0077cc;
-  color: white;
-  padding: 10px 18px;
-  border: none;
-  border-radius: 6px;
+.appointment-report p {
+  text-align: center;
+  margin: 4px 0;
   font-size: 15px;
-  cursor: pointer;
-  margin-top: 20px;
-  transition: background-color 0.3s ease;
+  color: #5a7d9b; /* Slightly softer text color */
 }
 
-.print-btn:hover {
-  background-color: #005fa3;
+.appointment-report h4 {
+  text-align: center;
+  margin: 25px 0 30px; /* More vertical spacing */
+  color: #007bff;
+  font-weight: 600;
+  font-size: 22px; /* Larger report title */
+  letter-spacing: 0.8px;
+  position: relative;
+  padding-bottom: 8px;
 }
 
-/* Table styling inside report */
+.appointment-report h4::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 2px;
+  background-color: #007bff;
+  border-radius: 1px;
+}
+
+/* Table styling within the report */
 #appointment-report table {
   width: 100%;
-  border-collapse: collapse;
+  table-layout: fixed; /* Crucial for controlling column widths */
+  border-collapse: separate;
+  border-spacing: 0 12px; /* Increased spacing between rows */
   margin-top: 20px;
 }
 
 #appointment-report th,
 #appointment-report td {
-  border: 1px solid #ccc;
-  padding: 10px;
+  padding: 16px 8px; /* Adjusted horizontal padding slightly for better fit */
   text-align: center;
-  font-size: 14px;
+  font-size: 15px; /* Adjusted font size slightly */
+  border-radius: 10px; /* More rounded cells */
+  background-color: #f0f7ff; /* Lighter background for cells */
+  color: #334e68;
+  font-weight: 500; /* Regular font weight for data */
+  border: none;
+  box-shadow: inset 0 0 6px rgba(0, 123, 255, 0.08); /* Subtle inner shadow */
+  word-wrap: break-word; /* Ensures long words break to fit in cell */
+  vertical-align: middle; /* Vertically centers content in cells */
+}
+
+/* Strict Column Widths for better fixed layout */
+#appointment-report th:nth-child(1), /* # */
+#appointment-report td:nth-child(1) {
+  width: 5%;
+  min-width: 30px;
+}
+#appointment-report th:nth-child(2), /* Patient */
+#appointment-report td:nth-child(2) {
+  width: 19%; /* Adjusted */
+  min-width: 100px;
+}
+#appointment-report th:nth-child(3), /* Doctor */
+#appointment-report td:nth-child(3) {
+  width: 17%; /* Adjusted */
+  min-width: 90px;
+}
+#appointment-report th:nth-child(4), /* Date */
+#appointment-report td:nth-child(4) {
+  width: 11%; /* Adjusted */
+  min-width: 70px;
+}
+#appointment-report th:nth-child(5), /* Time (with icon) */
+#appointment-report td:nth-child(5) {
+  width: 13%; /* Increased width for icon + text */
+  min-width: 80px;
+}
+#appointment-report th:nth-child(6), /* Reason */
+#appointment-report td:nth-child(6) {
+  width: 25%; /* Increased width for reason */
+  min-width: 120px;
+}
+#appointment-report th:nth-child(7), /* Fee */
+#appointment-report td:nth-child(7) {
+  width: 10%;
+  min-width: 60px;
+}
+
+/* Styling for content within the Time column to properly display icons */
+.time-slot-content {
+  display: flex;
+  align-items: center; /* Vertically align icon and text */
+  justify-content: center; /* Horizontally center icon and text */
+  gap: 5px; /* Space between icon and text */
+}
+
+.time-slot-content svg { /* Targeting react-icons SVG directly */
+  font-size: 1.1em; /* Adjust icon size relative to text */
+  color: #007bff; /* Match primary color */
 }
 
 #appointment-report th {
-  background-color: #e6f7ff;
-  font-weight: bold;
+  background-color: #e0f0ff; /* Slightly darker header background */
+  font-weight: 700; /* Bolder headers */
+  letter-spacing: 0.08em;
+  color: #007bff; /* Primary color for headers */
+  text-transform: uppercase; /* Uppercase headers */
 }
 
-#appointment-report h2, #appointment-report p {
-  text-align: center;
-  margin: 4px 0;
+/* Alternating row colors for better readability */
+#appointment-report tbody tr:nth-child(odd) td {
+  background-color: #f7fcff;
 }
 
+#appointment-report tbody tr:nth-child(even) td {
+  background-color: #edf5ff;
+}
+
+/* Hover effect on table rows */
+#appointment-report tbody tr:hover td {
+  background-color: #cce0ff; /* Lighter blue on hover */
+  color: #0056b3; /* Darker blue text on hover */
+  transform: translateY(-2px); /* Slight lift effect */
+  transition: all 0.3s ease;
+  box-shadow: inset 0 0 8px rgba(0, 123, 255, 0.15);
+}
+
+/* Signature block styling */
 .signature-block {
-  margin-top: 40px;
+  margin-top: 55px; /* More space above signature */
   text-align: right;
-  font-size: 14px;
+  font-size: 15.5px;
+  font-weight: 600;
+  color: #007bff;
+  user-select: none;
 }
 
 .signature-block p {
-  margin: 4px 0;
+  margin: 8px 0 0 auto; /* Adjust margin for proper alignment */
+  border-top: 2px solid #007bff; /* Thicker, primary colored border */
+  padding-top: 10px; /* More padding above the text */
+  width: 220px; /* Increased width */
+  text-align: center; /* Center signature text */
 }
 
-.close-btn {
-  display: block;
-  margin: 30px auto 0;
-  padding: 10px 20px;
-  font-size: 16px;
-  background-color: #f44336;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}/* BookAppointment.css */
-
-.book-container {
-  max-width: 700px;
-  margin: 30px auto;
-  padding: 30px;
-  border-radius: 12px;
-  background: #f9f9f9;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.form-title {
-  text-align: center;
-  color: #2b7a78;
-  margin-bottom: 20px;
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.appointment-form {
+/* Report buttons styling */
+.report-buttons {
+  margin-top: 30px; /* More space above buttons */
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  justify-content: center;
+  gap: 20px; /* Consistent gap */
 }
 
-.form-group {
-  position: relative;
-}
-
-.form-icon {
-  position: absolute;
-  top: 50%;
-  left: 10px;
-  transform: translateY(-50%);
-  color: #2b7a78;
-}
-
-input, select, textarea {
-  width: 100%;
-  padding: 10px 10px 10px 36px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  font-size: 15px;
-}
-
-textarea {
-  resize: vertical;
-}
-
-.submit-btn {
-  background-color: #2b7a78;
-  color: #fff;
-  padding: 12px;
-  border: none;
-  border-radius: 6px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.submit-btn:hover {
-  background-color: #205e5a;
-}
-
-.appointment-report {
-  margin-top: 40px;
-  padding: 20px;
-  border: 1px solid #dcdcdc;
-  border-radius: 10px;
-  background-color: #fff;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
-.appointment-report h3 {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #444;
-}
-
-#print-btn,
-.print-btn {
+.print-btn,
+.close-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background-color: #0077cc;
-  color: white;
-  padding: 10px 18px;
+  gap: 10px; /* Space between icon and text */
+  padding: 14px 25px; /* Larger padding */
+  font-size: 17px;
+  font-weight: 600;
+  border-radius: 12px;
   border: none;
-  border-radius: 6px;
-  font-size: 15px;
   cursor: pointer;
-  margin-top: 20px;
-  transition: background-color 0.3s ease;
+  user-select: none;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); /* Softer shadow */
+  transition: all 0.3s ease;
+}
+
+.print-btn {
+  background-color: #28a745; /* Green for print */
+  color: white;
 }
 
 .print-btn:hover {
-  background-color: #005fa3;
-}
-
-/* Table styling inside report */
-#appointment-report table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-
-#appointment-report th,
-#appointment-report td {
-  border: 1px solid #ccc;
-  padding: 10px;
-  text-align: center;
-  font-size: 14px;
-}
-
-#appointment-report th {
-  background-color: #e6f7ff;
-  font-weight: bold;
-}
-
-#appointment-report h2, #appointment-report p {
-  text-align: center;
-  margin: 4px 0;
-}
-
-.signature-block {
-  margin-top: 40px;
-  text-align: right;
-  font-size: 14px;
-}
-
-.signature-block p {
-  margin: 4px 0;
+  background-color: #218838;
+  box-shadow: 0 7px 20px rgba(40, 167, 69, 0.4);
+  transform: translateY(-2px);
 }
 
 .close-btn {
-  display: block;
-  margin: 30px auto 0;
-  padding: 10px 20px;
-  font-size: 16px;
-  background-color: #f44336;
+  background-color: #dc3545; /* Red for close */
   color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
+}
+
+.close-btn:hover {
+  background-color: #c82333;
+  box-shadow: 0 7px 20px rgba(220, 53, 69, 0.4);
+  transform: translateY(-2px);
+}
+
+/* Responsive Adjustments */
+
+/* Small phones (portrait) */
+@media (max-width: 480px) {
+  .book-container {
+    padding: 25px 20px;
+    margin: 20px 15px;
+    border-radius: 12px;
+  }
+
+  .form-title {
+    font-size: 26px;
+    margin-bottom: 25px;
+  }
+
+  .form-icon {
+    left: 14px;
+    font-size: 18px;
+  }
+
+  input, select, textarea {
+    font-size: 14px;
+    padding: 12px 12px 12px 42px;
+    border-radius: 10px;
+  }
+
+  textarea {
+    min-height: 80px;
+  }
+
+  .submit-btn {
+    font-size: 16px;
+    padding: 12px;
+  }
+
+  .appointment-report {
+    padding: 25px 20px;
+    margin-top: 40px;
+    border-radius: 14px;
+  }
+
+  .appointment-report h2 {
+    font-size: 24px;
+  }
+
+  .appointment-report p {
+    font-size: 13.5px;
+  }
+
+  .appointment-report h4 {
+    font-size: 18px;
+    margin: 20px 0 20px;
+  }
+
+  /* Adjust table on small screens to stack */
+  #appointment-report table {
+    display: block;
+    overflow-x: auto; /* Allows horizontal scroll for very wide content in a cell */
+    white-space: normal; /* Allow text to wrap within stacked cells */
+    table-layout: auto; /* Revert to auto layout when stacked */
+  }
+
+  #appointment-report thead, #appointment-report tbody, #appointment-report th, #appointment-report td, #appointment-report tr {
+    display: block; /* Make table elements block-level for stacking */
+  }
+
+  #appointment-report tr {
+    margin-bottom: 15px; /* Space between stacked rows */
+    border: 1px solid #cce0ff; /* Add border to stacked rows */
+    border-radius: 10px;
+  }
+
+  #appointment-report th, #appointment-report td {
+    border: none; /* Remove individual cell borders when stacked */
+    text-align: left; /* Align text left when stacked */
+    padding: 10px 15px;
+    font-size: 13px;
+    width: auto !important; /* Override fixed widths */
+    min-width: unset; /* Remove min-width constraints */
+  }
+
+  #appointment-report td:before {
+    content: attr(data-label); /* Use data-label for pseudo-elements */
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-right: 10px;
+    color: #007bff;
+  }
+
+  /* Hide original headers on small screens as we're using data-labels */
+  #appointment-report thead {
+    display: none;
+  }
+
+  #appointment-report tbody tr:hover td {
+    background-color: #f0f7ff; /* Reset hover background for stacked rows */
+    color: #334e68;
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Ensure time slot content handles stacking well */
+  .time-slot-content {
+    justify-content: flex-start; /* Align to start when stacked */
+  }
+
+
+  .signature-block {
+    margin-top: 40px;
+    font-size: 14px;
+  }
+
+  .signature-block p {
+    width: 180px;
+    padding-top: 6px;
+  }
+
+  .report-buttons {
+    flex-direction: column; /* Stack buttons on small screens */
+    gap: 15px;
+  }
+
+  .print-btn, .close-btn {
+    font-size: 15px;
+    padding: 12px 20px;
+    justify-content: center; /* Center button text and icon */
+  }
+}
+
+/* Tablets (portrait) and smaller desktops */
+@media (min-width: 481px) and (max-width: 767px) {
+  .book-container {
+    max-width: 600px;
+    padding: 30px 35px;
+  }
+
+  .form-title {
+    font-size: 28px;
+    margin-bottom: 30px;
+  }
+
+  .form-icon {
+    left: 16px;
+    font-size: 19px;
+  }
+
+  input, select, textarea {
+    font-size: 15px;
+    padding: 13px 13px 13px 45px;
+  }
+
+  textarea {
+    min-height: 85px;
+  }
+
+  .submit-btn {
+    font-size: 18px;
+    padding: 14px;
+  }
+
+  .appointment-report {
+    padding: 30px 35px;
+    margin-top: 50px;
+  }
+
+  .appointment-report h2 {
+    font-size: 26px;
+  }
+
+  .appointment-report p {
+    font-size: 14.5px;
+  }
+
+  .appointment-report h4 {
+    font-size: 20px;
+    margin: 22px 0 25px;
+  }
+
+  #appointment-report th, #appointment-report td {
+    padding: 14px 10px;
+    font-size: 14px;
+  }
+
+  #appointment-report table {
+    border-spacing: 0 10px;
+  }
+
+  .signature-block {
+    margin-top: 45px;
+    font-size: 15px;
+  }
+
+  .signature-block p {
+    width: 200px;
+    padding-top: 8px;
+  }
+
+  .report-buttons {
+    flex-direction: row;
+    gap: 18px;
+  }
+}
+
+/* Print specific styles */
+@media print {
+  body {
+    -webkit-print-color-adjust: exact; /* Ensures background colors are printed */
+    print-color-adjust: exact;
+    background-color: #fff !important; /* Force white background for printing */
+  }
+
+  .book-container, .appointment-report {
+    box-shadow: none !important; /* Remove shadows for cleaner print */
+    border: none !important; /* Remove borders if preferred */
+    margin: 0 !important;
+    padding: 15mm !important; /* Standard print margins */
+    max-width: 100% !important;
+  }
+
+  .report-buttons, .form-title::after, .appointment-report h4::after {
+    display: none !important; /* Hide buttons and underlines when printing */
+  }
+
+  /* Ensure icons (from React Icons) are visible in print */
+  .form-icon, .time-slot-content svg { /* Targeting form icons and SVG icons in time slot */
+    color: #000 !important; /* Make icons black for better contrast on print */
+    opacity: 1 !important;
+    display: inline-block !important; /* Ensure they are not hidden */
+    /* If still not showing, check your React Icons setup. You might need to
+       ensure the Font Awesome (or similar) font is globally available or
+       embed the SVG directly for maximum compatibility. */
+  }
+
+  #appointment-report th, #appointment-report td {
+    background-color: #e0f0ff !important; /* Ensure background color prints */
+    border: 1px solid #ccc !important; /* Add subtle border for print clarity */
+    box-shadow: none !important;
+    color: #000 !important; /* Black text for print */
+  }
+
+  #appointment-report tbody tr:hover td {
+    background-color: #e0f0ff !important; /* Reset hover style for print */
+    color: #000 !important;
+    transform: none !important;
+  }
+
+  .signature-block p {
+    border-top: 1px solid #000 !important; /* Black border for signature */
+  }
+
+  /* Adjust print media for the print window generated by JS */
+  .close-btn {
+    display: none !important; /* Hide the close button in the print preview itself */
+  }
 }

@@ -22,6 +22,8 @@ import ReportViewer from "../ReportViewer/ReportViewer";
 import "./HospitalDashboard.css";
 import DoctorProfile  from "../Doctors/DoctorProfile";
 import Doctors from "../Doctors/Doctors";
+import AdmitForm from "../AdmitForm/AdmitForm";
+
 
 const HospitalDashboard = () => {
   const [activePage, setActivePage] = useState("dashboard");
@@ -48,8 +50,11 @@ const HospitalDashboard = () => {
         return <Dashboard />;
       case "book-appointment":
         return <BookAppointment />;
+      case "admit-form":
+        return <AdmitForm/>
       case "patients":
         return <Patients />;
+
       case "appointments":
         return <AppointmentsList />;
       case "doctorsp":
@@ -78,6 +83,9 @@ const HospitalDashboard = () => {
             </li>
             <li onClick={() => setActivePage("book-appointment")}>
               <FaBookMedical /> Book Appointment
+            </li>
+            <li onClick={() => setActivePage("admit-form")}>
+              <FaBookMedical /> AdmitForm
             </li>
             <li onClick={() => setActivePage("patients")}>
               <FaUserInjured /> Patients
