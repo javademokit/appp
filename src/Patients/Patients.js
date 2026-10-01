@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './UrineTestForm.css';
+import { apiFetch } from '../API/api';
 
 const medicalTestTypes = [
   { name: 'Complete Blood Count (CBC)', price: 500 },
@@ -68,10 +69,18 @@ const UrineTestForm = () => {
     e.preventDefault();
 
     try {
-      const res = await fetch('http://localhost:8080/api/urine-tests', {
+      const aliases = {
+        'Complete Blood Count (CBC)': 'CBC',
+        'Blood Chemistry Test': 'BLOOD_CHEMISTRY',
+        'X-ray': 'XRAY',
+        'Electrocardiogram (ECG)': 'ECG',
+      };
+      const testType = aliases[formData.medicalTestType]
+        || formData.medicalTestType.replace(/\s*\([^)]*\)/, '').toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+      const { medicalTestType, testPrice, ...testData } = formData;
+      const res = await apiFetch('/medical-tests', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...testData, age: Number(formData.age), testType }),
       });
 
       if (res.ok) {

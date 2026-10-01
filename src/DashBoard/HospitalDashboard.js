@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FaUserInjured,
   FaCalendarCheck,
@@ -8,8 +9,10 @@ import {
   FaUserCircle,
   FaSignOutAlt,
   FaBookMedical,
-  FaTachometerAlt
+  FaTachometerAlt,
+  FaCreditCard
 } from "react-icons/fa";
+import { CalendarClock, FileBadge, FlaskConical, Pill, Siren } from "lucide-react";
 
 import Header from "../company/Header";
 import Footer from "../company/Footer";
@@ -19,26 +22,35 @@ import AppointmentsList from "../AppointmentsList/AppointmentsList";
 import SettingsPage from "../Settings/SettingsPage";
 import BookAppointment from "../Patients/BookAppointment"; 
 import ReportViewer from "../ReportViewer/ReportViewer";
+import PaymentPage from "../PaymentPage/PaymentPage";
 import "./HospitalDashboard.css";
 import DoctorProfile  from "../Doctors/DoctorProfile";
 import Doctors from "../Doctors/Doctors";
+import { apiFetch } from "../API/api";
+import PharmacyPage from "../Operations/PharmacyPage";
+import LabsDiagnosticsPage from "../Operations/LabsDiagnosticsPage";
+import EmergencyTriagePage from "../Operations/EmergencyTriagePage";
+import StaffShiftsPage from "../Operations/StaffShiftsPage";
+import DischargePage from "../Operations/DischargePage";
 
 const HospitalDashboard = () => {
   const [activePage, setActivePage] = useState("dashboard");
   const [username, setUsername] = useState("");
+  const navigate = useNavigate();
 
-  // Load username from localStorage
   useEffect(() => {
-    const storedUsername = localStorage.getItem("username");
-    if (storedUsername) {
-      setUsername(storedUsername);
-    }
-  }, []);
+    apiFetch("/users/me")
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((user) => setUsername(user.username))
+      .catch(() => navigate("/UserLogin", { replace: true }));
+  }, [navigate]);
 
-  // Handle logout
-  const handleLogout = () => {
-    localStorage.clear();
-    window.location.href = "/UserLogin";
+  const handleLogout = async () => {
+    try {
+      await apiFetch("/users/logout", { method: "POST" });
+    } finally {
+      navigate("/UserLogin", { replace: true });
+    }
   };
 
   // Render the main content
@@ -56,6 +68,18 @@ const HospitalDashboard = () => {
         return <DoctorProfile />;
       case "reports":
         return <ReportViewer />;
+      case "billing":
+        return <PaymentPage />;
+      case "discharges":
+        return <DischargePage />;
+      case "pharmacy":
+        return <PharmacyPage />;
+      case "laboratory":
+        return <LabsDiagnosticsPage />;
+      case "emergency":
+        return <EmergencyTriagePage />;
+      case "staff-shifts":
+        return <StaffShiftsPage />;
       case "DoctorTimeSlots":
         return <Doctors />;
       case "settings":
@@ -73,28 +97,46 @@ const HospitalDashboard = () => {
         {/* Sidebar Navigation */}
         <div className="sidebar">
           <ul>
-            <li onClick={() => setActivePage("dashboard")}>
+            <li className={activePage === "dashboard" ? "active" : ""} aria-current={activePage === "dashboard" ? "page" : undefined} onClick={() => setActivePage("dashboard")}>
               <FaTachometerAlt /> Dashboard
             </li>
-            <li onClick={() => setActivePage("book-appointment")}>
+            <li className={activePage === "book-appointment" ? "active" : ""} aria-current={activePage === "book-appointment" ? "page" : undefined} onClick={() => setActivePage("book-appointment")}>
               <FaBookMedical /> Book Appointment
             </li>
-            <li onClick={() => setActivePage("patients")}>
+            <li className={activePage === "patients" ? "active" : ""} aria-current={activePage === "patients" ? "page" : undefined} onClick={() => setActivePage("patients")}>
               <FaUserInjured /> Patients
             </li>
-            <li onClick={() => setActivePage("appointments")}>
+            <li className={activePage === "appointments" ? "active" : ""} aria-current={activePage === "appointments" ? "page" : undefined} onClick={() => setActivePage("appointments")}>
               <FaCalendarCheck /> Appointments
             </li>
-            <li onClick={() => setActivePage("doctorsp")}>
+            <li className={activePage === "doctorsp" ? "active" : ""} aria-current={activePage === "doctorsp" ? "page" : undefined} onClick={() => setActivePage("doctorsp")}>
               <FaUserMd /> Doctors
             </li>
-            <li onClick={() => setActivePage("reports")}>
+            <li className={activePage === "reports" ? "active" : ""} aria-current={activePage === "reports" ? "page" : undefined} onClick={() => setActivePage("reports")}>
               <FaFileAlt /> Reports
             </li>
-            <li onClick={() => setActivePage("DoctorTimeSlots")}>
-              <FaCogs /> DoctorTimeSlots
+            <li className={activePage === "billing" ? "active" : ""} aria-current={activePage === "billing" ? "page" : undefined} onClick={() => setActivePage("billing")}>
+              <FaCreditCard /> Billing & Payments
             </li>
-            <li onClick={() => setActivePage("settings")}>
+            <li className={activePage === "discharges" ? "active" : ""} aria-current={activePage === "discharges" ? "page" : undefined} onClick={() => setActivePage("discharges")}>
+              <FileBadge size={16} /> Discharge &amp; Claims
+            </li>
+            <li className={activePage === "DoctorTimeSlots" ? "active" : ""} aria-current={activePage === "DoctorTimeSlots" ? "page" : undefined} onClick={() => setActivePage("DoctorTimeSlots")}>
+              <FaCalendarCheck /> Doctor Schedule
+            </li>
+            <li className={activePage === "staff-shifts" ? "active" : ""} aria-current={activePage === "staff-shifts" ? "page" : undefined} onClick={() => setActivePage("staff-shifts")}>
+              <CalendarClock size={16} /> Staff &amp; Shifts
+            </li>
+            <li className={activePage === "pharmacy" ? "active" : ""} aria-current={activePage === "pharmacy" ? "page" : undefined} onClick={() => setActivePage("pharmacy")}>
+              <Pill size={16} /> Pharmacy
+            </li>
+            <li className={activePage === "laboratory" ? "active" : ""} aria-current={activePage === "laboratory" ? "page" : undefined} onClick={() => setActivePage("laboratory")}>
+              <FlaskConical size={16} /> Lab &amp; Diagnostics
+            </li>
+            <li className={activePage === "emergency" ? "active" : ""} aria-current={activePage === "emergency" ? "page" : undefined} onClick={() => setActivePage("emergency")}>
+              <Siren size={16} /> Triage &amp; Emergency
+            </li>
+            <li className={activePage === "settings" ? "active" : ""} aria-current={activePage === "settings" ? "page" : undefined} onClick={() => setActivePage("settings")}>
               <FaCogs /> Settings
             </li>
           </ul>

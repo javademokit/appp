@@ -1,0 +1,192 @@
+.discharge-note {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.85rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #d4e4dd;
+  border-radius: 5px;
+  background: #f5faf7;
+  color: #536a61;
+  font-size: 0.76rem;
+}
+
+.discharge-case-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.discharge-case-card {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--clinic-line);
+  border-radius: 7px;
+  background: #fff;
+}
+
+.discharge-case-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid #e9efec;
+}
+
+.discharge-patient-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.discharge-patient-line h2 {
+  margin: 0;
+  color: #263d37;
+  font-size: 1rem;
+}
+
+.discharge-patient-line > span:not(.workflow-status) {
+  color: #7a8984;
+  font-size: 0.72rem;
+}
+
+.discharge-case-header p {
+  margin: 0.3rem 0 0;
+  color: #71817b;
+  font-size: 0.76rem;
+}
+
+.discharge-balance {
+  display: flex;
+  min-width: 116px;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+}
+
+.discharge-balance span {
+  color: #75847f;
+  font-size: 0.65rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.discharge-balance strong {
+  color: #253c36;
+  font-size: 1.05rem;
+}
+
+.discharge-clearance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid #e9efec;
+}
+
+.clearance-step {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.clearance-icon {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e5eae7;
+  border-radius: 50%;
+  background: #f6f8f7;
+  color: #83918b;
+}
+
+.clearance-icon.complete {
+  border-color: #c6e1d1;
+  background: #edf8f1;
+  color: #347550;
+}
+
+.clearance-step div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.clearance-step strong { color: #3f544d; font-size: 0.74rem; }
+.clearance-step small { overflow: hidden; color: #7a8984; font-size: 0.65rem; text-overflow: ellipsis; white-space: nowrap; }
+
+.discharge-finance-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.3rem;
+  padding: 0.75rem 0;
+}
+
+.discharge-finance-summary span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  color: #7a8984;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.discharge-finance-summary strong {
+  color: #344a43;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.discharge-pending-note {
+  margin: 0.2rem 0 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border-left: 3px solid #c38a3b;
+  background: #fff8ee;
+  color: #805923;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.discharge-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid #e9efec;
+}
+
+.discharge-actions .workflow-button.primary:disabled {
+  border-color: #d7e0dc;
+  background: #e5ebe8;
+  color: #84908b;
+  cursor: not-allowed;
+}
+
+.discharge-inline-form {
+  margin-top: 0.7rem;
+  padding: 0.8rem;
+  border: 1px solid #dfe9e4;
+  border-radius: 6px;
+  background: #f8fbf9;
+}
+
+.discharge-inline-form h3 {
+  margin: 0 0 0.65rem;
+  color: #3b514a;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 640px) {
+  .discharge-case-header { flex-direction: column; }
+  .discharge-balance { align-items: flex-start; }
+  .discharge-clearance-grid { grid-template-columns: 1fr; }
+  .discharge-finance-summary { gap: 0.7rem 1rem; }
+  .discharge-actions .workflow-button { flex: 1 1 calc(50% - 0.45rem); }
+}

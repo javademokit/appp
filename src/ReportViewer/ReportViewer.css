@@ -1,25 +1,67 @@
 .report-container {
-  padding: 20px;
-  font-family: Arial;
+  width: 100%;
+  padding: 0;
+  color: var(--clinic-ink);
+  font-family: inherit;
+}
+
+.report-container h1 {
+  margin: 0 0 1rem;
+  font-size: 1.55rem;
 }
 
 .report-controls {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-bottom: 1rem;
 }
 
-table {
+.report-controls select,
+.report-controls button {
+  box-sizing: border-box;
+  min-height: 40px;
+  border: 1px solid var(--clinic-line);
+  border-radius: 5px;
+  padding: 0.55rem 0.75rem;
+  background: #fff;
+  color: var(--clinic-ink);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.report-controls button {
+  border-color: var(--clinic-primary);
+  background: var(--clinic-primary);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.report-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--clinic-line);
+  border-radius: 7px;
+  background: #fff;
+}
+
+.report-table-wrapper table {
   width: 100%;
   border-collapse: collapse;
 }
 
-th, td {
-  border: 1px solid #ccc;
-  padding: 8px;
+.report-table-wrapper th,
+.report-table-wrapper td {
+  border-bottom: 1px solid #e7eeeb;
+  padding: 0.72rem 0.8rem;
+  text-align: left;
+  font-size: 0.8rem;
 }
 
-th {
-  background-color: #f0f0f0;
+.report-table-wrapper th {
+  background-color: #edf5f2;
+  color: #536761;
+  font-size: 0.68rem;
+  text-transform: uppercase;
   font-weight: bold;
 }

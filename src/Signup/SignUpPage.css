@@ -1,32 +1,27 @@
-/* SignUpPage.css */
-
-body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(to right, #e0f7fa, hsl(0, 0%, 95%));
-}
-
 .signup-container {
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 1.25rem;
+  background: var(--clinic-canvas);
 }
 
 .signup-form {
-  background: white;
-  padding: 40px 30px;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+  background: var(--clinic-surface);
+  padding: 32px;
+  border: 1px solid var(--clinic-line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(27, 51, 45, 0.08);
   width: 100%;
   max-width: 400px;
   text-align: center;
 }
 
 .signup-form h1 {
-  color: #0077b6;
-  font-size: 2rem;
+  color: var(--clinic-primary-strong);
+  font-size: 1.8rem;
   margin-bottom: 25px;
 }
 
@@ -35,33 +30,35 @@ body {
 }
 
 .input-group input {
+  box-sizing: border-box;
   width: 100%;
-  padding: 12px 15px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 1rem;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--clinic-line);
+  border-radius: 5px;
+  font-size: 0.9rem;
   transition: all 0.3s ease-in-out;
 }
 
 .input-group input:focus {
-  border-color: hwb(204 89% 9%);
-  outline: none;
-  box-shadow: 0 0 5px rgba(235, 237, 238, 0.3);
+  border-color: var(--clinic-primary);
+  box-shadow: 0 0 0 3px rgba(22, 121, 111, 0.12);
 }
 
 .signup-btn {
   width: 100%;
-  padding: 12px;
-  background-color: #0077b6;
+  min-height: 44px;
+  padding: 10px 12px;
+  background-color: var(--clinic-primary);
   color: white;
   font-weight: bold;
   font-size: 1rem;
   border: none;
-  border-radius: 8px;
+  border-radius: 5px;
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
 .signup-btn:hover {
-  background-color: #005f8f;
+  background-color: var(--clinic-primary-strong);
 }

@@ -1,7 +1,8 @@
 .dashboard-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
+  background: var(--clinic-canvas);
 }
 
 .dashboard-body {
@@ -10,22 +11,33 @@
 }
 
 .sidebar {
-  width: 200px;
-  background-color: #2f3e46;
-  color: white;
+  width: 224px;
+  flex: 0 0 224px;
+  border-right: 1px solid var(--clinic-line);
+  background: #f8fbf9;
+  color: var(--clinic-ink);
   padding-top: 20px;
 }
 
 .sidebar ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 
 .sidebar li {
-  padding: 15px 20px;
+  min-height: 44px;
+  margin: 3px 10px;
+  padding: 11px 12px;
+  border-radius: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
+  gap: 10px;
+  color: #536761;
+  font-size: 0.84rem;
+  font-weight: 600;
+  transition: background-color 140ms ease, color 140ms ease;
 }
 
 .sidebar li i {
@@ -34,24 +46,33 @@
 }
 
 .sidebar li:hover {
-  background-color: #354f52;
+  background-color: #edf5f2;
+  color: var(--clinic-ink);
+}
+
+.sidebar li.active {
+  background: var(--clinic-primary-soft);
+  color: var(--clinic-primary-strong);
+  font-weight: 750;
 }
 
 .main-content {
   flex: 1;
-  padding: 20px;
-  background-color: #f1f1f1;
+  min-width: 0;
+  padding: 24px;
+  background: var(--clinic-canvas);
   overflow-y: auto;
 }
 
 /* Top-right icons section */
 .top-right-icons {
   position: absolute;
-  top: 10px;
+  top: 13px;
   right: 20px;
   display: flex;
   align-items: center;
-  font-size: 18px;
+  color: var(--clinic-ink);
+  font-size: 0.85rem;
 }
 
 .top-right-icons .user-profile {
@@ -67,6 +88,14 @@
 
 .top-right-icons .logout {
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--clinic-line);
+  border-radius: 6px;
+  color: var(--clinic-muted);
 }
 
 .top-right-icons .logout i {
@@ -74,10 +103,53 @@
 }
 
 /* Footer styling */
-footer {
-  background-color: #2f3e46;
-  color: white;
-  padding: 10px;
+.dashboard-container > footer {
+  background: #fff;
+  color: var(--clinic-muted);
+  padding: 12px 20px;
   text-align: center;
-  margin-top: 20px;
+  margin-top: 0;
+  border-top: 1px solid var(--clinic-line);
+}
+
+@media (max-width: 720px) {
+  .dashboard-container {
+    height: auto;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .dashboard-body {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    box-sizing: border-box;
+    width: 100%;
+    flex: 0 0 auto;
+    overflow-x: auto;
+    padding: 0;
+  }
+
+  .sidebar ul {
+    display: flex;
+    width: max-content;
+    min-width: 100%;
+    margin: 0;
+  }
+
+  .sidebar li {
+    flex: 0 0 auto;
+    min-height: 46px;
+    padding: 12px;
+    white-space: nowrap;
+  }
+
+  .main-content {
+    box-sizing: border-box;
+    width: 100%;
+    flex: 1 0 auto;
+    overflow: visible;
+    padding: 12px;
+  }
 }

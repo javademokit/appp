@@ -24,11 +24,11 @@
   gap: 16px;
 }
 
-.form-group {
+.book-container .form-group {
   position: relative;
 }
 
-.form-icon {
+.book-container .form-icon {
   position: absolute;
   top: 50%;
   left: 10px;
@@ -36,7 +36,9 @@
   color: #2b7a78;
 }
 
-input, select, textarea {
+.book-container input,
+.book-container select,
+.book-container textarea {
   width: 100%;
   padding: 10px 10px 10px 36px;
   border: 1px solid #ccc;
@@ -44,11 +46,11 @@ input, select, textarea {
   font-size: 15px;
 }
 
-textarea {
+.book-container textarea {
   resize: vertical;
 }
 
-.submit-btn {
+.book-container .submit-btn {
   background-color: #2b7a78;
   color: #fff;
   padding: 12px;
@@ -59,11 +61,11 @@ textarea {
   transition: background-color 0.3s ease;
 }
 
-.submit-btn:hover {
+.book-container .submit-btn:hover {
   background-color: #205e5a;
 }
 
-.appointment-report {
+.book-container .appointment-report {
   margin-top: 40px;
   padding: 20px;
   border: 1px solid #dcdcdc;
@@ -72,7 +74,7 @@ textarea {
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-.appointment-report h3 {
+.book-container .appointment-report h3 {
   text-align: center;
   margin-bottom: 20px;
   color: #444;
@@ -94,7 +96,7 @@ textarea {
   transition: background-color 0.3s ease;
 }
 
-.print-btn:hover {
+.book-container .print-btn:hover {
   background-color: #005fa3;
 }
 
@@ -123,17 +125,17 @@ textarea {
   margin: 4px 0;
 }
 
-.signature-block {
+.book-container .signature-block {
   margin-top: 40px;
   text-align: right;
   font-size: 14px;
 }
 
-.signature-block p {
+.book-container .signature-block p {
   margin: 4px 0;
 }
 
-.close-btn {
+.book-container .close-btn {
   display: block;
   margin: 30px auto 0;
   padding: 10px 20px;
@@ -169,11 +171,11 @@ textarea {
   gap: 16px;
 }
 
-.form-group {
+.book-container .form-group {
   position: relative;
 }
 
-.form-icon {
+.book-container .form-icon {
   position: absolute;
   top: 50%;
   left: 10px;
@@ -181,7 +183,9 @@ textarea {
   color: #2b7a78;
 }
 
-input, select, textarea {
+.book-container input,
+.book-container select,
+.book-container textarea {
   width: 100%;
   padding: 10px 10px 10px 36px;
   border: 1px solid #ccc;
@@ -189,11 +193,11 @@ input, select, textarea {
   font-size: 15px;
 }
 
-textarea {
+.book-container textarea {
   resize: vertical;
 }
 
-.submit-btn {
+.book-container .submit-btn {
   background-color: #2b7a78;
   color: #fff;
   padding: 12px;
@@ -204,11 +208,11 @@ textarea {
   transition: background-color 0.3s ease;
 }
 
-.submit-btn:hover {
+.book-container .submit-btn:hover {
   background-color: #205e5a;
 }
 
-.appointment-report {
+.book-container .appointment-report {
   margin-top: 40px;
   padding: 20px;
   border: 1px solid #dcdcdc;
@@ -217,7 +221,7 @@ textarea {
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-.appointment-report h3 {
+.book-container .appointment-report h3 {
   text-align: center;
   margin-bottom: 20px;
   color: #444;
@@ -239,7 +243,7 @@ textarea {
   transition: background-color 0.3s ease;
 }
 
-.print-btn:hover {
+.book-container .print-btn:hover {
   background-color: #005fa3;
 }
 
@@ -268,17 +272,17 @@ textarea {
   margin: 4px 0;
 }
 
-.signature-block {
+.book-container .signature-block {
   margin-top: 40px;
   text-align: right;
   font-size: 14px;
 }
 
-.signature-block p {
+.book-container .signature-block p {
   margin: 4px 0;
 }
 
-.close-btn {
+.book-container .close-btn {
   display: block;
   margin: 30px auto 0;
   padding: 10px 20px;
@@ -288,4 +292,110 @@ textarea {
   border: none;
   border-radius: 6px;
   cursor: pointer;
+}
+
+.book-container {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-family: inherit;
+}
+
+.book-container .form-title {
+  margin: 0 0 1rem;
+  color: var(--clinic-ink);
+  font-size: 1.55rem;
+  text-align: left;
+}
+
+.book-container .appointment-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  padding: 1.2rem;
+  border: 1px solid var(--clinic-line);
+  border-radius: 8px;
+  background: var(--clinic-surface);
+  box-shadow: 0 2px 8px rgba(27, 51, 45, 0.04);
+}
+
+.book-container .appointment-form .form-group {
+  min-width: 0;
+}
+
+.book-container .appointment-form input,
+.book-container .appointment-form select,
+.book-container .appointment-form textarea {
+  box-sizing: border-box;
+  min-height: 42px;
+  padding: 0.65rem 0.75rem 0.65rem 2.3rem;
+  border: 1px solid #d5dfdb;
+  border-radius: 5px;
+  background: #fff;
+  color: var(--clinic-ink);
+  font-size: 0.84rem;
+}
+
+.book-container .appointment-form textarea {
+  min-height: 88px;
+  padding-top: 0.7rem;
+  resize: vertical;
+}
+
+.book-container .appointment-form .form-group:has(textarea),
+.book-container .appointment-form .submit-btn {
+  grid-column: 1 / -1;
+}
+
+.book-container .form-icon {
+  color: var(--clinic-primary);
+}
+
+.book-container .submit-btn,
+.book-container .print-btn {
+  min-height: 42px;
+  justify-content: center;
+  border-radius: 5px;
+  background: var(--clinic-primary);
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.book-container .submit-btn:hover,
+.book-container .print-btn:hover {
+  background: var(--clinic-primary-strong);
+}
+
+.book-container .appointment-report {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-color: var(--clinic-line);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.book-container .appointment-report th {
+  background: #edf5f2;
+}
+
+.book-container .close-btn {
+  border-radius: 5px;
+  background: #edf1ef;
+  color: #536761;
+}
+
+@media (max-width: 720px) {
+  .book-container .appointment-form {
+    grid-template-columns: 1fr;
+    padding: 0.9rem;
+  }
+
+  .book-container .appointment-form .form-group:has(textarea),
+  .book-container .appointment-form .submit-btn {
+    grid-column: auto;
+  }
 }

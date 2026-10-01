@@ -1,0 +1,53 @@
+:root {
+	--clinic-ink: #203b36;
+	--clinic-muted: #687b76;
+	--clinic-primary: #16796f;
+	--clinic-primary-strong: #105f58;
+	--clinic-primary-soft: #e9f4f1;
+	--clinic-canvas: #f3f7f5;
+	--clinic-surface: #ffffff;
+	--clinic-line: #dce7e2;
+	--clinic-warning: #a36a24;
+	--clinic-danger: #a8473a;
+	--clinic-focus: #83c3b6;
+}
+
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+	min-height: 100%;
+	margin: 0;
+}
+
+body {
+	background: var(--clinic-canvas);
+	color: var(--clinic-ink);
+	font-family: "Avenir Next", "Segoe UI", sans-serif;
+	-webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+	font: inherit;
+}
+
+button {
+	cursor: pointer;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+	outline: 3px solid var(--clinic-focus);
+	outline-offset: 2px;
+}

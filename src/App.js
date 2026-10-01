@@ -8,14 +8,12 @@ import HospitalDashboard from "./DashBoard/HospitalDashboard";
  // ✅ New import
 import ProtectedRoute from "./components/ProtectedRoute";
 
-import Header from "./company/Header";
 import Footer from "./company/Footer";
 import { ROLES } from "./Admin/roles"; // ✅ Roles
 import AdminDashboard from "./Admin/AdminDashboard.js"
 
 const PageWithLayout = ({ children }) => (
   <>
-    <Header />
     <main className="flex-1 min-h-[calc(100vh-120px)] bg-gray-50">{children}</main>
     <Footer />
   </>

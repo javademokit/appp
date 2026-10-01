@@ -1,6 +1,9 @@
 import axios from 'axios';
+import { API_BASE_URL } from './http';
 
-const API = axios.create({ baseURL: 'http://localhost:8080/api' });
+export { API_BASE_URL, apiFetch } from './http';
+
+const API = axios.create({ baseURL: API_BASE_URL, withCredentials: true });
 
 // Get all wards
 export const fetchWards = () => API.get('/wards');

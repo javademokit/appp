@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './BookAppointment.css';
+import { apiFetch } from '../API/api';
 import {
   FaUser,
   FaUserMd,
@@ -34,7 +35,8 @@ const BookAppointment = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const res = await fetch('http://localhost:7771/api/doctors');
+        const res = await apiFetch('/doctors');
+        if (!res.ok) throw new Error('Could not load doctors');
         const data = await res.json();
         setDoctors(data.filter((d) => d.doctorName));
       } catch (error) {
@@ -66,11 +68,8 @@ const BookAppointment = () => {
     console.log('Submitting form...', form);
 
     try {
-      const response = await fetch('http://localhost:7771/api/appointments1', {
+      const response = await apiFetch('/appointments1', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(form),
       });
 

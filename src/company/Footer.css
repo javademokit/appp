@@ -1,13 +1,14 @@
 .footer {
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    color: #fff;
+  box-sizing: border-box;
+  background: #fff;
+  color: var(--clinic-muted);
     padding: 20px 30px;
     text-align: center;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     position: relative;
     bottom: 0;
     width: 100%;
-    box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.1);
+    border-top: 1px solid var(--clinic-line);
   }
   
   .footer-content {
@@ -28,14 +29,14 @@
   }
   
   .footer-links a {
-    color: #ffffff;
+    color: var(--clinic-primary-strong);
     text-decoration: none;
     font-weight: 500;
     transition: color 0.3s ease;
   }
   
   .footer-links a:hover {
-    color: #ffdd57;
+    color: var(--clinic-ink);
     text-decoration: underline;
   }
   

@@ -1,21 +1,15 @@
 import React from "react";
+import { FaHospital } from "react-icons/fa";
 import './Header.css';
 
 const Header = () => {
   return (
     <header className="header">
       <div className="top-nav">
-        {/* Left: Logo or Title */}
-        <div className="logo">
-          <h1>🏥 MedSuite360</h1>
+        <div className="logo" aria-label="Hospital logo">
+          <span className="logo-icon"><FaHospital /></span>
         </div>
 
-        {/* Center: Search */}
-        <div className="search-container">
-          <input type="text" placeholder="Search..." className="search-bar" />
-        </div>
-
-        {/* Right: Icons */}
         <div className="icons">
           <i className="fas fa-bell notifications"></i>
           <i className="fas fa-cogs settings"></i>

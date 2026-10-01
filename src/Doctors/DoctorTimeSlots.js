@@ -1,5 +1,6 @@
 // src/Doctors/Doctors.js
 import React, { useEffect, useState } from 'react';
+import { apiFetch } from '../API/api';
 import './Doctor.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 
@@ -19,7 +20,8 @@ function Doctors() {
 
   const fetchDoctors = async () => {
     try {
-      const response = await fetch('http://localhost:7771/api/doctors/all');
+      const response = await apiFetch('/doctors');
+      if (!response.ok) throw new Error('Could not load doctors');
       const data = await response.json();
       setDoctors(data);
     } catch (error) {

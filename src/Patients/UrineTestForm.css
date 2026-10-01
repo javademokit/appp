@@ -1,57 +1,66 @@
 .urine-test-form-container {
-  max-width: 600px;
-  margin: auto;
-  background-color: #f9fbff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  font-family: 'Segoe UI', sans-serif;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  font-family: inherit;
 }
 
 .urine-test-form-container h2 {
-  text-align: center;
-  color: #0077cc;
-  margin-bottom: 24px;
+  margin: 0 0 1rem;
+  color: var(--clinic-ink);
+  font-size: 1.55rem;
 }
 
 .urine-test-form {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 0.8rem;
+  padding: 1.2rem;
+  border: 1px solid var(--clinic-line);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(27, 51, 45, 0.04);
 }
 
-.form-group {
+.urine-test-form .form-group {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-input,
-select,
-textarea {
+.urine-test-form input,
+.urine-test-form select,
+.urine-test-form textarea {
   flex: 1;
-  padding: 10px;
-  font-size: 14px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0.65rem 0.75rem;
+  color: var(--clinic-ink);
+  font-size: 0.84rem;
+  border-radius: 5px;
+  border: 1px solid #d5dfdb;
 }
 
-textarea {
+.urine-test-form textarea {
   min-height: 80px;
   resize: vertical;
 }
 
-button {
-  background-color: #0077cc;
+.urine-test-form button {
+  min-height: 42px;
+  background-color: var(--clinic-primary);
   color: white;
-  padding: 12px;
-  font-size: 16px;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.84rem;
   border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
+  border-radius: 5px;
+  font-weight: 700;
+  transition: background-color 0.16s ease;
 }
 
-button:hover {
-  background-color: #005fa3;
+.urine-test-form button:hover {
+  background-color: var(--clinic-primary-strong);
 }

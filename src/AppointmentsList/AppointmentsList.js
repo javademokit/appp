@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import axios from 'axios';
 import { FaUserInjured, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
+import { apiFetch } from '../API/api';
 import './AppointmentsList.css';
 
 const AppointmentsList = () => {
@@ -13,8 +13,10 @@ const AppointmentsList = () => {
 
   const fetchAppointments = useCallback(async () => {
     try {
-      const response = await axios.get('http://localhost:7771/api/appointments1');
-      const sorted = response.data.sort((a, b) => a.time.localeCompare(b.time));
+      const response = await apiFetch('/appointments1');
+      if (!response.ok) throw new Error('Could not load appointments');
+      const data = await response.json();
+      const sorted = data.sort((a, b) => a.time.localeCompare(b.time));
       setAppointments(sorted);
     } catch (error) {
       console.error('Error fetching appointments:', error);
@@ -36,8 +38,9 @@ const AppointmentsList = () => {
 
   const updateAppointmentStatus = async (id, action) => {
     try {
-      const response = await axios.patch(`http://localhost:7771/api/appointments1/${id}`, {
-        status: action === 'confirm' ? 'confirmed' : 'cancelled',
+      const response = await apiFetch(`/appointments1/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: action === 'confirm' ? 'confirmed' : 'cancelled' }),
       });
 
       if (response.status === 200) {

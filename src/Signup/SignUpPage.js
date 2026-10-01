@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { toast, ToastContainer } from 'react-toastify';
+import { apiFetch } from '../API/api';
 import 'react-toastify/dist/ReactToastify.css';
 import './SignUpPage.css';
 
@@ -27,7 +28,7 @@ const SignUpPage = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:7771/api/users/signup', {
+      const response = await apiFetch('/users/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, emailId,mobileNo, password }),

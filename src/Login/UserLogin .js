@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '../API/api';
 import './LoginPage.css'; // 👈 Add this line
 
 
@@ -25,7 +26,7 @@ const UserLogin = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:7771/api/users/login', {
+      const response = await apiFetch('/users/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ emailId, password }),
@@ -37,9 +38,6 @@ const UserLogin = () => {
         throw new Error(data.message || 'Invalid credentials');
       }
 
-      // ✅ Store username in localStorage
-      localStorage.setItem('username', data.user.username);
-      console.log('Login successful!');
       navigate("/HospitalDashboard");
 
     } catch (error) {
