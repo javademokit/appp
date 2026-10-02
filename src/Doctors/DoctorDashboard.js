@@ -161,17 +161,17 @@ export default function DoctorDashboard() {
           {success && <div className="doctor-alert success" role="status">{success}</div>}
 
           <div className="doctor-stats">
-            <article><span>Upcoming patients</span><strong>{loading ? '—' : appointments.length}</strong><small>Today and future appointments</small></article>
+            <article><span>Assigned appointments</span><strong>{loading ? '—' : appointments.length}</strong><small>All appointments for your doctor profile</small></article>
             <article><span>Waiting / upcoming</span><strong>{loading ? '—' : dashboard?.waitingCount ?? 0}</strong><small>Pending or confirmed</small></article>
             <article><span>Follow-ups</span><strong>{loading ? '—' : dashboard?.followUpCount ?? 0}</strong><small>Marked in visit reason</small></article>
           </div>
 
           <section className="doctor-panel" id="today-appointments">
             <div className="doctor-panel-heading">
-              <div><h2>Upcoming appointments</h2><p>Scheduled from {dashboard?.fromDate || 'today'} onward</p></div>
+              <div><h2>Doctor appointments</h2><p>Appointments assigned to your doctor profile</p></div>
             </div>
             {loading ? <p className="doctor-empty">Loading your appointment schedule…</p>
-              : appointments.length === 0 ? <p className="doctor-empty">No upcoming appointments scheduled for this doctor.</p>
+              : appointments.length === 0 ? <p className="doctor-empty">No appointments found for this doctor profile.</p>
                 : <div className="doctor-table-scroll"><table className="doctor-table">
                   <thead><tr><th>Date</th><th>Time</th><th>Patient</th><th>Visit reason</th><th>Status</th><th /></tr></thead>
                   <tbody>{appointments.map((appointment) => (
@@ -188,7 +188,7 @@ export default function DoctorDashboard() {
           </section>
 
           <section className="doctor-panel" id="patient-360">
-            <div className="doctor-panel-heading"><div><h2>Recent patients</h2><p>Patients from this doctor’s upcoming appointments</p></div></div>
+            <div className="doctor-panel-heading"><div><h2>Recent patients</h2><p>Patients from this doctor’s appointments</p></div></div>
             {!recentPatients.length ? <p className="doctor-empty">Patient list will appear when appointments are scheduled.</p>
               : <div className="doctor-recent-list">{recentPatients.map((appointment) => (
                 <button key={appointment.patientId} type="button" onClick={() => selectAppointment(appointment)}>

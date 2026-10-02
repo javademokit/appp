@@ -52,7 +52,7 @@ test('doctor reviews a linked patient and completes a consultation using persist
 
   render(<DoctorDashboard />);
   expect(await screen.findByText('Dr. Example')).toBeInTheDocument();
-  expect(screen.getByText('Upcoming appointments')).toBeInTheDocument();
+  expect(screen.getByText('Doctor appointments')).toBeInTheDocument();
   expect(screen.getByText('2026-10-02')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Open patient' }));
 
