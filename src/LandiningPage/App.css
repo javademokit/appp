@@ -87,6 +87,7 @@
 }
 
 .login-btn,
+.staff-login-btn,
 .signup-btn {
   background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: white;
@@ -374,6 +375,29 @@
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.demo-badge.live-badge {
+  border-color: #b7d8c4;
+  background: #edf8f0;
+  color: #326a49;
+}
+
+.demo-badge.live-badge-error {
+  border-color: #e5beb6;
+  background: #fff4f1;
+  color: #a8473a;
+}
+
+.ops-data-state {
+  display: flex;
+  min-height: 150px;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  color: #75837f;
+  font-size: 0.82rem;
+  text-align: center;
 }
 
 .range-control {

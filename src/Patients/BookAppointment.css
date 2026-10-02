@@ -388,6 +388,53 @@
   color: #536761;
 }
 
+.book-container .appointment-patient-select,
+.book-container .appointment-patient-summary {
+  grid-column: 1 / -1;
+}
+
+.book-container .appointment-patient-select {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  color: #52645e;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.book-container .appointment-patient-select select {
+  box-sizing: border-box;
+  min-height: 42px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #d5dfdb;
+  border-radius: 5px;
+  background: #fff;
+  color: var(--clinic-ink);
+  font: inherit;
+}
+
+.book-container .appointment-patient-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--clinic-line);
+  border-radius: 6px;
+  background: #f7faf8;
+  color: #61716d;
+  font-size: 0.8rem;
+}
+
+.book-container .appointment-patient-summary strong {
+  color: var(--clinic-ink);
+  font-size: 0.95rem;
+}
+
+.book-container .submit-btn:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 @media (max-width: 720px) {
   .book-container .appointment-form {
     grid-template-columns: 1fr;
@@ -395,7 +442,9 @@
   }
 
   .book-container .appointment-form .form-group:has(textarea),
-  .book-container .appointment-form .submit-btn {
+  .book-container .appointment-form .submit-btn,
+  .book-container .appointment-patient-select,
+  .book-container .appointment-patient-summary {
     grid-column: auto;
   }
 }

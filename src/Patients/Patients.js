@@ -1,187 +1,117 @@
-import React, { useState } from 'react';
-import './UrineTestForm.css';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { RefreshCw, Search, UserRound } from 'lucide-react';
 import { apiFetch } from '../API/api';
+import '../Operations/Operations.css';
 
-const medicalTestTypes = [
-  { name: 'Complete Blood Count (CBC)', price: 500 },
-  { name: 'Blood Chemistry Test', price: 800 },
-  { name: 'Lipid Profile', price: 600 },
-  { name: 'Blood Culture', price: 1000 },
-  { name: 'Coagulation Test', price: 700 },
-  { name: 'Urinalysis', price: 300 },
-  { name: 'Urine Culture', price: 450 },
-  { name: 'X-ray', price: 1200 },
-  { name: 'Ultrasound', price: 1500 },
-  { name: 'CT Scan', price: 4000 },
-  { name: 'MRI', price: 5000 },
-  { name: 'Mammography', price: 3500 },
-  { name: 'PET Scan', price: 6000 },
-  { name: 'Tissue Biopsy', price: 2000 },
-  { name: 'Cytology', price: 1500 },
-  { name: 'Genetic Test', price: 8000 },
-  { name: 'Culture and Sensitivity', price: 700 },
-  { name: 'Rapid Antigen Test', price: 400 },
-  { name: 'PCR Test', price: 3500 },
-  { name: 'Electrocardiogram (ECG)', price: 900 },
-  { name: 'Echocardiogram', price: 1200 },
-  { name: 'Stress Test', price: 1000 },
-  { name: 'Allergy Test', price: 2500 },
-  { name: 'Thyroid Function Test', price: 800 },
-  { name: 'Bone Density Test', price: 2000 },
-  { name: 'Pulmonary Function Test', price: 1800 },
-  { name: 'Lumbar Puncture', price: 3000 },
-];
+export default function Patients() {
+  const [patients, setPatients] = useState([]);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [showAdmissionForm, setShowAdmissionForm] = useState(false);
+  const [admissionForm, setAdmissionForm] = useState({ patientId: '', wardNumber: '' });
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-const labTechnicians = ['Technician A', 'Technician B', 'Technician C'];
-const referredDoctors = ['Dr. Sharma', 'Dr. Mehta', 'Dr. Khan', 'Outside'];
-
-const UrineTestForm = () => {
-  const [formData, setFormData] = useState({
-    patientName: '',
-    age: '',
-    gender: 'male',
-    category: 'adult',
-    medicalTestType: 'Urinalysis',
-    testPrice: 300,
-    labTechnician: labTechnicians[0],
-    referredBy: referredDoctors[0],
-    glucose: '',
-    protein: '',
-    ketones: '',
-    ph: '',
-    blood: '',
-    remarks: '',
-  });
-
-  const [showReceipt, setShowReceipt] = useState(false);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    if (name === 'medicalTestType') {
-      const selected = medicalTestTypes.find(test => test.name === value);
-      setFormData({ ...formData, medicalTestType: value, testPrice: selected?.price || 0 });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
-      const aliases = {
-        'Complete Blood Count (CBC)': 'CBC',
-        'Blood Chemistry Test': 'BLOOD_CHEMISTRY',
-        'X-ray': 'XRAY',
-        'Electrocardiogram (ECG)': 'ECG',
-      };
-      const testType = aliases[formData.medicalTestType]
-        || formData.medicalTestType.replace(/\s*\([^)]*\)/, '').toUpperCase().replace(/[^A-Z0-9]+/g, '_');
-      const { medicalTestType, testPrice, ...testData } = formData;
-      const res = await apiFetch('/medical-tests', {
-        method: 'POST',
-        body: JSON.stringify({ ...testData, age: Number(formData.age), testType }),
-      });
+      const response = await apiFetch('/patients');
+      const data = await response.json().catch(() => []);
+      if (!response.ok) throw new Error(data.message || 'Could not load patient records');
+      if (!Array.isArray(data)) throw new Error('Patient service returned an invalid response');
+      setPatients(data);
+    } catch (requestError) {
+      setError(requestError.message || 'Could not load patient records');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-      if (res.ok) {
-        alert('🧾 Test Submitted Successfully');
-        setShowReceipt(true);
-      } else {
-        alert('⚠️ Submission failed!');
-      }
-    } catch (err) {
-      console.error('Error:', err);
-      alert('❌ Server error during submission.');
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const submitAdmission = async (event) => {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    setSuccess('');
+    try {
+      const response = await apiFetch(`/patients/${encodeURIComponent(admissionForm.patientId)}/admission`, {
+        method: 'POST',
+        body: JSON.stringify({ wardNumber: admissionForm.wardNumber }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'Could not admit patient');
+      setAdmissionForm({ patientId: '', wardNumber: '' });
+      setShowAdmissionForm(false);
+      setSuccess(`${data.patientName} admitted under Patient ID ${data.patientId}.`);
+      await refresh();
+    } catch (requestError) {
+      setError(requestError.message || 'Could not admit patient');
+    } finally {
+      setBusy(false);
     }
   };
 
-  const handlePrint = () => {
-    window.print();
-  };
+  const filteredPatients = useMemo(() => patients.filter((patient) =>
+    `${patient.patientId || ''} ${patient.patientName || ''} ${patient.patientmobileNo || ''} ${patient.patientEmailId || ''}`
+      .toLowerCase().includes(search.toLowerCase())
+  ), [patients, search]);
 
   return (
-    <div className="urine-test-form-container">
-      <h2>🧪 Medical Test Entry - AIMS</h2>
-      <form onSubmit={handleSubmit} className="urine-test-form">
-        <div className="form-group">
-          <input type="text" name="patientName" placeholder="Patient Name" value={formData.patientName} onChange={handleChange} required />
-          <input type="number" name="age" placeholder="Age" value={formData.age} onChange={handleChange} required min={0} />
+    <section className="workflow-page" aria-labelledby="patients-title">
+      <header className="workflow-header">
+        <div>
+          <p className="workflow-eyebrow">Patient records</p>
+          <h1 id="patients-title">Patients</h1>
+          <p>Each patient is registered when an appointment is booked and identified by one permanent Patient ID.</p>
         </div>
-
-        <div className="form-group">
-          <select name="gender" value={formData.gender} onChange={handleChange}>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
-          <select name="category" value={formData.category} onChange={handleChange}>
-            <option value="boy">Boy</option>
-            <option value="girl">Girl</option>
-            <option value="adult">Adult</option>
-          </select>
+        <div className="workflow-toolbar-actions">
+          <button className="workflow-button subtle" type="button" onClick={refresh} disabled={loading}>
+            <RefreshCw size={15} /> Refresh
+          </button>
+          <button className="workflow-button primary" type="button" onClick={() => setShowAdmissionForm((shown) => !shown)}>
+            Admit existing patient
+          </button>
         </div>
+      </header>
 
-        <div className="form-group">
-          <label>Medical Test Type:</label>
-          <select name="medicalTestType" value={formData.medicalTestType} onChange={handleChange}>
-            {medicalTestTypes.map((test, idx) => (
-              <option key={idx} value={test.name}>{test.name}</option>
-            ))}
-          </select>
-          <p>💰 Price: ₹{formData.testPrice}</p>
+      {error && <div className="workflow-alert error" role="alert">{error}</div>}
+      {success && <div className="workflow-alert success" role="status">{success}</div>}
+
+      {showAdmissionForm && <form className="workflow-form-panel" onSubmit={submitAdmission}>
+        <div className="workflow-panel-heading"><div><h2>Admit patient</h2><p>Admission attaches to an existing patient record and preserves their Patient ID.</p></div><button className="workflow-button subtle" type="button" onClick={() => setShowAdmissionForm(false)}>Cancel</button></div>
+        <div className="workflow-form-grid">
+          <label>Patient<select required value={admissionForm.patientId} onChange={(event) => setAdmissionForm({ ...admissionForm, patientId: event.target.value })}><option value="">Select a patient</option>{patients.filter((patient) => !patient.patientAdmitdate || patient.patientDischargedate).map((patient) => <option key={patient.patientId} value={patient.patientId}>{patient.patientName} · {patient.patientId}</option>)}</select></label>
+          <label>Ward / unit<input required value={admissionForm.wardNumber} onChange={(event) => setAdmissionForm({ ...admissionForm, wardNumber: event.target.value })} /></label>
         </div>
+        <div className="workflow-form-actions"><button className="workflow-button primary" type="submit" disabled={busy || !admissionForm.patientId}>{busy ? 'Admitting…' : 'Admit patient'}</button></div>
+      </form>}
 
-        <div className="form-group">
-          <label>Lab Technician:</label>
-          <select name="labTechnician" value={formData.labTechnician} onChange={handleChange}>
-            {labTechnicians.map((tech, idx) => (
-              <option key={idx} value={tech}>{tech}</option>
-            ))}
-          </select>
+      <section className="workflow-panel">
+        <div className="workflow-panel-heading">
+          <div><h2>Patient directory</h2><p>{patients.length} patient records</p></div>
+          <label className="workflow-search">
+            <Search size={15} aria-hidden="true" />
+            <input aria-label="Search patients" placeholder="Search name, ID, phone, or email" value={search} onChange={(event) => setSearch(event.target.value)} />
+          </label>
         </div>
-
-        <div className="form-group">
-          <label>Referred By Doctor:</label>
-          <select name="referredBy" value={formData.referredBy} onChange={handleChange}>
-            {referredDoctors.map((doc, idx) => (
-              <option key={idx} value={doc}>{doc}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="form-group">
-          <input type="text" name="glucose" placeholder="Glucose" value={formData.glucose} onChange={handleChange} />
-          <input type="text" name="protein" placeholder="Protein" value={formData.protein} onChange={handleChange} />
-        </div>
-
-        <div className="form-group">
-          <input type="text" name="ketones" placeholder="Ketones" value={formData.ketones} onChange={handleChange} />
-          <input type="text" name="ph" placeholder="pH" value={formData.ph} onChange={handleChange} />
-        </div>
-
-        <div className="form-group">
-          <input type="text" name="blood" placeholder="Blood" value={formData.blood} onChange={handleChange} />
-        </div>
-
-        <textarea name="remarks" placeholder="Additional Remarks" value={formData.remarks} onChange={handleChange}></textarea>
-
-        <button type="submit">✅ Submit Test</button>
-      </form>
-
-      {showReceipt && (
-        <div className="receipt">
-          <h3>🧾 Receipt</h3>
-          <p><strong>Patient:</strong> {formData.patientName} ({formData.age}, {formData.gender})</p>
-          <p><strong>Category:</strong> {formData.category}</p>
-          <p><strong>Test:</strong> {formData.medicalTestType}</p>
-          <p><strong>Price:</strong> ₹{formData.testPrice}</p>
-          <p><strong>Lab Technician:</strong> {formData.labTechnician}</p>
-          <p><strong>Referred By:</strong> {formData.referredBy}</p>
-          <p><strong>Remarks:</strong> {formData.remarks}</p>
-          <button onClick={handlePrint}>🖨️ Print</button>
-        </div>
-      )}
-    </div>
+        {loading ? <div className="workflow-empty">Loading patient records…</div>
+          : !filteredPatients.length ? <div className="workflow-empty"><UserRound size={18} /> No patient records match this search.</div>
+            : <div className="workflow-table-wrap"><table className="workflow-table">
+              <thead><tr><th>Patient ID</th><th>Patient</th><th>Contact</th><th>Admission</th><th>Ward / status</th></tr></thead>
+              <tbody>{filteredPatients.map((patient) => (
+                <tr key={patient.id || patient.patientId}>
+                  <td><strong>{patient.patientId || 'ID unavailable'}</strong></td>
+                  <td><strong>{patient.patientName || 'Name unavailable'}</strong><small>{[patient.patientAge && `${patient.patientAge} years`, patient.gender].filter(Boolean).join(' · ') || 'Demographics not recorded'}</small></td>
+                  <td><strong>{patient.patientmobileNo || '—'}</strong><small>{patient.patientEmailId || '—'}</small></td>
+                  <td>{patient.patientAdmitdate || 'Outpatient'}{patient.patientDischargedate && <small>Discharged {patient.patientDischargedate}</small>}</td>
+                  <td>{patient.patientAdmitdate && !patient.patientDischargedate ? patient.patientWardnum || 'Ward not assigned' : patient.patientDischargedate ? 'Discharged' : 'Not admitted'}</td>
+                </tr>
+              ))}</tbody>
+            </table></div>}
+      </section>
+    </section>
   );
-};
-
-export default UrineTestForm;
+}

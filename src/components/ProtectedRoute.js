@@ -1,19 +1,25 @@
 // ProtectedRoute.js
 import React, { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { apiFetch } from "../API/api";
+import { normalizeRoles } from "../Admin/roles";
 
-const ProtectedRoute = ({ children }) => {
-  const [authState, setAuthState] = useState("checking");
+const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+  const [authState, setAuthState] = useState({ status: "checking", roles: [] });
+  const navigate = useNavigate();
 
   useEffect(() => {
     let active = true;
     apiFetch("/users/me")
       .then((response) => {
-        if (active) setAuthState(response.ok ? "authenticated" : "anonymous");
+        if (!response.ok) throw new Error("Session expired");
+        return response.json();
+      })
+      .then((account) => {
+        if (active) setAuthState({ status: "authenticated", roles: normalizeRoles(account.roles) });
       })
       .catch(() => {
-        if (active) setAuthState("anonymous");
+        if (active) setAuthState({ status: "anonymous", roles: [] });
       });
 
     return () => {
@@ -21,8 +27,25 @@ const ProtectedRoute = ({ children }) => {
     };
   }, []);
 
-  if (authState === "checking") return <div role="status">Checking session...</div>;
-  return authState === "authenticated" ? children : <Navigate to="/UserLogin" replace />;
+  const logout = async () => {
+    try {
+      await apiFetch("/users/logout", { method: "POST" });
+    } finally {
+      navigate("/UserLogin", { replace: true });
+    }
+  };
+
+  if (authState.status === "checking") return <div role="status">Checking session...</div>;
+  if (authState.status === "anonymous") return <Navigate to="/UserLogin" replace />;
+  const normalizedAllowedRoles = normalizeRoles(allowedRoles);
+  if (normalizedAllowedRoles.length && !normalizedAllowedRoles.some((role) => authState.roles.includes(role))) {
+    return <main className="role-denied">
+      <h1>Access not permitted</h1>
+      <p>This account does not have a role authorized for this workspace.</p>
+      <button type="button" onClick={logout}>Sign out</button>
+    </main>;
+  }
+  return children;
 };
 
 export default ProtectedRoute;

@@ -49,7 +49,13 @@ export default function HomePage() {
         </div>
         <div className="top-actions">
           <button className="top-btn login-btn">
-            <Link to="/UserLogin">Login</Link>
+            <Link to="/PatientLogin">Patient login</Link>
+          </button>
+          <button className="top-btn staff-login-btn">
+            <Link to="/DoctorLogin">Doctor login</Link>
+          </button>
+          <button className="top-btn staff-login-btn">
+            <Link to="/HospitalLogin">Hospital CRM / HR</Link>
           </button>
           <button className="top-btn signup-btn">
             <Link to="/SignUpPage">Sign Up</Link>

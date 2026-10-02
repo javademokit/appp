@@ -15,16 +15,25 @@ const pretty = (value) => String(value || '').replaceAll('_', ' ').toLowerCase()
 
 export default function EmergencyTriagePage() {
   const [cases, setCases] = useState([]);
+  const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [form, setForm] = useState({ patientName: '', patientId: '', complaint: '', severity: 'MODERATE', ambulanceRequired: false, assignedClinician: '' });
+  const [form, setForm] = useState({ patientId: '', complaint: '', severity: 'MODERATE', ambulanceRequired: false, assignedClinician: '' });
 
   const refresh = useCallback(async () => {
     setLoading(true); setError('');
-    try { setCases(await readResponse(await apiFetch('/emergency/cases'))); }
+    try {
+      const [caseResponse, patientResponse] = await Promise.all([
+        apiFetch('/emergency/cases'),
+        apiFetch('/patients'),
+      ]);
+      const [caseData, patientData] = await Promise.all([readResponse(caseResponse), readResponse(patientResponse)]);
+      setCases(caseData);
+      setPatients(patientData.filter((patient) => patient.patientId));
+    }
     catch (requestError) { setError(requestError.message || 'Could not load emergency queue'); }
     finally { setLoading(false); }
   }, []);
@@ -34,7 +43,7 @@ export default function EmergencyTriagePage() {
     event.preventDefault(); setBusyId('new'); setError(''); setSuccess('');
     try {
       await readResponse(await apiFetch('/emergency/cases', { method: 'POST', body: JSON.stringify(form) }));
-      setForm({ patientName: '', patientId: '', complaint: '', severity: 'MODERATE', ambulanceRequired: false, assignedClinician: '' });
+      setForm({ patientId: '', complaint: '', severity: 'MODERATE', ambulanceRequired: false, assignedClinician: '' });
       setShowForm(false); setSuccess('Emergency case added to the triage queue.'); await refresh();
     } catch (requestError) { setError(requestError.message); }
     finally { setBusyId(''); }
@@ -75,8 +84,7 @@ export default function EmergencyTriagePage() {
       {showForm && <form className="workflow-form-panel" onSubmit={createCase}>
         <div className="workflow-panel-heading"><div><h2>Register emergency arrival</h2><p>Critical cases will be highlighted immediately in the queue.</p></div><button className="workflow-button subtle" type="button" onClick={() => setShowForm(false)}>Cancel</button></div>
         <div className="workflow-form-grid">
-          <label>Patient name<input required value={form.patientName} onChange={(e) => setForm({ ...form, patientName: e.target.value })} /></label>
-          <label>Patient ID<input value={form.patientId} onChange={(e) => setForm({ ...form, patientId: e.target.value })} /></label>
+          <label>Patient<select required value={form.patientId} onChange={(e) => setForm({ ...form, patientId: e.target.value })}><option value="">Select patient</option>{patients.map((patient) => <option key={patient.patientId} value={patient.patientId}>{patient.patientName} · {patient.patientId}</option>)}</select></label>
           <label>Severity<select value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })}>{severityLabels.map((severity) => <option key={severity} value={severity}>{pretty(severity)}</option>)}</select></label>
           <label>Assigned clinician<input value={form.assignedClinician} onChange={(e) => setForm({ ...form, assignedClinician: e.target.value })} /></label>
           <label className="workflow-form-wide">Presenting complaint<textarea required rows="2" value={form.complaint} onChange={(e) => setForm({ ...form, complaint: e.target.value })} /></label>

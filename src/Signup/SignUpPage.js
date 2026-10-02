@@ -25,6 +25,10 @@ const SignUpPage = () => {
       toast.error('Please fill all fields');
       return;
     }
+    if (password.length < 12) {
+      toast.error('Password must be at least 12 characters');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -37,7 +41,7 @@ const SignUpPage = () => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        toast.success('Sign up successful!');
+        toast.success('Patient account created. You can now sign in.');
         setName('');
         setEmail('');
         setMobileNo('');
@@ -67,6 +71,8 @@ const SignUpPage = () => {
             <input
               type="text"
               placeholder="UserId"
+              autoComplete="username"
+              required
               value={userId}
               onChange={(e) => setName(e.target.value)}
             />
@@ -75,14 +81,18 @@ const SignUpPage = () => {
             <input
               type="email"
               placeholder="Email"
+              autoComplete="email"
+              required
               value={emailId}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
           <div className="input-group">
             <input
-              type="MobileNo"
+              type="tel"
               placeholder="MobileNo"
+              autoComplete="tel"
+              required
               value={mobileNo}
               onChange={(e) => setMobileNo(e.target.value)}
             />
@@ -91,6 +101,9 @@ const SignUpPage = () => {
             <input
               type="password"
               placeholder="Password"
+              autoComplete="new-password"
+              minLength={12}
+              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />

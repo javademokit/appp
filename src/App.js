@@ -9,8 +9,10 @@ import HospitalDashboard from "./DashBoard/HospitalDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import Footer from "./company/Footer";
-import { ROLES } from "./Admin/roles"; // ✅ Roles
+import { HOSPITAL_WORKSPACE_ROLES, ROLES } from "./Admin/roles";
 import AdminDashboard from "./Admin/AdminDashboard.js"
+import PatientPortal from "./Patients/PatientPortal";
+import DoctorDashboard from "./Doctors/DoctorDashboard";
 
 const PageWithLayout = ({ children }) => (
   <>
@@ -33,13 +35,24 @@ function App() {
           }
         />
         <Route path="/UserLogin" element={<UserLogin />} />
+        <Route path="/PatientLogin" element={<UserLogin portal="patient" />} />
+        <Route path="/DoctorLogin" element={<UserLogin portal="doctor" />} />
+        <Route path="/HospitalLogin" element={<UserLogin portal="hospital" />} />
         <Route path="/SignUpPage" element={<SignUpPage />} />
 
         {/* Role-Based Protected Routes */}
         <Route
+          path="/DoctorDashboard"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.DOCTOR]}>
+              <DoctorDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/HospitalDashboard"
           element={
-            <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.DOCTOR]}>
+            <ProtectedRoute allowedRoles={HOSPITAL_WORKSPACE_ROLES}>
               <HospitalDashboard />
             </ProtectedRoute>
           }
@@ -47,8 +60,16 @@ function App() {
         <Route
           path="/AdminDashboard"
           element={
-            <ProtectedRoute allowedRoles={[ROLES.ADMIN]}>
+            <ProtectedRoute allowedRoles={[ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.CLINIC_ADMIN]}>
               <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/PatientPortal"
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.PATIENT]}>
+              <PatientPortal />
             </ProtectedRoute>
           }
         />

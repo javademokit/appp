@@ -19,6 +19,7 @@ export default function PharmacyPage() {
   const [inventory, setInventory] = useState([]);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [issues, setIssues] = useState([]);
+  const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -29,23 +30,25 @@ export default function PharmacyPage() {
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [medicationForm, setMedicationForm] = useState(emptyMedication);
   const [orderForm, setOrderForm] = useState({ medicationId: '', quantity: '', supplier: '', expectedDeliveryDate: '' });
-  const [issueForm, setIssueForm] = useState({ prescriptionId: '', patientId: '', patientName: '', medicationId: '', dosage: '', quantity: '' });
+  const [issueForm, setIssueForm] = useState({ prescriptionId: '', patientId: '', medicationId: '', dosage: '', quantity: '' });
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const [inventoryResponse, ordersResponse, issuesResponse] = await Promise.all([
+      const [inventoryResponse, ordersResponse, issuesResponse, patientsResponse] = await Promise.all([
         apiFetch('/pharmacy/medications'),
         apiFetch('/pharmacy/purchase-orders'),
         apiFetch('/pharmacy/prescription-issues'),
+        apiFetch('/patients'),
       ]);
-      const [inventoryData, ordersData, issuesData] = await Promise.all([
-        readResponse(inventoryResponse), readResponse(ordersResponse), readResponse(issuesResponse),
+      const [inventoryData, ordersData, issuesData, patientData] = await Promise.all([
+        readResponse(inventoryResponse), readResponse(ordersResponse), readResponse(issuesResponse), readResponse(patientsResponse),
       ]);
       setInventory(inventoryData);
       setPurchaseOrders(ordersData);
       setIssues(issuesData);
+      setPatients(patientData.filter((patient) => patient.patientId));
     } catch (requestError) {
       setError(requestError.message || 'Could not load pharmacy data');
     } finally {
@@ -104,7 +107,7 @@ export default function PharmacyPage() {
       await readResponse(await apiFetch('/pharmacy/prescription-issues', {
         method: 'POST', body: JSON.stringify({ ...issueForm, quantity: Number(issueForm.quantity) }),
       }));
-      setIssueForm({ prescriptionId: '', patientId: '', patientName: '', medicationId: '', dosage: '', quantity: '' });
+      setIssueForm({ prescriptionId: '', patientId: '', medicationId: '', dosage: '', quantity: '' });
       setShowIssueForm(false); setSuccess('Prescription entered in the dispensing queue.'); await refresh();
     } catch (requestError) { setError(requestError.message); }
     finally { setBusy(false); }
@@ -182,7 +185,7 @@ export default function PharmacyPage() {
 
         {activeTab === 'prescriptions' && <>
           <div className="workflow-panel-heading"><div><h2>Prescription issues</h2><p>Track items awaiting dispense and completed issues.</p></div><button className="workflow-button primary" type="button" onClick={() => setShowIssueForm((shown) => !shown)}><Plus size={15} /> Add prescription</button></div>
-          {showIssueForm && <form className="workflow-inline-form" onSubmit={submitIssue}><label>Prescription ID<input required value={issueForm.prescriptionId} onChange={(e) => setIssueForm({ ...issueForm, prescriptionId: e.target.value })} /></label><label>Patient ID<input required value={issueForm.patientId} onChange={(e) => setIssueForm({ ...issueForm, patientId: e.target.value })} /></label><label>Patient name<input value={issueForm.patientName} onChange={(e) => setIssueForm({ ...issueForm, patientName: e.target.value })} /></label><label>Medication<select required value={issueForm.medicationId} onChange={(e) => setIssueForm({ ...issueForm, medicationId: e.target.value })}><option value="">Select medication</option>{inventory.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.strength}</option>)}</select></label><label>Dosage<input required value={issueForm.dosage} placeholder="e.g. 1 tablet twice daily" onChange={(e) => setIssueForm({ ...issueForm, dosage: e.target.value })} /></label><label>Quantity<input required type="number" min="1" value={issueForm.quantity} onChange={(e) => setIssueForm({ ...issueForm, quantity: e.target.value })} /></label><button className="workflow-button primary" disabled={busy} type="submit">Add to queue</button></form>}
+          {showIssueForm && <form className="workflow-inline-form" onSubmit={submitIssue}><label>Prescription ID<input required value={issueForm.prescriptionId} onChange={(e) => setIssueForm({ ...issueForm, prescriptionId: e.target.value })} /></label><label>Patient<select required value={issueForm.patientId} onChange={(e) => setIssueForm({ ...issueForm, patientId: e.target.value })}><option value="">Select patient</option>{patients.map((patient) => <option key={patient.patientId} value={patient.patientId}>{patient.patientName} · {patient.patientId}</option>)}</select></label><label>Medication<select required value={issueForm.medicationId} onChange={(e) => setIssueForm({ ...issueForm, medicationId: e.target.value })}><option value="">Select medication</option>{inventory.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.strength}</option>)}</select></label><label>Dosage<input required value={issueForm.dosage} placeholder="e.g. 1 tablet twice daily" onChange={(e) => setIssueForm({ ...issueForm, dosage: e.target.value })} /></label><label>Quantity<input required type="number" min="1" value={issueForm.quantity} onChange={(e) => setIssueForm({ ...issueForm, quantity: e.target.value })} /></label><button className="workflow-button primary" disabled={busy} type="submit">Add to queue</button></form>}
           {!issues.length ? <div className="workflow-empty">No prescriptions in the dispensing queue.</div> : <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Prescription</th><th>Patient</th><th>Medication</th><th>Dosage</th><th>Quantity</th><th>Status</th><th>Action</th></tr></thead><tbody>{issues.map((issue) => <tr key={issue.id}><td>{issue.prescriptionId}</td><td>{issue.patientName || issue.patientId}</td><td><strong>{issue.medicationName}</strong></td><td>{issue.dosage}</td><td>{issue.quantity}</td><td><span className={`workflow-status ${issue.status === 'ISSUED' ? 'ready' : 'neutral'}`}>{issue.status}</span></td><td>{issue.status === 'PENDING' && <button className="workflow-button subtle" disabled={busy} type="button" onClick={() => dispenseIssue(issue.id)}>Dispense</button>}</td></tr>)}</tbody></table></div>}
         </>}
       </section>

@@ -181,9 +181,27 @@
   font-size: 0.76rem;
 }
 
+.workflow-search { display: inline-flex; align-items: center; gap: 0.4rem; }
 .workflow-search input { width: min(250px, 100%); }
 .workflow-date-filter { display: flex; align-items: center; gap: 0.45rem; color: var(--clinic-muted); font-size: 0.74rem; }
 .workflow-status-select { min-height: 32px; padding: 0.32rem; }
+.attendance-actions { display: flex; align-items: center; gap: 0.4rem; }
+
+.user-role-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(130px, 1fr));
+  gap: 0.35rem 0.65rem;
+  min-width: 300px;
+}
+
+.user-role-options label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #52645e;
+  font-size: 0.68rem;
+  white-space: nowrap;
+}
 
 .workflow-table-wrap { width: 100%; overflow-x: auto; }
 
@@ -296,6 +314,7 @@
 .workflow-form-grid .workflow-checkbox { flex-direction: row; align-items: center; }
 .workflow-form-grid .workflow-checkbox input { width: 16px; min-height: auto; }
 .workflow-form-actions { justify-content: flex-end; margin-top: 0.85rem; }
+.workflow-field-label { margin: 0 0 0.4rem; color: #52645e; font-size: 0.72rem; font-weight: 700; }
 
 .workflow-tabs {
   display: flex;
@@ -379,4 +398,14 @@
   .workflow-kpis article { min-height: 72px; padding: 0.65rem; }
   .workflow-kpis article > svg { top: 0.65rem; right: 0.65rem; width: 16px; }
   .workflow-toolbar-actions { width: 100%; justify-content: space-between; }
+}
+.patient-portal-profile {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  color: #334155;
+}
+
+.patient-portal-profile strong {
+  color: #0f172a;
 }

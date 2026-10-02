@@ -9,7 +9,10 @@ async function readResponse(response) {
   return data;
 }
 
-const today = new Date().toISOString().slice(0, 10);
+const today = (() => {
+  const date = new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+})();
 const initialForm = { staffId: '', staffName: '', staffRole: 'Doctor', department: '', shiftDate: today, startTime: '08:00', endTime: '16:00', notes: '' };
 
 export default function StaffShiftsPage() {
@@ -50,12 +53,16 @@ export default function StaffShiftsPage() {
     finally { setBusy(false); }
   };
 
-  const deleteShift = async (id) => {
+  const recordAttendance = async (shift, action) => {
     setBusy(true); setError(''); setSuccess('');
     try {
-      await readResponse(await apiFetch(`/staff/shifts/${id}`, { method: 'DELETE' }));
-      setSuccess('Shift removed.'); await refresh();
-    } catch (requestError) { setError(requestError.message); }
+      const result = await readResponse(await apiFetch(
+        `/staff/shifts/${shift.id}/${action}`,
+        { method: 'POST' },
+      ));
+      setSuccess(`${result.staffName} ${action === 'check-in' ? 'checked in' : 'checked out'} successfully.`);
+      await refresh();
+    } catch (requestError) { setError(requestError.message || 'Could not record doctor attendance'); }
     finally { setBusy(false); }
   };
 
@@ -97,7 +104,7 @@ export default function StaffShiftsPage() {
 
       <section className="workflow-panel">
         <div className="workflow-panel-heading"><div><h2>Shift roster</h2><p>{filteredShifts.length} shifts scheduled</p></div><div className="workflow-toolbar-actions"><label className="workflow-date-filter">Date<input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} /></label><button className="workflow-button subtle" type="button" onClick={refresh}><RefreshCw size={15} /> Refresh</button></div></div>
-        {loading ? <div className="workflow-empty">Loading shifts…</div> : !filteredShifts.length ? <div className="workflow-empty">No shifts scheduled for this date.</div> : <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Staff member</th><th>Role / department</th><th>Date</th><th>Hours</th><th>Status</th><th>Action</th></tr></thead><tbody>{filteredShifts.map((shift) => <tr key={shift.id}><td><strong>{shift.staffName}</strong><small>{shift.staffId}</small></td><td>{shift.staffRole}<small>{shift.department}</small></td><td>{shift.shiftDate}</td><td>{shift.startTime}–{shift.endTime}</td><td><select className="workflow-status-select" value={shift.status} disabled={busy} onChange={(e) => updateStatus(shift, e.target.value)}><option value="SCHEDULED">Scheduled</option><option value="ON_DUTY">On duty</option><option value="COMPLETED">Completed</option><option value="CANCELLED">Cancelled</option></select></td><td><button type="button" className="workflow-icon-button" aria-label={`Remove shift for ${shift.staffName}`} title="Remove shift" disabled={busy} onClick={() => deleteShift(shift.id)}><Trash2 size={15} /></button></td></tr>)}</tbody></table></div>}
+        {loading ? <div className="workflow-empty">Loading shifts…</div> : !filteredShifts.length ? <div className="workflow-empty">No shifts scheduled for this date.</div> : <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Staff member</th><th>Role / department</th><th>Date</th><th>Shift hours</th><th>Attendance</th><th>Check-in / out</th><th>Action</th></tr></thead><tbody>{filteredShifts.map((shift) => <tr key={shift.id}><td><strong>{shift.staffName}</strong><small>{shift.staffId}</small></td><td>{shift.staffRole}<small>{shift.department}</small></td><td>{shift.shiftDate}</td><td>{shift.startTime}–{shift.endTime}</td><td><span className={`workflow-status ${shift.status === 'ON_DUTY' ? 'ready' : shift.status === 'COMPLETED' ? 'neutral' : shift.status === 'CANCELLED' ? 'critical' : 'warning'}`}>{shift.status.replace('_', ' ')}</span></td><td><small>In: {shift.checkInAt ? new Date(shift.checkInAt).toLocaleTimeString() : '—'}</small><small>Out: {shift.checkOutAt ? new Date(shift.checkOutAt).toLocaleTimeString() : '—'}</small></td><td className="attendance-actions">{shift.staffRole.toLowerCase() === 'doctor' && shift.shiftDate === today && shift.status === 'SCHEDULED' && <button className="workflow-button subtle" type="button" disabled={busy} onClick={() => recordAttendance(shift, 'check-in')}>Check in</button>}{shift.staffRole.toLowerCase() === 'doctor' && shift.shiftDate === today && shift.status === 'ON_DUTY' && <button className="workflow-button subtle" type="button" disabled={busy} onClick={() => recordAttendance(shift, 'check-out')}>Check out</button>}{shift.status === 'SCHEDULED' && <button type="button" className="workflow-icon-button" aria-label={`Cancel shift for ${shift.staffName}`} title="Cancel shift" disabled={busy} onClick={() => updateStatus(shift, 'CANCELLED')}><Trash2 size={15} /></button>}</td></tr>)}</tbody></table></div>}
       </section>
     </section>
   );

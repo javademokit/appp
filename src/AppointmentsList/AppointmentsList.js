@@ -10,16 +10,19 @@ const AppointmentsList = () => {
   const [modalMessage, setModalMessage] = useState('');
   const [modalType, setModalType] = useState('success');
   const [searchQuery, setSearchQuery] = useState('');
+  const [error, setError] = useState('');
+  const [busyId, setBusyId] = useState('');
 
   const fetchAppointments = useCallback(async () => {
     try {
       const response = await apiFetch('/appointments1');
-      if (!response.ok) throw new Error('Could not load appointments');
-      const data = await response.json();
-      const sorted = data.sort((a, b) => a.time.localeCompare(b.time));
+      const data = await response.json().catch(() => []);
+      if (!response.ok) throw new Error(data.message || 'Could not load appointments');
+      if (!Array.isArray(data)) throw new Error('Appointment service returned an invalid response');
+      const sorted = data.sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')));
       setAppointments(sorted);
     } catch (error) {
-      console.error('Error fetching appointments:', error);
+      setError(error.message || 'Could not load appointments');
     } finally {
       setLoading(false);
     }
@@ -37,32 +40,37 @@ const AppointmentsList = () => {
   };
 
   const updateAppointmentStatus = async (id, action) => {
+    setBusyId(id);
+    setError('');
     try {
       const response = await apiFetch(`/appointments1/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ status: action === 'confirm' ? 'confirmed' : 'cancelled' }),
       });
 
-      if (response.status === 200) {
+      if (response.ok) {
         showAlert(`${action === 'confirm' ? 'Confirmed' : 'Cancelled'} successfully!`);
-        fetchAppointments();
+        await fetchAppointments();
       } else {
-        showAlert('Something went wrong!', 'error');
+        const result = await response.json().catch(() => ({}));
+        showAlert(result.message || 'Something went wrong!', 'error');
       }
-    } catch {
-      showAlert('Failed to update appointment', 'error');
+    } catch (requestError) {
+      showAlert(requestError.message || 'Failed to update appointment', 'error');
+    } finally {
+      setBusyId('');
     }
   };
 
   const filteredAppointments = appointments.filter((appt) =>
-    appt.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    appt.doctor.toLowerCase().includes(searchQuery.toLowerCase())
+    `${appt.patientId || ''} ${appt.patientName || ''} ${appt.doctor || ''}`
+      .toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
     <div className="appointments-container">
       <div className="appointments-header">
-        <h2 className="appointments-title">📋 All Appointments</h2>
+        <h2 className="appointments-title">All Appointments</h2>
         <input
           type="text"
           placeholder="Search by patient or doctor..."
@@ -71,6 +79,8 @@ const AppointmentsList = () => {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
+
+      {error && <div className="workflow-alert error" role="alert">{error}</div>}
 
       {loading ? (
         <div className="appointments-loading">Loading...</div>
@@ -83,7 +93,7 @@ const AppointmentsList = () => {
             <table className="appointments-table">
               <thead>
                 <tr>
-                  <th>PatientsID</th>
+                  <th>Patient ID</th>
                   <th>Patient Name</th>
                   <th>Gender</th>
                   <th>Age</th>
@@ -100,8 +110,8 @@ const AppointmentsList = () => {
               <tbody>
                 {filteredAppointments.map((appt) => (
                   <tr key={appt.id}>
-                    <td>{appt.id}</td>
-                    <td><FaUserInjured className="icon" /> {appt.patientName}</td>
+                    <td>{appt.patientId || 'Unlinked legacy appointment'}</td>
+                    <td><FaUserInjured className="icon" /> {appt.patientName || '—'}</td>
                     <td>{appt.gender}</td>
                     <td>{appt.patientAge}</td>
                     <td>{appt.mobileNo}</td>
@@ -121,6 +131,7 @@ const AppointmentsList = () => {
                     </td>
                     <td>
                       <select
+                        disabled={busyId === appt.id || ['cancelled', 'confirmed'].includes(appt.appointmentStatus)}
                         onChange={(e) => updateAppointmentStatus(appt.id, e.target.value)}
                         defaultValue=""
                         className="action-dropdown"
@@ -140,7 +151,7 @@ const AppointmentsList = () => {
           <div className="appointments-mobile">
             {filteredAppointments.map((appt) => (
               <div className="appointment-card" key={appt.id}>
-                <div className="appointment-index">#{appt.id}</div>
+                <div className="appointment-index">Patient ID: {appt.patientId || 'Unlinked legacy appointment'}</div>
                 <div className="appointment-patient">
                   <FaUserInjured className="icon" /> {appt.patientName}
                 </div>
@@ -149,7 +160,7 @@ const AppointmentsList = () => {
                 <div><strong>Mobile:</strong> {appt.mobileNo}</div>
                 <div><strong>Email:</strong> {appt.patientEmailId}</div>
                 <div><strong>Address:</strong> {appt.patientAddress}</div>
-                <div><strong>Doctor:</strong> {appt.doctor}</div>
+                <div><strong>Doctor:</strong> {appt.doctor || '—'}</div>
                 <div><strong>Date:</strong> {appt.date}</div>
                 <div><strong>Time:</strong> {appt.time}</div>
                 <div><strong>Status:</strong>
@@ -162,6 +173,7 @@ const AppointmentsList = () => {
                   )}
                 </div>
                 <select
+                  disabled={busyId === appt.id || ['cancelled', 'confirmed'].includes(appt.appointmentStatus)}
                   onChange={(e) => updateAppointmentStatus(appt.id, e.target.value)}
                   defaultValue=""
                   className="action-dropdown"

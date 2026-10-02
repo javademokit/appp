@@ -1,4 +1,7 @@
-export const API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || 'http://localhost:7771/api').replace(/\/$/, '');
+const configuredApiBase = process.env.REACT_APP_API_BASE_URL
+  || (process.env.NODE_ENV === 'production' ? '/api' : 'http://localhost:7771/api');
+
+export const API_BASE_URL = configuredApiBase.replace(/\/$/, '');
 
 export const apiFetch = async (path, options = {}) => {
   const method = (options.method || 'GET').toUpperCase();
