@@ -20,7 +20,13 @@ const emptyConsultation = {
 
 async function readResponse(response, fallback) {
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.message || fallback);
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new Error('Your doctor session has expired. Please sign in again.');
+    }
+    const message = data.message || data.detail || data.title || data.errorDescription;
+    throw new Error(message || `${fallback} (${response.status})`);
+  }
   return data;
 }
 

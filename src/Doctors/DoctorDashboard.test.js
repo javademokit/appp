@@ -84,3 +84,31 @@ test('doctor reviews a linked patient and completes a consultation using persist
   });
   expect(await screen.findByRole('status')).toHaveTextContent('Consultation saved for Aadi Patient');
 });
+
+test('explains when a restarted backend has expired the doctor session', async () => {
+  apiFetch.mockResolvedValue({
+    ok: false,
+    status: 401,
+    json: async () => ({ error: 'Unauthorized' }),
+  });
+
+  render(<DoctorDashboard />);
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Your doctor session has expired. Please sign in again.',
+  );
+});
+
+test('shows the backend reason when the doctor profile is not linked', async () => {
+  apiFetch.mockResolvedValue({
+    ok: false,
+    status: 409,
+    json: async () => ({ message: 'No doctor profile is linked to this account. Contact your hospital administrator.' }),
+  });
+
+  render(<DoctorDashboard />);
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'No doctor profile is linked to this account. Contact your hospital administrator.',
+  );
+});

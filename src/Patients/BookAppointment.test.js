@@ -49,6 +49,7 @@ test('books a new patient and displays the Patient ID returned by the API', asyn
   fireEvent.change(screen.getByPlaceholderText('Patient Mobile No'), { target: { value: '5552000' } });
   fireEvent.change(screen.getByDisplayValue('Select Gender'), { target: { value: 'Female' } });
   fillAppointmentDetails();
+  expect(document.querySelector('select[name="doctor"]')).toHaveValue('doctor-1');
   fireEvent.click(screen.getByRole('button', { name: 'Book Appointment' }));
 
   expect(await screen.findByRole('status')).toHaveTextContent('Patient ID: PT-GENERATED');
@@ -64,6 +65,7 @@ test('books a returning patient using the existing canonical ID without re-enter
   await screen.findByRole('option', { name: /Existing Patient/ });
   fireEvent.change(screen.getByLabelText('Patient record'), { target: { value: 'PT-EXISTING' } });
   fillAppointmentDetails();
+  expect(document.querySelector('select[name="doctor"]')).toHaveValue('doctor-1');
   fireEvent.click(screen.getByRole('button', { name: 'Book Appointment' }));
 
   await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('/appointments1', expect.objectContaining({

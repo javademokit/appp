@@ -288,11 +288,14 @@ const BookAppointment = () => {
           <FaUserMd className="form-icon" />
           <select
             name="doctor"
-            value={form.doctor}
+            value={form.doctorId}
             onChange={handleChange}
             required
+            disabled={loadingDirectories || !doctors.length}
           >
-            <option value="">Select Doctor</option>
+            <option value="">
+              {loadingDirectories ? 'Loading doctors…' : doctors.length ? 'Select Doctor' : 'No doctors available'}
+            </option>
             {doctors.map((doc) => (
               <option key={doc.id} value={doc.id}>
                 {doc.doctorName}
