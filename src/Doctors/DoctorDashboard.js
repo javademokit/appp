@@ -30,6 +30,16 @@ async function readResponse(response, fallback) {
   return data;
 }
 
+function escapePrintValue(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[character]);
+}
+
 export default function DoctorDashboard() {
   const [dashboard, setDashboard] = useState(null);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
@@ -167,7 +177,72 @@ export default function DoctorDashboard() {
 
   const printPrescription = () => {
     if (!printablePrescription) return;
-    window.print();
+    setError('');
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      setError('Your browser blocked the prescription print window. Allow pop-ups for this site, then try again.');
+      return;
+    }
+
+    const prescriptionDate = printablePrescription.createdAt
+      ? new Date(printablePrescription.createdAt).toLocaleDateString()
+      : new Date().toLocaleDateString();
+    const medicationRows = (printablePrescription.medications || []).map((item) => `
+      <tr>
+        <td>${escapePrintValue(item.name)} ${escapePrintValue([item.strength, item.dosageForm].filter(Boolean).join(' · '))}</td>
+        <td>${escapePrintValue(item.dose)} · ${escapePrintValue(item.route)}</td>
+        <td>${escapePrintValue(item.frequency)}</td>
+        <td>${escapePrintValue(item.duration)}</td>
+        <td>${escapePrintValue(item.quantity)}</td>
+        <td>${escapePrintValue(item.instructions || '—')}</td>
+      </tr>
+    `).join('');
+
+    printWindow.document.open();
+    printWindow.document.write(`<!doctype html>
+      <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>Medication prescription · ${escapePrintValue(printablePrescription.patientName)}</title>
+          <style>
+            @page { size: A4; margin: 16mm; }
+            body { color: #111; background: #fff; font: 12px Arial, sans-serif; }
+            header { display: flex; justify-content: space-between; align-items: end; border-bottom: 2px solid #222; padding-bottom: 12px; }
+            header strong { font-size: 21px; }
+            header span { font-size: 16px; }
+            .details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; margin: 20px 0; }
+            .details div { display: grid; gap: 3px; }
+            .details b { color: #555; font-size: 10px; text-transform: uppercase; }
+            h2 { margin: 22px 0 8px; font-size: 15px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #777; padding: 8px; text-align: left; vertical-align: top; }
+            th { background: #f0f0f0; }
+            .footer { margin-top: 34px; border-top: 1px solid #777; padding-top: 10px; }
+            @media print { tr { break-inside: avoid; } }
+          </style>
+        </head>
+        <body>
+          <header><strong>MEDCARE HOSPITAL</strong><span>Medication prescription</span></header>
+          <section class="details">
+            <div><b>Patient</b><span>${escapePrintValue(printablePrescription.patientName)}</span></div>
+            <div><b>Patient ID</b><span>${escapePrintValue(printablePrescription.patientId)}</span></div>
+            <div><b>Doctor</b><span>${escapePrintValue(printablePrescription.doctorName)}</span></div>
+            <div><b>Date</b><span>${escapePrintValue(prescriptionDate)}</span></div>
+            <div><b>Diagnosis</b><span>${escapePrintValue(printablePrescription.diagnosis)}</span></div>
+          </section>
+          <h2>Medicines</h2>
+          <table>
+            <thead><tr><th>Medicine</th><th>Dose / route</th><th>Frequency</th><th>Duration</th><th>Qty</th><th>Instructions</th></tr></thead>
+            <tbody>${medicationRows || '<tr><td colspan="6">No medicines prescribed</td></tr>'}</tbody>
+          </table>
+          <p class="footer">Please follow the prescribed directions and contact your doctor if you have questions.</p>
+        </body>
+      </html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.onafterprint = () => printWindow.close();
+    printWindow.setTimeout(() => printWindow.print(), 250);
   };
 
   return (

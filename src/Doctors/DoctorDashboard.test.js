@@ -18,7 +18,10 @@ const appointment = {
   appointmentStatus: 'confirmed',
 };
 
-afterEach(() => jest.clearAllMocks());
+afterEach(() => {
+  jest.restoreAllMocks();
+  jest.clearAllMocks();
+});
 
 test('doctor reviews a linked patient and completes a consultation using persisted clinical fields', async () => {
   apiFetch.mockImplementation(async (path, options = {}) => {
@@ -134,7 +137,20 @@ test('doctor reviews a linked patient and completes a consultation using persist
     }],
   });
   expect(await screen.findByRole('status')).toHaveTextContent('Consultation saved for Aadi Patient');
-  expect(await screen.findByRole('button', { name: 'Print prescription' })).toBeInTheDocument();
+  const printWindow = {
+    document: { open: jest.fn(), write: jest.fn(), close: jest.fn() },
+    focus: jest.fn(),
+    setTimeout: jest.fn((callback) => callback()),
+    print: jest.fn(),
+    close: jest.fn(),
+  };
+  const openPrintWindow = jest.spyOn(window, 'open').mockReturnValue(printWindow);
+  fireEvent.click(await screen.findByRole('button', { name: 'Print prescription' }));
+  expect(openPrintWindow).toHaveBeenCalledWith('', '_blank');
+  expect(printWindow.document.write).toHaveBeenCalledWith(expect.stringContaining('MEDCARE HOSPITAL'));
+  expect(printWindow.document.write).toHaveBeenCalledWith(expect.stringContaining('Aadi Patient'));
+  expect(printWindow.document.write).toHaveBeenCalledWith(expect.stringContaining('Amoxicillin'));
+  expect(printWindow.print).toHaveBeenCalled();
 });
 
 test('explains when a restarted backend has expired the doctor session', async () => {
