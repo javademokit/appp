@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Download, RefreshCw } from 'lucide-react';
+import { Activity, BedDouble, ClipboardList, Download, History, RefreshCw, Users, UserRoundCheck } from 'lucide-react';
 import { apiFetch } from '../API/api';
 import '../Operations/Operations.css';
 import './WardManagement.css';
@@ -319,6 +319,7 @@ export default function WardManagement() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [activeNursingTab, setActiveNursingTab] = useState('overview');
   const [wardForm, setWardForm] = useState({ name: '', type: 'GENERAL', maxPatientsPerNurse: 8, minimumNursesPerShift: 1 });
   const [nurseForm, setNurseForm] = useState({ accountId: '', name: '', employeeId: '', phone: '', qualification: '', licenseNumber: '', designation: 'STAFF_NURSE', specialization: 'GENERAL', status: 'ACTIVE', photoUrl: '' });
   const [rosterForm, setRosterForm] = useState({ nurseId: '', wardId: '', shift: 'MORNING', startDate: '', endDate: '' });
@@ -328,6 +329,13 @@ export default function WardManagement() {
   const canSetupWards = useMemo(() => (currentUser?.roles || []).some((role) => ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'CLINIC_ADMIN'].includes(String(role).replace(/^ROLE_/, '').toUpperCase())), [currentUser]);
   const canManageStaff = canSetupWards || (currentUser?.roles || []).some((role) => String(role).replace(/^ROLE_/, '').toUpperCase() === 'HEAD_NURSE');
   const canReviewSwaps = useMemo(() => (currentUser?.roles || []).some((role) => ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'CLINIC_ADMIN', 'HEAD_NURSE'].includes(String(role).replace(/^ROLE_/, '').toUpperCase())), [currentUser]);
+  const nursingTabs = [
+    { id: 'overview', label: 'Overview', icon: Activity },
+    { id: 'wards', label: 'Wards & beds', icon: BedDouble },
+    ...(canManageStaff || canReviewSwaps ? [{ id: 'staff', label: 'Nurses & shifts', icon: Users }] : []),
+    { id: 'assignments', label: 'Patient assignments', icon: UserRoundCheck },
+    { id: 'activity', label: 'History & care', icon: History },
+  ];
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -476,9 +484,9 @@ export default function WardManagement() {
   if (loading) return <section className="workflow-page" aria-busy="true"><div className="workflow-empty">Loading nursing management…</div></section>;
 
   return (
-    <section className="workflow-page" aria-labelledby="ward-management-title">
-      <header className="workflow-header"><div><p className="workflow-eyebrow">Nursing operations</p><h1 id="ward-management-title">{canManage ? 'Nursing & Ward Management' : 'My Nursing Dashboard'}</h1>
-        <p>{canManage ? 'Configure nurse profiles, ward beds, shifts, patient assignments, and staffing reports.' : 'Assigned patients, shift tasks, care notes, and patient handover.'}</p></div>
+    <section className="workflow-page nurse-management-layout" aria-labelledby="ward-management-title">
+      <header className="workflow-header"><div><p className="workflow-eyebrow">Hospital operations</p><h1 id="ward-management-title">{canManage ? 'Nurse Management' : 'My Nursing Dashboard'}</h1>
+        <p>{canManage ? 'Manage nurse profiles, ward beds and shifts, assign patients, and monitor workload and handovers.' : 'View assigned patients, shift tasks, care notes, and patient handovers.'}</p></div>
         <div className="workflow-toolbar-actions">
           {canManage && <>
             <button className="workflow-button subtle" type="button" onClick={exportReport}><Download size={15} /> Export Excel-compatible CSV</button>
@@ -493,6 +501,59 @@ export default function WardManagement() {
         rosters={nurseRosters} shiftSwaps={shiftSwaps} reviewSwaps={canReviewSwaps}
         refresh={refresh} setError={setError} setSuccess={setSuccess} />}
       {canManage && <>
+        <nav className="nurse-management-tabs" role="tablist" aria-label="Nurse management sections">
+          {nursingTabs.map(({ id, label, icon: Icon }) => <button
+            key={id}
+            id={`nurse-tab-${id}`}
+            type="button"
+            role="tab"
+            aria-selected={activeNursingTab === id}
+            aria-controls={`nurse-panel-${id}`}
+            className={activeNursingTab === id ? 'active' : ''}
+            onClick={() => setActiveNursingTab(id)}
+          ><Icon size={16} />{label}</button>)}
+        </nav>
+        {activeNursingTab === 'overview' && <section className="nurse-overview" id="nurse-panel-overview" role="tabpanel" aria-labelledby="nurse-tab-overview">
+          <div className="nurse-overview-intro">
+            <div><span>WARD OPERATIONS</span><h2>Good care starts with clear assignments.</h2>
+              <p>Monitor ward capacity, nurse coverage, and patients who need an assignment.</p></div>
+            <button className="workflow-button primary" type="button" onClick={() => setActiveNursingTab('assignments')}>
+              <UserRoundCheck size={16} /> Manage patient assignments
+            </button>
+          </div>
+          <div className="nurse-overview-metrics">
+            <article><span>Active wards</span><strong>{wards.length}</strong><small>{wards.reduce((total, ward) => total + (Number(ward.vacantBeds) || 0), 0)} vacant beds</small><BedDouble size={20} /></article>
+            <article><span>Active nurses</span><strong>{nurses.filter((nurse) => nurse.profileComplete && nurse.status === 'ACTIVE').length}</strong><small>Available staff profiles</small><Users size={20} /></article>
+            <article><span>Admitted patients</span><strong>{assignmentBoard.length}</strong><small>Across configured wards</small><UserRoundCheck size={20} /></article>
+            <article className={unassignedPatients.length ? 'needs-attention' : ''}><span>Need a nurse</span><strong>{unassignedPatients.length}</strong><small>{unassignedPatients.length ? 'Review assignments' : 'All patients covered'}</small><ClipboardList size={20} /></article>
+          </div>
+          <div className="nurse-overview-bottom">
+            <section className="workflow-panel">
+              <div className="workflow-panel-heading"><div><h2>Ward coverage</h2><p>Current staffing against each ward’s minimum.</p></div>
+                <button className="workflow-button subtle" type="button" onClick={() => setActiveNursingTab('wards')}>View wards</button></div>
+              {!wards.length ? <div className="workflow-empty">No wards are configured yet.</div> : <div className="nurse-ward-summary">
+                {wards.slice(0, 5).map((ward) => <div key={ward.id}>
+                  <span className="nurse-ward-mark"><BedDouble size={17} /></span>
+                  <div><strong>{ward.name}</strong><small>{ward.type} · {ward.vacantBeds} vacant beds</small></div>
+                  <span className={`nurse-coverage-status ${ward.understaffed ? 'warning' : 'ready'}`}>{ward.nursesOnDuty}/{ward.minimumNursesPerShift} on duty</span>
+                </div>)}
+              </div>}
+            </section>
+            <section className="workflow-panel nurse-attention-panel">
+              <div className="workflow-panel-heading"><div><h2>Needs attention</h2><p>Items that may need an administrator’s review.</p></div></div>
+              {wards.some((ward) => ward.understaffed) && <button type="button" onClick={() => setActiveNursingTab('wards')}>
+                <span className="nurse-attention-dot" />{wards.filter((ward) => ward.understaffed).length} ward(s) below minimum staffing
+              </button>}
+              {unassignedPatients.length > 0 && <button type="button" onClick={() => setActiveNursingTab('assignments')}>
+                <span className="nurse-attention-dot" />{unassignedPatients.length} patient(s) without a primary nurse
+              </button>}
+              {!wards.some((ward) => ward.understaffed) && !unassignedPatients.length
+                && <div className="nurse-all-clear"><Activity size={17} />No urgent staffing or assignment issues.</div>}
+            </section>
+          </div>
+        </section>
+        }
+        {activeNursingTab === 'wards' && <section id="nurse-panel-wards" role="tabpanel" aria-labelledby="nurse-tab-wards">
         <section className="workflow-panel">
           <div className="workflow-panel-heading"><div><h2>Ward and bed setup</h2><p>{canSetupWards
             ? 'Create units, configure patient ratios and minimum shift staffing, then add beds.'
@@ -533,8 +594,10 @@ export default function WardManagement() {
             </tr>)}</tbody>
           </table></div>}
         </section>
+        </section>}
 
-        {canManageStaff && <section className="workflow-panel">
+        {activeNursingTab === 'staff' && canManageStaff && <>
+        <section className="workflow-panel">
           <div className="workflow-panel-heading"><div><h2>Nurse profiles</h2><p>Link profiles to active staff accounts with the NURSE or HEAD_NURSE role.</p></div></div>
           <form className="workflow-form-grid" onSubmit={saveNurseProfile}>
             <label>Staff account<select required value={nurseForm.accountId} onChange={(event) => {
@@ -560,9 +623,9 @@ export default function WardManagement() {
             <tbody>{nurses.map((nurse) => <tr key={nurse.id}><td>{nurse.name || nurse.userId}</td><td>{nurse.profile?.employeeId || 'Profile needed'}</td><td>{nurse.profile?.licenseNumber || '—'}</td><td>{nurse.profile?.designation || '—'}</td><td>{nurse.profile?.specialization || '—'}</td><td>{nurse.status}</td>
               <td>{assignments.filter((assignment) => assignment.nurseId === nurse.id && assignment.status === 'ACTIVE' && assignment.role === 'PRIMARY').length} patients</td></tr>)}</tbody>
           </table></div>
-        </section>}
+        </section>
 
-        {canManageStaff && <section className="workflow-panel">
+        <section className="workflow-panel">
           <div className="workflow-panel-heading"><div><h2>Shift roster</h2><p>Weekly duty roster and shift staffing assignments.</p></div></div>
           <form className="workflow-form-grid" onSubmit={(event) => {
             event.preventDefault();
@@ -580,7 +643,7 @@ export default function WardManagement() {
             <thead><tr><th>Nurse</th><th>Ward</th><th>Shift</th><th>Date range</th><th>Status</th></tr></thead>
             <tbody>{rosterWeek.map((roster) => <tr key={roster.id}><td>{nurses.find((nurse) => nurse.id === roster.nurseId)?.name || roster.nurseId}</td><td>{wards.find((ward) => ward.id === roster.wardId)?.name || roster.wardId}</td><td>{roster.shift}</td><td>{roster.startDate} – {roster.endDate}</td><td>{roster.status}</td></tr>)}</tbody>
           </table></div>}
-        </section>}
+        </section>
 
         {!isNurse && <section className="workflow-panel">
           <div className="workflow-panel-heading"><div><h2>Shift swap approvals</h2><p>Head Nurses and administrators approve or decline requests.</p></div></div>
@@ -594,8 +657,9 @@ export default function WardManagement() {
               </div>}</td></tr>)}</tbody>
           </table></div>}
         </section>}
+        </>}
 
-        <section className="workflow-panel">
+        {activeNursingTab === 'assignments' && <section id="nurse-panel-assignments" role="tabpanel" aria-labelledby="nurse-tab-assignments"><section className="workflow-panel">
           <div className="workflow-panel-heading"><div><h2>Patient assignment</h2><p>Assign ward coverage, and maintain primary and backup nurse assignments per admitted patient.</p></div></div>
           <form className="workflow-form-grid" onSubmit={submitBulkAssignment}>
             <label>Ward<select required value={bulkForm.wardId} onChange={(event) => setBulkForm({ ...bulkForm, wardId: event.target.value })}><option value="">Select ward</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}</select></label>
@@ -632,9 +696,9 @@ export default function WardManagement() {
             })}</tbody>
           </table></div>}
           {unassignedPatients.length > 0 && <p className="workflow-alert error">{unassignedPatients.length} admitted patient(s) have no primary nurse.</p>}
-        </section>
+        </section></section>}
 
-        <section className="workflow-panel">
+        {activeNursingTab === 'activity' && <section id="nurse-panel-activity" role="tabpanel" aria-labelledby="nurse-tab-activity"><section className="workflow-panel">
           <div className="workflow-panel-heading"><div><h2>Assignment history &amp; outstanding care</h2><p>Audit of primary/backup assignments, handovers, and missed or overdue tasks.</p></div></div>
           <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Patient</th><th>Nurse</th><th>Role</th><th>Ward / shift</th><th>Assigned by</th><th>From / to</th><th>Status</th></tr></thead>
             <tbody>{assignments.map((assignment) => <tr key={assignment.id}><td>{assignment.patientId}</td><td>{nurses.find((nurse) => nurse.id === assignment.nurseId)?.name || assignment.nurseId}</td><td>{assignment.role}</td><td>{wards.find((ward) => ward.id === assignment.wardId)?.name || assignment.wardId}<small>{assignment.shift}</small></td><td>{assignment.assignedBy}</td><td>{assignment.fromTime}<small>{assignment.toTime || 'Current'}</small></td><td>{assignment.status}</td></tr>)}</tbody>
@@ -642,7 +706,7 @@ export default function WardManagement() {
           <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Patient</th><th>Nurse</th><th>Task</th><th>Due</th><th>Status</th></tr></thead>
             <tbody>{careRecords.filter((record) => record.status === 'PENDING').map((record) => <tr key={record.id}><td>{record.patientId}</td><td>{nurses.find((nurse) => nurse.id === record.nurseId)?.name || record.nurseId}</td><td>{record.description || record.type}</td><td>{record.dueAt || 'Not specified'}</td><td>{isOverdue(record) ? 'OVERDUE' : 'PENDING'}</td></tr>)}</tbody>
           </table></div>
-        </section>
+        </section></section>}
       </>}
     </section>
   );

@@ -10,3 +10,332 @@
   gap: 0.35rem;
   min-width: 150px;
 }
+
+.nurse-management-layout {
+  --nurse-ink: #183b35;
+  --nurse-muted: #70827d;
+  --nurse-line: #dfeae5;
+  --nurse-green: #137a68;
+}
+
+.nurse-management-layout .workflow-header {
+  align-items: flex-end;
+  margin: -2px -2px 1.25rem;
+  padding: 1.3rem 1.4rem;
+  border: 1px solid #dcebe4;
+  border-radius: 14px;
+  background: radial-gradient(ellipse at 88% 0%, #e5f5ed 0, transparent 42%), linear-gradient(110deg, #fff 0%, #f5faf7 100%);
+}
+
+.nurse-management-layout .workflow-header h1 {
+  color: var(--nurse-ink);
+  font-size: clamp(1.45rem, 2.4vw, 1.85rem);
+  letter-spacing: -0.035em;
+}
+
+.nurse-management-layout .workflow-eyebrow {
+  color: var(--nurse-green);
+  letter-spacing: 0.12em;
+}
+
+.nurse-management-tabs {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  margin: 0 0 1rem;
+  border-bottom: 1px solid var(--nurse-line);
+  scrollbar-width: thin;
+}
+
+.nurse-management-tabs button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 46px;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: 0.65rem 1rem;
+  background: transparent;
+  color: #657a73;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+
+.nurse-management-tabs button:hover {
+  background: #f1f8f4;
+  color: var(--nurse-ink);
+}
+
+.nurse-management-tabs button.active {
+  border-bottom-color: var(--nurse-green);
+  color: var(--nurse-green);
+}
+
+.nurse-overview-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 1rem;
+  padding: 1.25rem 1.4rem;
+  border: 1px solid #dcebe4;
+  border-radius: 12px;
+  background: linear-gradient(115deg, #eaf6ef, #f7fbf8 70%);
+}
+
+.nurse-overview-intro > div > span {
+  color: var(--nurse-green);
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.nurse-overview-intro h2 {
+  margin: 0.35rem 0;
+  color: var(--nurse-ink);
+  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+  letter-spacing: -0.025em;
+}
+
+.nurse-overview-intro p {
+  margin: 0;
+  color: var(--nurse-muted);
+  font-size: 0.8rem;
+}
+
+.nurse-overview-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.nurse-overview-metrics article {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 120px;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  overflow: hidden;
+  padding: 1rem 1.05rem;
+  border: 1px solid var(--nurse-line);
+  border-radius: 11px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgb(27 67 55 / 3%);
+}
+
+.nurse-overview-metrics article > span {
+  color: var(--nurse-muted);
+  font-size: 0.69rem;
+  font-weight: 750;
+}
+
+.nurse-overview-metrics article > strong {
+  color: var(--nurse-ink);
+  font-size: 1.75rem;
+  line-height: 1.1;
+}
+
+.nurse-overview-metrics article > small {
+  color: #879790;
+  font-size: 0.68rem;
+}
+
+.nurse-overview-metrics article > svg {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  color: #70a895;
+}
+
+.nurse-overview-metrics article.needs-attention {
+  border-color: #eedbbd;
+  background: linear-gradient(145deg, #fff, #fffaf1);
+}
+
+.nurse-overview-metrics article.needs-attention > svg,
+.nurse-overview-metrics article.needs-attention > strong {
+  color: #a66a20;
+}
+
+.nurse-overview-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.85fr);
+  gap: 0.85rem;
+}
+
+.nurse-overview-bottom .workflow-panel {
+  margin-bottom: 0;
+  border-color: var(--nurse-line);
+  border-radius: 11px;
+}
+
+.nurse-ward-summary {
+  padding: 0.25rem 1rem 0.55rem;
+}
+
+.nurse-ward-summary > div {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 58px;
+  border-bottom: 1px solid #edf2ef;
+}
+
+.nurse-ward-summary > div:last-child {
+  border-bottom: 0;
+}
+
+.nurse-ward-summary > div > div {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.nurse-ward-summary strong {
+  overflow: hidden;
+  color: var(--nurse-ink);
+  font-size: 0.77rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nurse-ward-summary small {
+  color: var(--nurse-muted);
+  font-size: 0.67rem;
+}
+
+.nurse-ward-mark {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 9px;
+  background: #edf7f1;
+  color: var(--nurse-green);
+}
+
+.nurse-coverage-status {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 0.32rem 0.55rem;
+  font-size: 0.64rem;
+  font-weight: 800;
+}
+
+.nurse-coverage-status.ready {
+  background: #eaf5ee;
+  color: #35704f;
+}
+
+.nurse-coverage-status.warning {
+  background: #fff2df;
+  color: #93601f;
+}
+
+.nurse-attention-panel > button {
+  display: flex;
+  width: calc(100% - 2rem);
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.7rem 1rem;
+  border: 1px solid #f0e5d5;
+  border-radius: 8px;
+  padding: 0.75rem;
+  background: #fffcf7;
+  color: #775b39;
+  font-size: 0.73rem;
+  text-align: left;
+}
+
+.nurse-attention-panel > button:hover {
+  border-color: #e9d5b9;
+  background: #fff8ec;
+}
+
+.nurse-attention-dot {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #d18b35;
+}
+
+.nurse-all-clear {
+  display: flex;
+  min-height: 100px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  color: #5b7b6d;
+  font-size: 0.75rem;
+}
+
+.nurse-management-layout > [role="tabpanel"] > .workflow-panel,
+.nurse-management-layout > [role="tabpanel"] .workflow-panel {
+  border-color: var(--nurse-line);
+  border-radius: 10px;
+  box-shadow: 0 3px 12px rgb(27 67 55 / 3%);
+}
+
+@media (max-width: 900px) {
+  .nurse-overview-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .nurse-overview-bottom {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .nurse-management-layout .workflow-header {
+    align-items: flex-start;
+    padding: 1rem;
+  }
+
+  .nurse-management-tabs button {
+    padding-inline: 0.75rem;
+  }
+
+  .nurse-overview-intro {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .nurse-overview-intro .workflow-button {
+    width: 100%;
+  }
+
+  .nurse-overview-metrics article {
+    min-height: 108px;
+    padding: 0.8rem;
+  }
+
+  .nurse-overview-metrics article > svg {
+    top: 0.8rem;
+    right: 0.8rem;
+    width: 17px;
+  }
+
+  .nurse-ward-summary {
+    padding-inline: 0.7rem;
+  }
+
+  .nurse-coverage-status {
+    max-width: 104px;
+    text-align: center;
+    white-space: normal;
+  }
+}

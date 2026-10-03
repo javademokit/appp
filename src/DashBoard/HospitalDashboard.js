@@ -147,7 +147,7 @@ const HospitalDashboard = () => {
             </li>
             </>}
             {nursingAccess && <li className={activePage === "ward-management" ? "active" : ""} aria-current={activePage === "ward-management" ? "page" : undefined} onClick={() => setActivePage("ward-management")}>
-              <Building2 size={16} /> Nursing &amp; Ward Management
+              <Building2 size={16} /> Nurse Management
             </li>}
             {!nursingOnly && <>
             <li className={activePage === "pharmacy" ? "active" : ""} aria-current={activePage === "pharmacy" ? "page" : undefined} onClick={() => setActivePage("pharmacy")}>
