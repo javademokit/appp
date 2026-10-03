@@ -120,6 +120,14 @@
   text-align: left;
 }
 
+.invoice-table td small {
+  display: block;
+  margin-top: 0.25rem;
+  color: #64748b;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
 .invoice-table th {
   background: #edf5f2;
   color: #536761;
@@ -146,6 +154,11 @@
   color: #92400e;
 }
 
+.status.partially_paid { background: #ffedd5; color: #9a3412; }
+.status.no_charge { background: #e2e8f0; color: #475569; }
+.status.void,
+.status.refund_required { background: #fee2e2; color: #991b1b; }
+
 .status.overdue {
   background: #fee2e2;
   color: #991b1b;
@@ -165,6 +178,25 @@
   color: #15803d;
   font-weight: 700;
 }
+
+.summary-card:nth-child(4) { border-top: 4px solid #64748b; }
+.billing-payment-form {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.8rem;
+  border: 1px solid var(--clinic-line);
+  border-radius: 6px;
+  background: #f8fbfa;
+}
+.billing-payment-form strong { flex-basis: 100%; color: var(--clinic-ink); }
+.billing-payment-form label { display: grid; gap: 0.25rem; color: #536761; font-size: 0.75rem; font-weight: 600; }
+.billing-payment-form input,
+.billing-payment-form select { min-height: 36px; border: 1px solid var(--clinic-line); border-radius: 5px; padding: 0.4rem 0.55rem; font: inherit; }
+.billing-payment-row { color: #5b6b64; font-size: 0.85rem; }
+.billing-empty { padding: 1rem; border: 1px dashed var(--clinic-line); border-radius: 6px; color: #64748b; }
+.billing-row-actions { display: grid; justify-items: start; gap: 0.35rem; }
 
 @media (max-width: 900px) {
   .summary-grid {

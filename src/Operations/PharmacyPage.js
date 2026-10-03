@@ -3,8 +3,12 @@ import { AlertTriangle, Boxes, ClipboardList, Pill, Plus, RefreshCw } from 'luci
 import { apiFetch } from '../API/api';
 import './Operations.css';
 
+const medicineDepartments = [
+  'General Medicine', 'Pediatrics', 'Surgery / Operations', 'Nephrology / Kidney',
+  'Cardiology', 'Orthopedics', 'Neurology', 'Maternity / Obstetrics', 'Emergency',
+];
 const emptyMedication = {
-  name: '', strength: '', dosageForm: 'Tablet', batchNumber: '', quantityOnHand: '',
+  name: '', department: 'General Medicine', strength: '', dosageForm: 'Tablet', batchNumber: '', quantityOnHand: '',
   reorderLevel: '', unitPrice: '', supplier: '', location: '', expiryDate: '',
 };
 
@@ -19,12 +23,15 @@ export default function PharmacyPage() {
   const [inventory, setInventory] = useState([]);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [issues, setIssues] = useState([]);
+  const [doctorPrescriptions, setDoctorPrescriptions] = useState([]);
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [search, setSearch] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('All departments');
+  const [printablePrescription, setPrintablePrescription] = useState(null);
   const [showMedicationForm, setShowMedicationForm] = useState(false);
   const [showOrderForm, setShowOrderForm] = useState(false);
   const [showIssueForm, setShowIssueForm] = useState(false);
@@ -36,19 +43,22 @@ export default function PharmacyPage() {
     setLoading(true);
     setError('');
     try {
-      const [inventoryResponse, ordersResponse, issuesResponse, patientsResponse] = await Promise.all([
+      const [inventoryResponse, ordersResponse, issuesResponse, patientsResponse, prescriptionsResponse] = await Promise.all([
         apiFetch('/pharmacy/medications'),
         apiFetch('/pharmacy/purchase-orders'),
         apiFetch('/pharmacy/prescription-issues'),
         apiFetch('/patients'),
+        apiFetch('/pharmacy/prescriptions'),
       ]);
-      const [inventoryData, ordersData, issuesData, patientData] = await Promise.all([
+      const [inventoryData, ordersData, issuesData, patientData, prescriptionData] = await Promise.all([
         readResponse(inventoryResponse), readResponse(ordersResponse), readResponse(issuesResponse), readResponse(patientsResponse),
+        readResponse(prescriptionsResponse),
       ]);
       setInventory(inventoryData);
       setPurchaseOrders(ordersData);
       setIssues(issuesData);
       setPatients(patientData.filter((patient) => patient.patientId));
+      setDoctorPrescriptions(prescriptionData);
     } catch (requestError) {
       setError(requestError.message || 'Could not load pharmacy data');
     } finally {
@@ -66,9 +76,10 @@ export default function PharmacyPage() {
   });
   const pendingOrders = purchaseOrders.filter((order) => order.status !== 'RECEIVED');
   const filteredInventory = useMemo(() => inventory.filter((item) =>
-    `${item.name} ${item.strength || ''} ${item.batchNumber || ''} ${item.supplier || ''}`
-      .toLowerCase().includes(search.toLowerCase())
-  ), [inventory, search]);
+    (departmentFilter === 'All departments' || (item.department || 'General Medicine') === departmentFilter)
+      && `${item.name} ${item.department || ''} ${item.strength || ''} ${item.batchNumber || ''} ${item.supplier || ''}`
+        .toLowerCase().includes(search.toLowerCase())
+  ), [inventory, search, departmentFilter]);
 
   const submitMedication = async (event) => {
     event.preventDefault();
@@ -131,6 +142,21 @@ export default function PharmacyPage() {
     finally { setBusy(false); }
   };
 
+  const dispenseDoctorPrescription = async (id) => {
+    setBusy(true); setError(''); setSuccess('');
+    try {
+      await readResponse(await apiFetch(`/pharmacy/prescriptions/${id}/dispense`, { method: 'POST' }));
+      setSuccess('All medicines on the doctor prescription were dispensed and stock updated.');
+      await refresh();
+    } catch (requestError) { setError(requestError.message); }
+    finally { setBusy(false); }
+  };
+
+  const printPrescription = (prescription) => {
+    setPrintablePrescription(prescription);
+    window.setTimeout(() => window.print(), 0);
+  };
+
   return (
     <section className="workflow-page" aria-labelledby="pharmacy-title">
       <header className="workflow-header">
@@ -153,6 +179,7 @@ export default function PharmacyPage() {
           <div className="workflow-panel-heading"><div><h2>Add medication</h2><p>Record a batch and current stock level.</p></div><button className="workflow-button subtle" type="button" onClick={() => setShowMedicationForm(false)}>Cancel</button></div>
           <div className="workflow-form-grid">
             <label>Medicine name<input required value={medicationForm.name} onChange={(e) => setMedicationForm({ ...medicationForm, name: e.target.value })} /></label>
+            <label>Department<select required value={medicationForm.department} onChange={(e) => setMedicationForm({ ...medicationForm, department: e.target.value })}>{medicineDepartments.map((department) => <option key={department}>{department}</option>)}</select></label>
             <label>Strength<input value={medicationForm.strength} placeholder="e.g. 500 mg" onChange={(e) => setMedicationForm({ ...medicationForm, strength: e.target.value })} /></label>
             <label>Dosage form<select value={medicationForm.dosageForm} onChange={(e) => setMedicationForm({ ...medicationForm, dosageForm: e.target.value })}><option>Tablet</option><option>Capsule</option><option>Liquid</option><option>Injection</option><option>Topical</option><option>Other</option></select></label>
             <label>Batch number<input required value={medicationForm.batchNumber} onChange={(e) => setMedicationForm({ ...medicationForm, batchNumber: e.target.value })} /></label>
@@ -168,13 +195,15 @@ export default function PharmacyPage() {
       )}
 
       <div className="workflow-tabs" role="tablist" aria-label="Pharmacy workspace">
-        {[['inventory', 'Inventory'], ['orders', 'Purchase orders'], ['prescriptions', 'Prescription issues']].map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={activeTab === id} className={activeTab === id ? 'active' : ''} onClick={() => setActiveTab(id)}>{label}</button>)}
+        {[['inventory', 'Inventory'], ['orders', 'Purchase orders'], ['prescriptions', `Doctor prescriptions (${doctorPrescriptions.filter((item) => item.status === 'PENDING').length})`], ['issues', 'Manual prescription issues']].map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={activeTab === id} className={activeTab === id ? 'active' : ''} onClick={() => setActiveTab(id)}>{label}</button>)}
       </div>
 
       <section className="workflow-panel">
         {activeTab === 'inventory' && <>
-          <div className="workflow-panel-heading"><div><h2>Stock register</h2><p>Low stock is flagged when quantity reaches the reorder point.</p></div><label className="workflow-search"><input aria-label="Search medication inventory" placeholder="Search medication or batch" value={search} onChange={(e) => setSearch(e.target.value)} /></label></div>
-          {loading ? <div className="workflow-empty"><RefreshCw size={18} /> Loading inventory…</div> : !filteredInventory.length ? <div className="workflow-empty">No inventory matches this search.</div> : <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Medication</th><th>Batch</th><th>Stock</th><th>Reorder point</th><th>Expiry</th><th>Supplier</th></tr></thead><tbody>{filteredInventory.map((item) => { const low = item.quantityOnHand <= item.reorderLevel; const expiring = nearExpiryItems.some((candidate) => candidate.id === item.id); return <tr key={item.id}><td><strong>{item.name}</strong><small>{[item.strength, item.dosageForm].filter(Boolean).join(' · ')}</small></td><td>{item.batchNumber}</td><td><span className={`workflow-status ${low ? 'warning' : 'ready'}`}>{item.quantityOnHand} {low ? 'Low' : 'In stock'}</span></td><td>{item.reorderLevel}</td><td><span className={expiring ? 'expiry-warning' : ''}>{item.expiryDate || '—'}{expiring && ' · Soon'}</span></td><td>{item.supplier || '—'}</td></tr>; })}</tbody></table></div>}
+          <div className="workflow-panel-heading"><div><h2>Stock register</h2><p>Medicines are organized by clinical department. Low stock is flagged at the reorder point.</p></div>
+            <label>Department<select aria-label="Filter inventory by department" value={departmentFilter} onChange={(e) => setDepartmentFilter(e.target.value)}><option>All departments</option>{medicineDepartments.map((department) => <option key={department}>{department}</option>)}</select></label>
+            <label className="workflow-search"><input aria-label="Search medication inventory" placeholder="Search medication or batch" value={search} onChange={(e) => setSearch(e.target.value)} /></label></div>
+          {loading ? <div className="workflow-empty"><RefreshCw size={18} /> Loading inventory…</div> : !filteredInventory.length ? <div className="workflow-empty">No inventory matches this search.</div> : <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Department</th><th>Medication</th><th>Batch</th><th>Stock</th><th>Reorder point</th><th>Expiry</th><th>Supplier</th></tr></thead><tbody>{filteredInventory.map((item) => { const low = item.quantityOnHand <= item.reorderLevel; const expiring = nearExpiryItems.some((candidate) => candidate.id === item.id); return <tr key={item.id}><td>{item.department || 'General Medicine'}</td><td><strong>{item.name}</strong><small>{[item.strength, item.dosageForm].filter(Boolean).join(' · ')}</small></td><td>{item.batchNumber}</td><td><span className={`workflow-status ${low ? 'warning' : 'ready'}`}>{item.quantityOnHand} {low ? 'Low' : 'In stock'}</span></td><td>{item.reorderLevel}</td><td><span className={expiring ? 'expiry-warning' : ''}>{item.expiryDate || '—'}{expiring && ' · Soon'}</span></td><td>{item.supplier || '—'}</td></tr>; })}</tbody></table></div>}
         </>}
 
         {activeTab === 'orders' && <>
@@ -184,11 +213,47 @@ export default function PharmacyPage() {
         </>}
 
         {activeTab === 'prescriptions' && <>
+          <div className="workflow-panel-heading"><div><h2>Doctor prescriptions</h2><p>Prescriptions recorded by doctors from completed consultations, ready for printing and dispensing.</p></div></div>
+          {!doctorPrescriptions.length ? <div className="workflow-empty">No doctor prescriptions have been sent to the pharmacy.</div>
+            : <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Prescription</th><th>Patient</th><th>Doctor</th><th>Diagnosis</th><th>Medicines</th><th>Status</th><th>Actions</th></tr></thead>
+              <tbody>{doctorPrescriptions.map((prescription) => <tr key={prescription.id}>
+                <td>{prescription.id}</td><td><strong>{prescription.patientName}</strong><small>{prescription.patientId}</small></td>
+                <td>{prescription.doctorName}</td><td>{prescription.diagnosis}</td>
+                <td>{prescription.medications?.map((item, index) => <small key={`${item.medicationId}-${index}`}>
+                  {item.name} {[item.strength, item.dosageForm].filter(Boolean).join(' · ')} — {item.dose}, {item.frequency}, {item.duration}; qty {item.quantity}<br />
+                </small>)}</td>
+                <td><span className={`workflow-status ${prescription.status === 'DISPENSED' ? 'ready' : 'neutral'}`}>{prescription.status}</span></td>
+                <td><div className="workflow-row-actions"><button className="workflow-button subtle" type="button" onClick={() => printPrescription(prescription)}>Print</button>
+                  {prescription.status === 'PENDING' && <button className="workflow-button primary" type="button" disabled={busy} onClick={() => dispenseDoctorPrescription(prescription.id)}>Dispense all</button>}
+                </div></td>
+              </tr>)}</tbody></table></div>}
+        </>}
+
+        {activeTab === 'issues' && <>
           <div className="workflow-panel-heading"><div><h2>Prescription issues</h2><p>Track items awaiting dispense and completed issues.</p></div><button className="workflow-button primary" type="button" onClick={() => setShowIssueForm((shown) => !shown)}><Plus size={15} /> Add prescription</button></div>
           {showIssueForm && <form className="workflow-inline-form" onSubmit={submitIssue}><label>Prescription ID<input required value={issueForm.prescriptionId} onChange={(e) => setIssueForm({ ...issueForm, prescriptionId: e.target.value })} /></label><label>Patient<select required value={issueForm.patientId} onChange={(e) => setIssueForm({ ...issueForm, patientId: e.target.value })}><option value="">Select patient</option>{patients.map((patient) => <option key={patient.patientId} value={patient.patientId}>{patient.patientName} · {patient.patientId}</option>)}</select></label><label>Medication<select required value={issueForm.medicationId} onChange={(e) => setIssueForm({ ...issueForm, medicationId: e.target.value })}><option value="">Select medication</option>{inventory.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.strength}</option>)}</select></label><label>Dosage<input required value={issueForm.dosage} placeholder="e.g. 1 tablet twice daily" onChange={(e) => setIssueForm({ ...issueForm, dosage: e.target.value })} /></label><label>Quantity<input required type="number" min="1" value={issueForm.quantity} onChange={(e) => setIssueForm({ ...issueForm, quantity: e.target.value })} /></label><button className="workflow-button primary" disabled={busy} type="submit">Add to queue</button></form>}
           {!issues.length ? <div className="workflow-empty">No prescriptions in the dispensing queue.</div> : <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Prescription</th><th>Patient</th><th>Medication</th><th>Dosage</th><th>Quantity</th><th>Status</th><th>Action</th></tr></thead><tbody>{issues.map((issue) => <tr key={issue.id}><td>{issue.prescriptionId}</td><td>{issue.patientName || issue.patientId}</td><td><strong>{issue.medicationName}</strong></td><td>{issue.dosage}</td><td>{issue.quantity}</td><td><span className={`workflow-status ${issue.status === 'ISSUED' ? 'ready' : 'neutral'}`}>{issue.status}</span></td><td>{issue.status === 'PENDING' && <button className="workflow-button subtle" disabled={busy} type="button" onClick={() => dispenseIssue(issue.id)}>Dispense</button>}</td></tr>)}</tbody></table></div>}
         </>}
       </section>
+      {printablePrescription && <section className="printable-prescription" aria-label="Printable medication prescription">
+        <header><strong>MEDCARE HOSPITAL</strong><span>Medication prescription</span></header>
+        <div className="print-prescription-details">
+          <div><b>Patient</b><span>{printablePrescription.patientName}</span></div>
+          <div><b>Patient ID</b><span>{printablePrescription.patientId}</span></div>
+          <div><b>Doctor</b><span>{printablePrescription.doctorName}</span></div>
+          <div><b>Date</b><span>{printablePrescription.createdAt ? new Date(printablePrescription.createdAt).toLocaleDateString() : '—'}</span></div>
+          <div><b>Diagnosis</b><span>{printablePrescription.diagnosis}</span></div>
+        </div>
+        <h2>Medicines</h2>
+        <table><thead><tr><th>Medicine</th><th>Dose / route</th><th>Frequency</th><th>Duration</th><th>Qty</th><th>Instructions</th></tr></thead>
+          <tbody>{printablePrescription.medications?.map((item, index) => <tr key={`${item.medicationId}-${index}`}>
+            <td>{item.name} {[item.strength, item.dosageForm].filter(Boolean).join(' · ')}</td>
+            <td>{item.dose} · {item.route}</td><td>{item.frequency}</td><td>{item.duration}</td>
+            <td>{item.quantity}</td><td>{item.instructions || '—'}</td>
+          </tr>)}</tbody>
+        </table>
+        <p className="print-prescription-footer">Please follow the prescribed directions and contact the doctor if you have questions.</p>
+      </section>}
     </section>
   );
 }

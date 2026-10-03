@@ -47,3 +47,30 @@ test('assigns and persists a selected nurse for an admitted patient', async () =
   })));
   expect(await screen.findByRole('status')).toHaveTextContent('nurse-one assigned to Admitted Patient (PT-100)');
 });
+
+test('shows and searches patient records even when ward and nurse data cannot load', async () => {
+  const patients = [
+    { id: 'patient-1', patientId: 'PT-101', patientName: 'Ravi Kumar', patientmobileNo: '5551001' },
+    { id: 'patient-2', patientId: 'PT-102', patientName: 'Shyamlal Yadav', patientmobileNo: '5551002' },
+  ];
+  apiFetch.mockImplementation(async (path) => {
+    if (path === '/patients') return { ok: true, json: async () => patients };
+    if (path === '/nursing/nurses') return { ok: false, json: async () => ({ message: 'Nurse service unavailable' }) };
+    if (path === '/nursing/wards') return { ok: false, json: async () => ({ message: 'Ward service unavailable' }) };
+    if (path === '/users/me') return { ok: false, json: async () => ({ message: 'User lookup unavailable' }) };
+    throw new Error(`Unexpected API request: ${path}`);
+  });
+
+  render(<Patients />);
+
+  expect(await screen.findByText('Ravi Kumar')).toBeInTheDocument();
+  expect(screen.getByText('Patient ID: PT-101')).toBeInTheDocument();
+  expect(screen.getByText('Patient ID: PT-102')).toBeInTheDocument();
+  expect(screen.getByText('Showing 2 of 2 patient records')).toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent('Patient records loaded');
+
+  fireEvent.change(screen.getByRole('textbox', { name: 'Search patients' }), { target: { value: 'PT-102' } });
+  expect(screen.getByText('Shyamlal Yadav')).toBeInTheDocument();
+  expect(screen.queryByText('Ravi Kumar')).not.toBeInTheDocument();
+  expect(screen.getByText('Showing 1 of 2 patient records')).toBeInTheDocument();
+});

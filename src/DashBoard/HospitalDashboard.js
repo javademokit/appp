@@ -12,7 +12,7 @@ import {
   FaTachometerAlt,
   FaCreditCard
 } from "react-icons/fa";
-import { Building2, CalendarClock, FileBadge, FlaskConical, Pill, Siren } from "lucide-react";
+import { Building2, CalendarClock, FileBadge, FlaskConical, Pill, Siren, Wallet } from "lucide-react";
 
 import Header from "../company/Header";
 import Footer from "../company/Footer";
@@ -33,9 +33,12 @@ import EmergencyTriagePage from "../Operations/EmergencyTriagePage";
 import StaffShiftsPage from "../Operations/StaffShiftsPage";
 import DischargePage from "../Operations/DischargePage";
 import WardManagement from "../NursingWardManagement/WardManagement";
+import PayrollPage from "../Operations/PayrollPage";
 
 const HospitalDashboard = () => {
-  const [activePage, setActivePage] = useState("dashboard");
+  const [activePage, setActivePage] = useState(() => (
+    new URLSearchParams(window.location.search).get("billing") === "1" ? "billing" : "dashboard"
+  ));
   const [username, setUsername] = useState("");
   const [roles, setRoles] = useState([]);
   const navigate = useNavigate();
@@ -50,6 +53,12 @@ const HospitalDashboard = () => {
         if (assignedRoles.some((role) => ["NURSE", "HEAD_NURSE"].includes(role))
           && !assignedRoles.some((role) => ["SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN"].includes(role))) {
           setActivePage("ward-management");
+        } else if (new URLSearchParams(window.location.search).get("billing") === "1"
+          && !assignedRoles.some((role) => [
+            "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "RECEPTIONIST", "CRM_EXECUTIVE",
+            "BILLING_EXECUTIVE", "FINANCE",
+          ].includes(role))) {
+          setActivePage("dashboard");
         }
       })
       .catch(() => navigate("/UserLogin", { replace: true }));
@@ -59,6 +68,16 @@ const HospitalDashboard = () => {
     && !roles.some((role) => ["SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN"].includes(role));
   const nursingAccess = roles.some((role) => [
     "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "CRM_EXECUTIVE", "NURSE", "HEAD_NURSE",
+  ].includes(role));
+  const payrollAccess = roles.some((role) => [
+    "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "FINANCE", "HR", "NURSE", "HEAD_NURSE",
+  ].includes(role));
+  const appointmentAccess = roles.some((role) => [
+    "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "RECEPTIONIST", "CRM_EXECUTIVE",
+  ].includes(role));
+  const billingAccess = roles.some((role) => [
+    "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "RECEPTIONIST", "CRM_EXECUTIVE",
+    "BILLING_EXECUTIVE", "FINANCE",
   ].includes(role));
   const handleLogout = async () => {
     try {
@@ -74,6 +93,7 @@ const HospitalDashboard = () => {
       case "dashboard":
         return <Dashboard />;
       case "book-appointment":
+        if (!appointmentAccess) return <Dashboard />;
         return <BookAppointment />;
       case "patients":
         return <Patients />;
@@ -97,6 +117,8 @@ const HospitalDashboard = () => {
         return <StaffShiftsPage />;
       case "ward-management":
         return <WardManagement />;
+      case "payroll":
+        return <PayrollPage />;
       case "DoctorTimeSlots":
         return <Doctors />;
       case "settings":
@@ -118,9 +140,9 @@ const HospitalDashboard = () => {
             <li className={activePage === "dashboard" ? "active" : ""} aria-current={activePage === "dashboard" ? "page" : undefined} onClick={() => setActivePage("dashboard")}>
               <FaTachometerAlt /> Dashboard
             </li>
-            <li className={activePage === "book-appointment" ? "active" : ""} aria-current={activePage === "book-appointment" ? "page" : undefined} onClick={() => setActivePage("book-appointment")}>
+            {appointmentAccess && <li className={activePage === "book-appointment" ? "active" : ""} aria-current={activePage === "book-appointment" ? "page" : undefined} onClick={() => setActivePage("book-appointment")}>
               <FaBookMedical /> Book Appointment
-            </li>
+            </li>}
             <li className={activePage === "patients" ? "active" : ""} aria-current={activePage === "patients" ? "page" : undefined} onClick={() => setActivePage("patients")}>
               <FaUserInjured /> Patients
             </li>
@@ -133,9 +155,9 @@ const HospitalDashboard = () => {
             <li className={activePage === "reports" ? "active" : ""} aria-current={activePage === "reports" ? "page" : undefined} onClick={() => setActivePage("reports")}>
               <FaFileAlt /> Reports
             </li>
-            <li className={activePage === "billing" ? "active" : ""} aria-current={activePage === "billing" ? "page" : undefined} onClick={() => setActivePage("billing")}>
+            {billingAccess && <li className={activePage === "billing" ? "active" : ""} aria-current={activePage === "billing" ? "page" : undefined} onClick={() => setActivePage("billing")}>
               <FaCreditCard /> Billing & Payments
-            </li>
+            </li>}
             <li className={activePage === "discharges" ? "active" : ""} aria-current={activePage === "discharges" ? "page" : undefined} onClick={() => setActivePage("discharges")}>
               <FileBadge size={16} /> Discharge &amp; Claims
             </li>
@@ -148,6 +170,9 @@ const HospitalDashboard = () => {
             </>}
             {nursingAccess && <li className={activePage === "ward-management" ? "active" : ""} aria-current={activePage === "ward-management" ? "page" : undefined} onClick={() => setActivePage("ward-management")}>
               <Building2 size={16} /> Nurse Management
+            </li>}
+            {payrollAccess && <li className={activePage === "payroll" ? "active" : ""} aria-current={activePage === "payroll" ? "page" : undefined} onClick={() => setActivePage("payroll")}>
+              <Wallet size={16} /> {nursingOnly ? "My Payroll" : "Payroll"}
             </li>}
             {!nursingOnly && <>
             <li className={activePage === "pharmacy" ? "active" : ""} aria-current={activePage === "pharmacy" ? "page" : undefined} onClick={() => setActivePage("pharmacy")}>

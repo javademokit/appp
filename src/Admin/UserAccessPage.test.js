@@ -20,6 +20,7 @@ test('hospital administrator can assign a staff role to another registered accou
       return { ok: true, json: async () => ({ username: 'admin-one', roles: ['HOSPITAL_ADMIN'] }) };
     }
     if (path === '/doctors') return { ok: true, json: async () => [] };
+    if (path === '/nursing/nurses') return { ok: true, json: async () => [] };
     if (path === '/users') return { ok: true, json: async () => accounts };
     return { ok: false, json: async () => ({ message: 'Unexpected request' }) };
   });
@@ -58,6 +59,7 @@ test('hospital administrator can create a CRM staff account directly', async () 
       return { ok: true, json: async () => ({ username: 'admin-one', roles: ['HOSPITAL_ADMIN'] }) };
     }
     if (path === '/doctors') return { ok: true, json: async () => [] };
+    if (path === '/nursing/nurses') return { ok: true, json: async () => [] };
     if (path === '/users') return { ok: true, json: async () => accounts };
     return { ok: false, json: async () => ({ message: 'Unexpected request' }) };
   });
@@ -92,6 +94,7 @@ test('administrator can create a doctor login and availability profile together'
       return { ok: true, json: async () => ({ username: 'admin-one', roles: ['HOSPITAL_ADMIN'] }) };
     }
     if (path === '/doctors') return { ok: true, json: async () => [] };
+    if (path === '/nursing/nurses') return { ok: true, json: async () => [] };
     if (path === '/users') return { ok: true, json: async () => [] };
     return { ok: false, json: async () => ({ message: 'Unexpected request' }) };
   });
@@ -143,6 +146,7 @@ test('shows backend doctor-profile validation details instead of a generic reque
       return { ok: true, text: async () => JSON.stringify({ username: 'admin-one', roles: ['HOSPITAL_ADMIN'] }) };
     }
     if (path === '/doctors') return { ok: true, text: async () => '[]' };
+    if (path === '/nursing/nurses') return { ok: true, text: async () => '[]' };
     if (path === '/users') return { ok: true, text: async () => '[]' };
     return { ok: false, status: 404, text: async () => '{}' };
   });

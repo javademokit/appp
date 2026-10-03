@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, BedDouble, ClipboardList, Download, History, RefreshCw, Users, UserRoundCheck } from 'lucide-react';
+import { Activity, BedDouble, Ban, ClipboardList, DoorOpen, Download, Filter, History, RefreshCw, Sparkles, Users, UserRoundCheck, Wrench } from 'lucide-react';
 import { apiFetch } from '../API/api';
 import '../Operations/Operations.css';
 import './WardManagement.css';
@@ -228,7 +228,7 @@ function NurseDashboard({ dashboard, handovers, nurses, rosters, shiftSwaps, ref
               const handover = handoverForms[patientId] || {};
               return <tr key={item.assignment?.id || patientId}>
                 <td><strong>{patient.patientName || 'Patient'}</strong><small>{patientId} · {patient.patientAge || 'Age not recorded'}</small></td>
-                <td>{item.ward?.name || patient.patientWardnum || 'Ward'}<small>{item.bed?.bedNumber || 'Bed not recorded'} · {item.assignment?.role}</small></td>
+                <td>{item.ward?.name || patient.patientWardnum || 'Ward'}<small>{item.bed?.room?.roomNumber ? `Room ${item.bed.room.roomNumber} · ` : ''}{item.bed?.bedNumber || 'Bed not recorded'} · {item.assignment?.role}</small></td>
                 <td>{item.latestConsultation?.diagnosis || patient.patientPrescription || 'Diagnosis not recorded'}<small>Allergies: {patient.patientAllergies || 'None recorded'}</small></td>
                 <td>
                   {latestVitals && <p className={hasAbnormalVitals(latestVitals) ? 'workflow-alert error' : ''}>
@@ -305,6 +305,7 @@ function NurseDashboard({ dashboard, handovers, nurses, rosters, shiftSwaps, ref
 export default function WardManagement() {
   const [currentUser, setCurrentUser] = useState(null);
   const [wards, setWards] = useState([]);
+  const [rooms, setRooms] = useState([]);
   const [nurses, setNurses] = useState([]);
   const [rosters, setRosters] = useState([]);
   const [nurseRosters, setNurseRosters] = useState([]);
@@ -313,6 +314,8 @@ export default function WardManagement() {
   const [assignmentBoard, setAssignmentBoard] = useState([]);
   const [unassignedPatients, setUnassignedPatients] = useState([]);
   const [careRecords, setCareRecords] = useState([]);
+  const [bedHistory, setBedHistory] = useState({});
+  const [bedWaitingList, setBedWaitingList] = useState([]);
   const [dashboard, setDashboard] = useState([]);
   const [handovers, setHandovers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -321,6 +324,9 @@ export default function WardManagement() {
   const [success, setSuccess] = useState('');
   const [activeNursingTab, setActiveNursingTab] = useState('overview');
   const [wardForm, setWardForm] = useState({ name: '', type: 'GENERAL', maxPatientsPerNurse: 8, minimumNursesPerShift: 1 });
+  const [roomForm, setRoomForm] = useState({ id: '', wardId: '', building: '', floor: '', roomNumber: '', acType: 'NON_AC', category: 'GENERAL', bedCapacity: 1, defaultBedType: 'STANDARD', genderRestriction: 'ANY', status: 'ACTIVE', amenities: '', notes: '' });
+  const [bulkRoomForm, setBulkRoomForm] = useState({ ...roomForm, roomNumber: '', roomNumberEnd: '' });
+  const [bedFilters, setBedFilters] = useState({ wardId: '', status: '', acType: '', floor: '' });
   const [nurseForm, setNurseForm] = useState({ accountId: '', name: '', employeeId: '', phone: '', qualification: '', licenseNumber: '', designation: 'STAFF_NURSE', specialization: 'GENERAL', status: 'ACTIVE', photoUrl: '' });
   const [rosterForm, setRosterForm] = useState({ nurseId: '', wardId: '', shift: 'MORNING', startDate: '', endDate: '' });
   const [bulkForm, setBulkForm] = useState({ wardId: '', nurseId: '', shift: 'MORNING', bedFrom: '', bedTo: '' });
@@ -348,9 +354,9 @@ export default function WardManagement() {
       const roles = (userData.roles || []).map((role) => String(role).replace(/^ROLE_/, '').toUpperCase());
       const manager = roles.some((role) => managerRoles.includes(role));
       if (manager) {
-        const paths = ['/nursing/wards', '/nursing/nurses', '/nursing/rosters', '/nursing/assignments', '/nursing/unassigned-patients', '/nursing/shift-swaps', '/nursing/patients/assignments'];
+        const paths = ['/nursing/wards', '/nursing/rooms', '/nursing/nurses', '/nursing/rosters', '/nursing/assignments', '/nursing/unassigned-patients', '/nursing/shift-swaps', '/nursing/patients/assignments', '/nursing/bed-waiting-list'];
         const results = await Promise.all(paths.map((path) => request(path)));
-        [setWards, setNurses, setRosters, setAssignments, setUnassignedPatients, setShiftSwaps, setAssignmentBoard]
+        [setWards, setRooms, setNurses, setRosters, setAssignments, setUnassignedPatients, setShiftSwaps, setAssignmentBoard, setBedWaitingList]
           .forEach((setter, index) => setter(results[index]));
         if (roles.some((role) => ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'CLINIC_ADMIN', 'HEAD_NURSE'].includes(role))) {
           setCareRecords(await request('/nursing/care-records'));
@@ -387,15 +393,33 @@ export default function WardManagement() {
 
   useEffect(() => { refresh(); }, [refresh]);
 
+  useEffect(() => {
+    if (!canManage) return undefined;
+    const pollBedBoard = async () => {
+      try {
+        const [updatedWards, waitingList] = await Promise.all([
+          request('/nursing/wards'),
+          request('/nursing/bed-waiting-list'),
+        ]);
+        setWards(updatedWards);
+        setBedWaitingList(waitingList);
+      } catch (requestError) {
+        setError(requestError.message || 'Could not refresh the bed board.');
+      }
+    };
+    const timer = window.setInterval(pollBedBoard, 30000);
+    return () => window.clearInterval(timer);
+  }, [canManage]);
+
   const submit = async (path, method, body, successMessage) => {
     setBusy(true);
     setError('');
     setSuccess('');
     try {
-      await request(path, { method, body: JSON.stringify(body) });
+      const result = await request(path, { method, body: JSON.stringify(body) });
       setSuccess(successMessage);
       await refresh();
-      return true;
+      return result || true;
     } catch (requestError) {
       setError(requestError.message || 'Request failed.');
       return false;
@@ -408,12 +432,99 @@ export default function WardManagement() {
     event.preventDefault();
     if (!nurseForm.accountId) return;
     const { accountId, ...profile } = nurseForm;
-    await submit(`/nursing/nurses/${encodeURIComponent(accountId)}/profile`, 'PUT', profile, 'Nurse profile saved.');
+    const savedProfile = await submit(`/nursing/nurses/${encodeURIComponent(accountId)}/profile`, 'PUT', profile, 'Nurse profile saved.');
+    if (savedProfile && savedProfile.employeeId) {
+      setNurseForm((current) => ({ ...current, employeeId: savedProfile.employeeId }));
+    }
   };
 
-  const saveBedStatus = async (wardId, bed) => {
-    const nextStatus = bed.status === 'RESERVED' ? 'VACANT' : 'RESERVED';
-    await submit(`/nursing/wards/${encodeURIComponent(wardId)}/beds/${encodeURIComponent(bed.id)}`, 'PUT', { status: nextStatus }, `Bed ${bed.bedNumber} marked ${nextStatus.toLowerCase()}.`);
+  const createRoom = async (event) => {
+    event.preventDefault();
+    const amenities = roomForm.amenities.split(',').map((item) => item.trim()).filter(Boolean);
+    const { id, ...roomDetails } = roomForm;
+    const ok = await submit(id ? `/nursing/rooms/${encodeURIComponent(id)}` : '/nursing/rooms', id ? 'PUT' : 'POST', {
+      ...roomDetails, bedCapacity: Number(roomForm.bedCapacity), amenities,
+    }, id ? 'Room details updated.' : 'Room and its beds created.');
+    if (ok) setRoomForm({ id: '', wardId: '', building: '', floor: '', roomNumber: '', acType: 'NON_AC', category: 'GENERAL', bedCapacity: 1, defaultBedType: 'STANDARD', genderRestriction: 'ANY', status: 'ACTIVE', amenities: '', notes: '' });
+  };
+
+  const editRoom = (room) => {
+    setRoomForm({
+      id: room.id,
+      wardId: room.wardId,
+      building: room.building || '',
+      floor: room.floor || '',
+      roomNumber: room.roomNumber || '',
+      acType: room.acType || 'NON_AC',
+      category: room.category || 'GENERAL',
+      bedCapacity: room.bedCapacity || 1,
+      defaultBedType: room.defaultBedType || 'STANDARD',
+      genderRestriction: room.genderRestriction || 'ANY',
+      status: room.status || 'ACTIVE',
+      amenities: (room.amenities || []).join(', '),
+      notes: room.notes || '',
+    });
+    document.querySelector('.bed-room-setup')?.setAttribute('open', '');
+  };
+
+  const createRoomRange = async (event) => {
+    event.preventDefault();
+    const start = Number(bulkRoomForm.roomNumber);
+    const end = Number(bulkRoomForm.roomNumberEnd);
+    if (!Number.isInteger(start) || !Number.isInteger(end) || end < start || end - start >= 200) {
+      setError('Enter a valid room number range with no more than 200 rooms.');
+      return;
+    }
+    const amenities = bulkRoomForm.amenities.split(',').map((item) => item.trim()).filter(Boolean);
+    const rooms = Array.from({ length: end - start + 1 }, (_, offset) => ({
+      wardId: bulkRoomForm.wardId,
+      building: bulkRoomForm.building,
+      floor: bulkRoomForm.floor,
+      roomNumber: String(start + offset),
+      acType: bulkRoomForm.acType,
+      category: bulkRoomForm.category,
+      bedCapacity: Number(bulkRoomForm.bedCapacity),
+      defaultBedType: bulkRoomForm.defaultBedType,
+      genderRestriction: bulkRoomForm.genderRestriction,
+      amenities,
+      notes: bulkRoomForm.notes,
+    }));
+    await submit('/nursing/rooms/bulk', 'POST', rooms, `${rooms.length} rooms and their beds created.`);
+  };
+
+  const updateBedLifecycle = async (event, wardId, bed) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const status = form.elements.status.value;
+    const reason = form.elements.reason.value.trim();
+    const holdUntil = status === 'RESERVED' ? form.elements.holdUntil.value : null;
+    if (status === 'RESERVED' && !holdUntil) {
+      setError('Choose when this reservation should expire.');
+      return;
+    }
+    await submit(`/nursing/wards/${encodeURIComponent(wardId)}/beds/${encodeURIComponent(bed.id)}`, 'PUT', {
+      status, reason, holdUntil: holdUntil ? new Date(holdUntil).toISOString() : null,
+    }, `Bed ${bed.bedNumber} updated to ${status.toLowerCase()}.`);
+  };
+
+  const completeCleaning = async (bed) => {
+    await submit(`/nursing/beds/${encodeURIComponent(bed.id)}/cleaning-complete`, 'POST', {},
+      `Bed ${bed.bedNumber} is clean and available.`);
+  };
+
+  const cancelWaitlistEntry = async (entry) => {
+    await submit(`/nursing/bed-waiting-list/${encodeURIComponent(entry.id)}/cancel`, 'POST', {},
+      `Waiting-list request for ${entry.patientName} cancelled.`);
+  };
+
+  const loadBedHistory = async (bedId) => {
+    if (bedHistory[bedId]) return;
+    try {
+      const history = await request(`/nursing/beds/${encodeURIComponent(bedId)}/history`);
+      setBedHistory((current) => ({ ...current, [bedId]: history }));
+    } catch (requestError) {
+      setError(requestError.message || 'Could not load bed status history.');
+    }
   };
 
   const submitBulkAssignment = async (event) => {
@@ -469,6 +580,21 @@ export default function WardManagement() {
     return rosters.filter((roster) => new Date(`${roster.endDate}T00:00:00`) >= monday
       && new Date(`${roster.startDate}T00:00:00`) <= sunday);
   }, [rosters]);
+
+  const bedBoard = useMemo(() => wards.flatMap((ward) => (ward.beds || []).map((bed) => ({
+    ...bed, wardId: ward.id, wardName: ward.name, room: bed.room || {},
+  }))).filter((bed) => (!bedFilters.wardId || bed.wardId === bedFilters.wardId)
+    && (!bedFilters.status || bed.status === bedFilters.status)
+    && (!bedFilters.acType || !bed.room.acType || bed.room.acType === bedFilters.acType)
+    && (!bedFilters.floor || (bed.room.floor || '').toLowerCase().includes(bedFilters.floor.toLowerCase()))), [wards, bedFilters]);
+  const bedCounts = useMemo(() => {
+    const counts = { total: 0, VACANT: 0, RESERVED: 0, OCCUPIED: 0, CLEANING: 0, MAINTENANCE: 0, BLOCKED: 0 };
+    wards.forEach((ward) => (ward.beds || []).forEach((bed) => {
+      counts.total += 1;
+      counts[bed.status] = (counts[bed.status] || 0) + 1;
+    }));
+    return counts;
+  }, [wards]);
 
   const exportReport = () => {
     const rows = [
@@ -547,7 +673,10 @@ export default function WardManagement() {
               {unassignedPatients.length > 0 && <button type="button" onClick={() => setActiveNursingTab('assignments')}>
                 <span className="nurse-attention-dot" />{unassignedPatients.length} patient(s) without a primary nurse
               </button>}
-              {!wards.some((ward) => ward.understaffed) && !unassignedPatients.length
+              {bedWaitingList.filter((item) => item.matchingBedsAvailable).length > 0 && <button type="button" onClick={() => setActiveNursingTab('wards')}>
+                <span className="nurse-attention-dot" />{bedWaitingList.filter((item) => item.matchingBedsAvailable).length} waiting patient(s) have a matching bed available
+              </button>}
+              {!wards.some((ward) => ward.understaffed) && !unassignedPatients.length && !bedWaitingList.some((item) => item.matchingBedsAvailable)
                 && <div className="nurse-all-clear"><Activity size={17} />No urgent staffing or assignment issues.</div>}
             </section>
           </div>
@@ -573,26 +702,143 @@ export default function WardManagement() {
             <button className="workflow-button primary" disabled={busy} type="submit">Create ward</button>
           </form>
           </>}
-          {!wards.length ? <div className="workflow-empty">No wards set up yet.</div> : <div className="workflow-table-wrap"><table className="workflow-table">
-            <thead><tr><th>Ward</th><th>Ratio</th><th>Staffing today</th><th>Bed availability</th>{canManageStaff && <th>Add bed</th>}<th>Beds</th></tr></thead>
-            <tbody>{wards.map((ward) => <tr key={ward.id}><td><strong>{ward.name}</strong><small>{ward.type}</small></td><td>1 nurse : {ward.maxPatientsPerNurse} patients</td>
-              <td>{ward.nursesOnDuty}/{ward.minimumNursesPerShift} on duty{ward.understaffed && <strong className="workflow-alert error"> · Understaffed</strong>}</td>
-              <td>{ward.vacantBeds} vacant / {ward.totalBeds}</td>
-              {canManageStaff && <td><form className="nursing-inline-form" onSubmit={(event) => {
-                event.preventDefault();
-                const bedNumber = event.currentTarget.elements.bedNumber.value.trim();
-                if (bedNumber) submit(`/nursing/wards/${encodeURIComponent(ward.id)}/beds`, 'POST', { bedNumber }, `Bed ${bedNumber} added to ${ward.name}.`);
-                event.currentTarget.reset();
-              }}><input aria-label={`New bed number for ${ward.name}`} name="bedNumber" required placeholder="Bed no." /><button className="workflow-button primary" type="submit" disabled={busy}>Add</button></form></td>
-              }
-              <td><div className="nursing-bed-list">{(ward.beds || []).map((bed) => canManageStaff
-                ? <button className="workflow-button subtle" key={bed.id} type="button"
-                  disabled={bed.status === 'OCCUPIED' || busy} onClick={() => saveBedStatus(ward.id, bed)} title="Toggle reservation status">
-                  {bed.bedNumber} · {bed.status}
-                </button>
-                : <span key={bed.id}>{bed.bedNumber} · {bed.status}</span>)}</div></td>
-            </tr>)}</tbody>
-          </table></div>}
+          {!wards.length ? <div className="workflow-empty">No wards set up yet.</div> : <>
+            <div className="bed-management-summary">
+              {[
+                ['Total beds', bedCounts.total, 'total'],
+                ['Occupied', bedCounts.OCCUPIED, 'occupied'],
+                ['Vacant', bedCounts.VACANT, 'vacant'],
+                ['Reserved', bedCounts.RESERVED, 'reserved'],
+                ['Cleaning', bedCounts.CLEANING, 'cleaning'],
+                ['Unavailable', bedCounts.MAINTENANCE + bedCounts.BLOCKED, 'maintenance'],
+              ].map(([label, count, kind]) => <article key={label} className={`bed-summary-${kind}`}>
+                <span>{label}</span><strong>{count}</strong>
+              </article>)}
+            </div>
+            {canSetupWards && <details className="bed-room-setup">
+              <summary><DoorOpen size={17} /> {roomForm.id ? `Edit room ${roomForm.roomNumber}` : 'Add room and generate beds'}</summary>
+              <form className="workflow-form-grid" onSubmit={createRoom}>
+                <label>Ward<select required value={roomForm.wardId} onChange={(event) => setRoomForm({ ...roomForm, wardId: event.target.value })}><option value="">Select ward</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}</select></label>
+                <label>Building / block<input value={roomForm.building} onChange={(event) => setRoomForm({ ...roomForm, building: event.target.value })} placeholder="e.g. Main Block" /></label>
+                <label>Floor<input value={roomForm.floor} onChange={(event) => setRoomForm({ ...roomForm, floor: event.target.value })} placeholder="e.g. 2" /></label>
+                <label>Room number<input required value={roomForm.roomNumber} onChange={(event) => setRoomForm({ ...roomForm, roomNumber: event.target.value })} /></label>
+                <label>AC type<select value={roomForm.acType} onChange={(event) => setRoomForm({ ...roomForm, acType: event.target.value })}><option value="AC">AC</option><option value="NON_AC">Non-AC</option></select></label>
+                <label>Room category<input required value={roomForm.category} onChange={(event) => setRoomForm({ ...roomForm, category: event.target.value })} placeholder="General, Private, ICU..." /></label>
+                <label>Bed capacity<input required type="number" min="1" max="100" value={roomForm.bedCapacity} onChange={(event) => setRoomForm({ ...roomForm, bedCapacity: event.target.value })} /></label>
+                <label>Default bed type<select value={roomForm.defaultBedType} onChange={(event) => setRoomForm({ ...roomForm, defaultBedType: event.target.value })}>
+                  {['STANDARD', 'ELECTRIC', 'ICU', 'PEDIATRIC_COT', 'BARIATRIC', 'STRETCHER', 'INCUBATOR'].map((type) => <option key={type} value={type}>{type.replaceAll('_', ' ')}</option>)}
+                </select></label>
+                <label>Gender restriction<select value={roomForm.genderRestriction} onChange={(event) => setRoomForm({ ...roomForm, genderRestriction: event.target.value })}><option value="ANY">Any</option><option value="MALE">Male</option><option value="FEMALE">Female</option></select></label>
+                <label>Room status<select value={roomForm.status} onChange={(event) => setRoomForm({ ...roomForm, status: event.target.value })}><option value="ACTIVE">Active</option><option value="UNDER_MAINTENANCE">Under maintenance</option><option value="CLOSED">Closed</option></select></label>
+                <label>Amenities<input value={roomForm.amenities} onChange={(event) => setRoomForm({ ...roomForm, amenities: event.target.value })} placeholder="Oxygen, TV (comma separated)" /></label>
+                <label className="workflow-form-wide">Notes<input value={roomForm.notes} onChange={(event) => setRoomForm({ ...roomForm, notes: event.target.value })} /></label>
+                <div className="workflow-form-actions workflow-form-wide">
+                  <button className="workflow-button primary" type="submit" disabled={busy || !roomForm.wardId}>{roomForm.id ? 'Save room changes' : 'Create room and beds'}</button>
+                  {roomForm.id && <button className="workflow-button subtle" type="button" onClick={() => setRoomForm({ id: '', wardId: '', building: '', floor: '', roomNumber: '', acType: 'NON_AC', category: 'GENERAL', bedCapacity: 1, defaultBedType: 'STANDARD', genderRestriction: 'ANY', status: 'ACTIVE', amenities: '', notes: '' })}>Cancel edit</button>}
+                </div>
+              </form>
+              <details className="bed-bulk-create">
+                <summary>Create a numeric room range</summary>
+                <form className="workflow-form-grid" onSubmit={createRoomRange}>
+                  <label>Ward<select required value={bulkRoomForm.wardId} onChange={(event) => setBulkRoomForm({ ...bulkRoomForm, wardId: event.target.value })}><option value="">Select ward</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}</select></label>
+                  <label>Building / block<input value={bulkRoomForm.building} onChange={(event) => setBulkRoomForm({ ...bulkRoomForm, building: event.target.value })} /></label>
+                  <label>Floor<input value={bulkRoomForm.floor} onChange={(event) => setBulkRoomForm({ ...bulkRoomForm, floor: event.target.value })} /></label>
+                  <label>First room number<input required type="number" value={bulkRoomForm.roomNumber} onChange={(event) => setBulkRoomForm({ ...bulkRoomForm, roomNumber: event.target.value })} /></label>
+                  <label>Last room number<input required type="number" value={bulkRoomForm.roomNumberEnd} onChange={(event) => setBulkRoomForm({ ...bulkRoomForm, roomNumberEnd: event.target.value })} /></label>
+                  <label>AC type<select value={bulkRoomForm.acType} onChange={(event) => setBulkRoomForm({ ...bulkRoomForm, acType: event.target.value })}><option value="AC">AC</option><option value="NON_AC">Non-AC</option></select></label>
+                  <label>Category<input required value={bulkRoomForm.category} onChange={(event) => setBulkRoomForm({ ...bulkRoomForm, category: event.target.value })} /></label>
+                  <label>Beds per room<input required type="number" min="1" max="100" value={bulkRoomForm.bedCapacity} onChange={(event) => setBulkRoomForm({ ...bulkRoomForm, bedCapacity: event.target.value })} /></label>
+                  <label>Default bed type<select value={bulkRoomForm.defaultBedType} onChange={(event) => setBulkRoomForm({ ...bulkRoomForm, defaultBedType: event.target.value })}>
+                    {['STANDARD', 'ELECTRIC', 'ICU', 'PEDIATRIC_COT', 'BARIATRIC', 'STRETCHER', 'INCUBATOR'].map((type) => <option key={type} value={type}>{type.replaceAll('_', ' ')}</option>)}
+                  </select></label>
+                  <button className="workflow-button primary" type="submit" disabled={busy || !bulkRoomForm.wardId}>Create room range</button>
+                </form>
+              </details>
+            </details>}
+            {canSetupWards && rooms.length > 0 && <section className="workflow-panel room-inventory-panel">
+              <div className="workflow-panel-heading"><div><h2>Room inventory</h2><p>{rooms.length} configured rooms across this hospital.</p></div></div>
+              <div className="workflow-table-wrap"><table className="workflow-table">
+                <thead><tr><th>Room</th><th>Ward / floor</th><th>Category</th><th>AC</th><th>Beds</th><th>Gender</th><th>Status</th><th>Action</th></tr></thead>
+                <tbody>{rooms.map((room) => <tr key={room.id}>
+                  <td><strong>{room.roomNumber}</strong><small>{room.building || 'Building not set'}</small></td>
+                  <td>{wards.find((ward) => ward.id === room.wardId)?.name || room.wardId}<small>{room.floor || 'Floor not set'}</small></td>
+                  <td>{room.category}</td><td>{room.acType === 'AC' ? 'AC' : 'Non-AC'}</td>
+                  <td>{(wards.find((ward) => ward.id === room.wardId)?.beds || []).filter((bed) => bed.roomId === room.id).length}/{room.bedCapacity}</td>
+                  <td>{room.genderRestriction || 'ANY'}</td><td>{room.status}</td>
+                  <td><button className="workflow-button subtle" type="button" onClick={() => editRoom(room)}>Edit room</button></td>
+                </tr>)}</tbody>
+              </table></div>
+            </section>}
+            <div className="bed-board-heading">
+              <div><h3>Live bed board</h3><p>Bed status changes update availability for admissions and transfers.</p></div>
+              <div className="bed-board-filters">
+                <label><Filter size={14} /><select aria-label="Filter beds by ward" value={bedFilters.wardId} onChange={(event) => setBedFilters({ ...bedFilters, wardId: event.target.value })}>
+                  <option value="">All wards</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}
+                </select></label>
+                <select aria-label="Filter beds by status" value={bedFilters.status} onChange={(event) => setBedFilters({ ...bedFilters, status: event.target.value })}>
+                  <option value="">All statuses</option>{['VACANT', 'RESERVED', 'OCCUPIED', 'CLEANING', 'MAINTENANCE', 'BLOCKED'].map((status) => <option key={status}>{status}</option>)}
+                </select>
+                <select aria-label="Filter beds by AC type" value={bedFilters.acType} onChange={(event) => setBedFilters({ ...bedFilters, acType: event.target.value })}>
+                  <option value="">AC and Non-AC</option><option value="AC">AC</option><option value="NON_AC">Non-AC</option>
+                </select>
+                <input aria-label="Filter beds by floor" placeholder="Floor" value={bedFilters.floor} onChange={(event) => setBedFilters({ ...bedFilters, floor: event.target.value })} />
+              </div>
+            </div>
+            {!bedBoard.length ? <div className="workflow-empty">No beds match these filters.</div> : <div className="live-bed-board">
+              {bedBoard.map((bed) => <article key={bed.id} className={`live-bed-tile bed-tile-${String(bed.status).toLowerCase()}`}>
+                <div className="live-bed-tile-top">
+                  <span className="bed-tile-room">{bed.room.roomNumber || 'Room not assigned'}{bed.room.floor ? ` · Floor ${bed.room.floor}` : ''}</span>
+                  <span className={`bed-status-pill bed-status-${String(bed.status).toLowerCase()}`}>{bed.status}</span>
+                </div>
+                <div className="live-bed-number"><BedDouble size={19} /><strong>{bed.bedNumber}</strong></div>
+                <div className="live-bed-meta"><span>{bed.wardName}</span><span>{bed.room.category || bed.bedType || 'Standard'}</span><span>{bed.room.acType === 'AC' ? 'AC' : bed.room.acType === 'NON_AC' ? 'Non-AC' : '—'}</span></div>
+                {bed.status === 'OCCUPIED' && <div className="bed-patient-detail"><strong>{bed.patientName || 'Patient admitted'}</strong><small>{bed.patientId}</small></div>}
+                {bed.blockReason && <p className="bed-block-reason">{bed.blockReason}</p>}
+                {canManageStaff && <details className="bed-history" onToggle={(event) => {
+                  if (event.currentTarget.open) loadBedHistory(bed.id);
+                }}>
+                  <summary>Change history</summary>
+                  {!bedHistory[bed.id] ? <small>Loading changes…</small>
+                    : !bedHistory[bed.id].length ? <small>No recorded changes.</small>
+                      : <ul>{bedHistory[bed.id].map((entry) => <li key={entry.id}>
+                        <strong>{entry.fromStatus || 'Created'} → {entry.toStatus}</strong>
+                        <small>{entry.changedBy} · {entry.changedAt ? new Date(entry.changedAt).toLocaleString() : ''}</small>
+                        {entry.reason && <small>{entry.reason}</small>}
+                      </li>)}</ul>}
+                </details>}
+                {canManageStaff && bed.status === 'CLEANING' && <button className="workflow-button primary bed-clean-button" type="button" disabled={busy} onClick={() => completeCleaning(bed)}><Sparkles size={15} /> Mark clean &amp; vacant</button>}
+                {canManageStaff && ['VACANT', 'RESERVED', 'MAINTENANCE', 'BLOCKED'].includes(bed.status) && <form className="bed-lifecycle-form" onSubmit={(event) => updateBedLifecycle(event, bed.wardId, bed)}>
+                  <select aria-label={`Change bed ${bed.bedNumber} status`} name="status" defaultValue={bed.status === 'VACANT' ? 'RESERVED' : 'VACANT'}
+                    onChange={(event) => {
+                      const form = event.currentTarget.form;
+                      form.elements.holdUntil.required = event.target.value === 'RESERVED';
+                      form.elements.reason.required = ['BLOCKED', 'MAINTENANCE'].includes(event.target.value);
+                    }}>
+                    {bed.status === 'VACANT' ? <><option value="RESERVED">Reserve</option><option value="MAINTENANCE">Maintenance</option><option value="BLOCKED">Block</option></>
+                      : <option value="VACANT">Set vacant</option>}
+                  </select>
+                  <input name="reason" aria-label={`Reason for bed ${bed.bedNumber} status`} placeholder="Reason (required for block/repair)" />
+                  <input name="holdUntil" aria-label={`Reservation expiry for bed ${bed.bedNumber}`} type="datetime-local" />
+                  <button className="workflow-button subtle" type="submit" disabled={busy}><Wrench size={14} /> Update</button>
+                </form>}
+                {canManageStaff && bed.status === 'OCCUPIED' && <small className="bed-action-hint"><Ban size={13} /> Release through patient discharge or transfer.</small>}
+              </article>)}
+            </div>}
+            {bedWaitingList.length > 0 && <section className="workflow-panel bed-waiting-list-panel">
+              <div className="workflow-panel-heading"><div><h3>Admission waiting list</h3><p>Patients awaiting a matching ward bed. Matching availability is refreshed with the bed board.</p></div></div>
+              <div className="workflow-table-wrap"><table className="workflow-table">
+                <thead><tr><th>Patient</th><th>Preferred ward</th><th>Preference</th><th>Requested</th><th>Availability</th><th>Action</th></tr></thead>
+                <tbody>{bedWaitingList.map(({ entry, matchingBedsAvailable }) => <tr key={entry.id}>
+                  <td><strong>{entry.patientName}</strong><small>{entry.patientId}</small></td>
+                  <td>{wards.find((ward) => ward.id === entry.wardId)?.name || entry.wardId}</td>
+                  <td>{[entry.preferredCategory, entry.preferredAcType === 'AC' ? 'AC' : entry.preferredAcType === 'NON_AC' ? 'Non-AC' : 'Any AC'].filter(Boolean).join(' · ')}</td>
+                  <td>{entry.requestedAt ? new Date(entry.requestedAt).toLocaleString() : '—'}</td>
+                  <td><span className={`workflow-status ${matchingBedsAvailable ? 'ready' : 'warning'}`}>{matchingBedsAvailable ? 'Matching bed available' : 'Waiting'}</span></td>
+                  <td><button className="workflow-button subtle" type="button" disabled={busy} onClick={() => cancelWaitlistEntry(entry)}>Cancel</button></td>
+                </tr>)}</tbody>
+              </table></div>
+            </section>}
+          </>}
         </section>
         </section>}
 
@@ -605,7 +851,7 @@ export default function WardManagement() {
               setNurseForm({ ...nurseForm, accountId: event.target.value, ...(nurse?.profile || {}) });
             }}><option value="">Select nurse account</option>{nurses.map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.userId || nurse.emailId} {nurse.profileComplete ? `· ${nurse.name}` : '· profile required'}</option>)}</select></label>
             <label>Full name<input required value={nurseForm.name} onChange={(event) => setNurseForm({ ...nurseForm, name: event.target.value })} /></label>
-            <label>Employee ID<input required value={nurseForm.employeeId} onChange={(event) => setNurseForm({ ...nurseForm, employeeId: event.target.value })} /></label>
+            <label>Employee ID (generated)<input readOnly value={nurseForm.employeeId} placeholder="Assigned automatically (NS-…)" /></label>
             <label>Phone<input value={nurseForm.phone} onChange={(event) => setNurseForm({ ...nurseForm, phone: event.target.value })} /></label>
             <label>Qualification<input value={nurseForm.qualification} onChange={(event) => setNurseForm({ ...nurseForm, qualification: event.target.value })} /></label>
             <label>License number<input required value={nurseForm.licenseNumber} onChange={(event) => setNurseForm({ ...nurseForm, licenseNumber: event.target.value })} /></label>
@@ -676,10 +922,14 @@ export default function WardManagement() {
               const primaryNurse = nurses.find((nurse) => nurse.id === entry.primary?.nurseId);
               const backupNurse = nurses.find((nurse) => nurse.id === entry.backup?.nurseId);
               const availableBeds = wards.flatMap((ward) => (ward.beds || [])
-                .filter((bed) => bed.status === 'VACANT' && bed.id !== patient.patientBedId)
+                .filter((bed) => bed.status === 'VACANT' && bed.id !== patient.patientBedId
+                  && (!bed.room?.status || bed.room.status === 'ACTIVE'))
                 .map((bed) => ({ ...bed, wardId: ward.id, wardName: ward.name })));
               return <tr key={patient.patientId}><td>{patient.patientName}<small>{patient.patientId}</small></td>
-                <td>{patient.patientWardnum}<small>{wards.find((ward) => ward.id === patient.patientWardId)?.beds?.find((bed) => bed.id === patient.patientBedId)?.bedNumber || patient.patientBedId}</small></td>
+                <td>{patient.patientWardnum}<small>{(() => {
+                  const currentBed = wards.find((ward) => ward.id === patient.patientWardId)?.beds?.find((bed) => bed.id === patient.patientBedId);
+                  return [currentBed?.room?.roomNumber && `Room ${currentBed.room.roomNumber}`, currentBed?.bedNumber || patient.patientBedId].filter(Boolean).join(' · ');
+                })()}</small></td>
                 <td>{primaryNurse?.name || (entry.primary ? entry.primary.nurseId : 'Unassigned')}</td>
                 <td>{backupNurse?.name || (entry.backup ? entry.backup.nurseId : 'Not assigned')}</td>
                 <td><form className="nursing-inline-form" onSubmit={(event) => assignUnassigned(event, patient)}>
@@ -689,7 +939,7 @@ export default function WardManagement() {
                 </form></td>
                 <td><form className="nursing-inline-form" onSubmit={(event) => transferPatient(event, patient)}>
                   <select required name="targetBed" defaultValue=""><option value="">Select vacant bed</option>{availableBeds.map((bed) => (
-                    <option key={bed.id} value={`${bed.wardId}::${bed.id}`}>{bed.wardName} · {bed.bedNumber}</option>
+                    <option key={bed.id} value={`${bed.wardId}::${bed.id}`}>{bed.wardName} · {bed.room?.roomNumber ? `Room ${bed.room.roomNumber} · ` : ''}{bed.bedNumber}</option>
                   ))}</select>
                   <button className="workflow-button subtle" type="submit" disabled={busy || !availableBeds.length}>Transfer</button>
                 </form></td></tr>;

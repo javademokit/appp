@@ -80,6 +80,85 @@
   color: #444;
 }
 
+.appointment-billing-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  align-items: start;
+  gap: 1.2rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #cfe0db;
+  border-radius: 8px;
+  background: #f4faf7;
+}
+
+.appointment-billing-summary h3,
+.appointment-payment-form h4 {
+  margin: 0 0 0.6rem;
+  text-align: left;
+  color: #245b4c;
+}
+
+.appointment-billing-summary p,
+.appointment-payment-form p {
+  margin: 0.35rem 0;
+  color: #52645d;
+  font-size: 0.88rem;
+}
+
+.appointment-payment-form {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.8rem;
+  border: 1px solid #dbe7e1;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.appointment-payment-form label {
+  display: grid;
+  gap: 0.3rem;
+  color: #455a51;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.appointment-payment-form input,
+.appointment-payment-form select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 38px;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #cbd8d2;
+  border-radius: 5px;
+  font: inherit;
+}
+
+.appointment-online-payments {
+  display: grid;
+  align-content: start;
+  gap: 0.55rem;
+  padding: 0.8rem;
+  border: 1px solid #dbe7e1;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.appointment-online-payments h4 {
+  margin: 0;
+  color: #245b4c;
+}
+
+.appointment-online-payments p {
+  margin: 0;
+  color: #63756d;
+  font-size: 0.82rem;
+}
+
+.appointment-online-payments .submit-btn {
+  font-size: 0.86rem;
+}
+
 #print-btn,
 .print-btn {
   display: flex;

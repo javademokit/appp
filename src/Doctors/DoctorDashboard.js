@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, CalendarDays, ClipboardList, LogOut, RefreshCw, Stethoscope, UserRound } from 'lucide-react';
+import { Activity, CalendarDays, ClipboardList, LogOut, RefreshCw, Stethoscope, UserRound, Wallet } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../API/api';
 import './DoctorDashboard.css';
@@ -35,6 +35,10 @@ export default function DoctorDashboard() {
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [patient360, setPatient360] = useState(null);
   const [consultation, setConsultation] = useState(emptyConsultation);
+  const [medicationCatalog, setMedicationCatalog] = useState([]);
+  const [medicationDepartment, setMedicationDepartment] = useState('All departments');
+  const [medicationOrders, setMedicationOrders] = useState([]);
+  const [printablePrescription, setPrintablePrescription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -45,12 +49,18 @@ export default function DoctorDashboard() {
     setLoading(true);
     setError('');
     try {
-      const result = await readResponse(
-        await apiFetch('/doctor-portal/dashboard'),
-        'Could not load today’s doctor dashboard',
-      );
+      const [dashboardResponse, medicationResponse] = await Promise.all([
+        apiFetch('/doctor-portal/dashboard'),
+        apiFetch('/doctor-portal/medications'),
+      ]);
+      const [result, medications] = await Promise.all([
+        readResponse(dashboardResponse, 'Could not load today’s doctor dashboard'),
+        readResponse(medicationResponse, 'Could not load the pharmacy medicine catalog'),
+      ]);
       if (!Array.isArray(result.appointments)) throw new Error('Doctor dashboard returned an invalid appointment list');
+      if (!Array.isArray(medications)) throw new Error('The pharmacy medicine catalog returned an invalid list');
       setDashboard(result);
+      setMedicationCatalog(medications);
     } catch (requestError) {
       setError(requestError.message || 'Could not load doctor dashboard');
     } finally {
@@ -75,6 +85,9 @@ export default function DoctorDashboard() {
     setSelectedAppointment(appointment);
     setPatient360(null);
     setConsultation(emptyConsultation);
+    setMedicationOrders([]);
+    setMedicationDepartment('All departments');
+    setPrintablePrescription(null);
     setSuccess('');
     setError('');
     if (!appointment.patientId) {
@@ -99,18 +112,24 @@ export default function DoctorDashboard() {
     setError('');
     setSuccess('');
     try {
-      await readResponse(await apiFetch('/doctor-portal/consultations', {
+      const result = await readResponse(await apiFetch('/doctor-portal/consultations', {
         method: 'POST',
         body: JSON.stringify({
           ...consultation,
           appointmentId: selectedAppointment.id,
           labOrders: consultation.labOrders.split(/\n|,/).map((order) => order.trim()).filter(Boolean),
+          medicationOrders: medicationOrders.map((order) => ({
+            ...order,
+            quantity: Number(order.quantity),
+          })),
         }),
       }), 'Could not complete the consultation');
+      if (result.medicationPrescription?.id) setPrintablePrescription(result.medicationPrescription);
       setSuccess(`Consultation saved for ${selectedAppointment.patientName}.`);
       setSelectedAppointment(null);
       setPatient360(null);
       setConsultation(emptyConsultation);
+      setMedicationOrders([]);
       await refresh();
     } catch (requestError) {
       setError(requestError.message || 'Could not complete the consultation');
@@ -132,6 +151,25 @@ export default function DoctorDashboard() {
     setConsultation((current) => ({ ...current, [name]: value }));
   };
 
+  const departments = useMemo(() => Array.from(new Set(
+    medicationCatalog.map((item) => item.department || 'General Medicine'),
+  )).sort(), [medicationCatalog]);
+
+  const availableMedications = medicationCatalog.filter((item) =>
+    medicationDepartment === 'All departments' || (item.department || 'General Medicine') === medicationDepartment);
+
+  const addMedicationOrder = () => setMedicationOrders((current) => [...current, {
+    medicationId: '', dose: '', route: 'Oral', frequency: '', duration: '', quantity: '', instructions: '',
+  }]);
+
+  const updateMedicationOrder = (index, field, value) => setMedicationOrders((current) =>
+    current.map((order, orderIndex) => orderIndex === index ? { ...order, [field]: value } : order));
+
+  const printPrescription = () => {
+    if (!printablePrescription) return;
+    window.print();
+  };
+
   return (
     <main className="doctor-workspace">
       <header className="doctor-topbar">
@@ -149,6 +187,7 @@ export default function DoctorDashboard() {
           <a href="#patient-360"><UserRound size={17} /> Patients</a>
           <a href="#consultation"><ClipboardList size={17} /> Consultation</a>
           <a href="#consultation"><Stethoscope size={17} /> Clinical notes</a>
+          <a href="/PayrollPortal"><Wallet size={17} /> My payroll</a>
         </aside>
 
         <section className="doctor-main" id="doctor-dashboard">
@@ -165,6 +204,10 @@ export default function DoctorDashboard() {
 
           {error && <div className="doctor-alert error" role="alert">{error}</div>}
           {success && <div className="doctor-alert success" role="status">{success}</div>}
+          {printablePrescription && <div className="doctor-alert success">
+            Prescription is ready for the patient and has been sent to the pharmacy.
+            <button type="button" className="doctor-open-button doctor-print-button" onClick={printPrescription}>Print prescription</button>
+          </div>}
 
           <div className="doctor-stats">
             <article><span>Assigned appointments</span><strong>{loading ? '—' : appointments.length}</strong><small>All appointments for your doctor profile</small></article>
@@ -247,6 +290,34 @@ export default function DoctorDashboard() {
               </fieldset>
               <label className="doctor-wide">Diagnosis<input required name="diagnosis" value={consultation.diagnosis} onChange={updateConsultation} /></label>
               <label className="doctor-wide">Prescription<textarea rows="2" name="prescription" value={consultation.prescription} onChange={updateConsultation} /></label>
+              <section className="doctor-medication-prescriber doctor-wide" aria-label="Medicine prescription">
+                <div className="doctor-medication-heading">
+                  <div><h3>Medicine prescription</h3><p>Select pharmacy stock by department and enter dose instructions. The prescription also appears in the pharmacy dispensing queue.</p></div>
+                  <button type="button" className="doctor-open-button" onClick={addMedicationOrder}
+                    disabled={!medicationCatalog.length}>Add medicine</button>
+                </div>
+                <div className="doctor-medication-filter">
+                  <label>Medicine department<select value={medicationDepartment} onChange={(event) => setMedicationDepartment(event.target.value)}>
+                    <option>All departments</option>{departments.map((department) => <option key={department}>{department}</option>)}
+                  </select></label>
+                  {!medicationCatalog.length && <p>No in-stock, unexpired medicines are available in the pharmacy catalog.</p>}
+                </div>
+                {medicationOrders.map((order, index) => <div className="doctor-medication-order" key={`medicine-${index}`}>
+                  <label>Medicine<select required value={order.medicationId} onChange={(event) => updateMedicationOrder(index, 'medicationId', event.target.value)}>
+                    <option value="">Select medicine</option>{availableMedications.map((item) => <option key={item.id} value={item.id}>
+                      {item.name}{item.strength ? ` · ${item.strength}` : ''}{item.dosageForm ? ` · ${item.dosageForm}` : ''} · stock {item.quantityAvailable}
+                    </option>)}</select></label>
+                  <label>Dose<input required placeholder="e.g. 1 tablet" value={order.dose} onChange={(event) => updateMedicationOrder(index, 'dose', event.target.value)} /></label>
+                  <label>Route<select value={order.route} onChange={(event) => updateMedicationOrder(index, 'route', event.target.value)}>
+                    {['Oral', 'Topical', 'Intravenous', 'Intramuscular', 'Inhalation', 'Ophthalmic', 'Other'].map((route) => <option key={route}>{route}</option>)}
+                  </select></label>
+                  <label>Frequency<input required placeholder="e.g. Twice daily" value={order.frequency} onChange={(event) => updateMedicationOrder(index, 'frequency', event.target.value)} /></label>
+                  <label>Duration<input required placeholder="e.g. 5 days" value={order.duration} onChange={(event) => updateMedicationOrder(index, 'duration', event.target.value)} /></label>
+                  <label>Total quantity<input required type="number" min="1" value={order.quantity} onChange={(event) => updateMedicationOrder(index, 'quantity', event.target.value)} /></label>
+                  <label className="doctor-medication-instructions">Instructions (optional)<input value={order.instructions} onChange={(event) => updateMedicationOrder(index, 'instructions', event.target.value)} /></label>
+                  <button type="button" className="doctor-remove-medication" onClick={() => setMedicationOrders((current) => current.filter((_, orderIndex) => orderIndex !== index))}>Remove</button>
+                </div>)}
+              </section>
               <label className="doctor-wide">Lab / diagnostic orders<textarea rows="2" name="labOrders" placeholder="One order per line" value={consultation.labOrders} onChange={updateConsultation} /></label>
               <label className="doctor-wide">Doctor notes<textarea rows="3" name="doctorNotes" value={consultation.doctorNotes} onChange={updateConsultation} /></label>
               <label>Follow-up date<input type="date" name="followUpDate" value={consultation.followUpDate} onChange={updateConsultation} /></label>
@@ -257,6 +328,25 @@ export default function DoctorDashboard() {
                   : saving ? 'Saving consultation…' : 'Complete consultation'}
               </button></div>
             </form>
+          </section>}
+          {printablePrescription && <section className="printable-prescription" aria-label="Printable medication prescription">
+            <header><strong>MEDCARE HOSPITAL</strong><span>Medication prescription</span></header>
+            <div className="print-prescription-details">
+              <div><b>Patient</b><span>{printablePrescription.patientName}</span></div>
+              <div><b>Patient ID</b><span>{printablePrescription.patientId}</span></div>
+              <div><b>Doctor</b><span>{printablePrescription.doctorName}</span></div>
+              <div><b>Date</b><span>{printablePrescription.createdAt ? new Date(printablePrescription.createdAt).toLocaleDateString() : new Date().toLocaleDateString()}</span></div>
+              <div><b>Diagnosis</b><span>{printablePrescription.diagnosis}</span></div>
+            </div>
+            <h2>Medicines</h2>
+            <table><thead><tr><th>Medicine</th><th>Dose / route</th><th>Frequency</th><th>Duration</th><th>Qty</th><th>Instructions</th></tr></thead>
+              <tbody>{printablePrescription.medications?.map((item, index) => <tr key={`${item.medicationId}-${index}`}>
+                <td>{item.name} {[item.strength, item.dosageForm].filter(Boolean).join(' · ')}</td>
+                <td>{item.dose} · {item.route}</td><td>{item.frequency}</td><td>{item.duration}</td>
+                <td>{item.quantity}</td><td>{item.instructions || '—'}</td>
+              </tr>)}</tbody>
+            </table>
+            <p className="print-prescription-footer">Please follow the prescribed directions and contact your doctor if you have questions.</p>
           </section>}
         </section>
       </div>

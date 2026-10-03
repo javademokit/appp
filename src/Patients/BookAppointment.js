@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './BookAppointment.css';
 import { apiFetch } from '../API/api';
+import { startAppointmentCheckout } from '../PaymentPage/paymentGatewayCheckout';
 import {
   FaUser,
   FaUserMd,
@@ -49,6 +50,15 @@ const BookAppointment = () => {
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [loadingDirectories, setLoadingDirectories] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [paymentBusy, setPaymentBusy] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('CASH');
+  const [paymentReference, setPaymentReference] = useState('');
+  const [paymentError, setPaymentError] = useState('');
+  const [paymentSuccess, setPaymentSuccess] = useState('');
+  const [paymentGatewayBusy, setPaymentGatewayBusy] = useState('');
+  const [paymentGateways, setPaymentGateways] = useState({});
+  const [paymentGatewayError, setPaymentGatewayError] = useState('');
   const [error, setError] = useState('');
   const [requiresReload, setRequiresReload] = useState(false);
 
@@ -118,6 +128,21 @@ const BookAppointment = () => {
     return () => { active = false; };
   }, [form.doctorId, form.date]);
 
+  useEffect(() => {
+    let active = true;
+    apiFetch('/billing/appointment-invoices/gateways')
+      .then(async (response) => {
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.message || `Could not load payment gateways (${response.status})`);
+        return data;
+      })
+      .then((data) => { if (active) setPaymentGateways(data); })
+      .catch((requestError) => {
+        if (active) setPaymentGatewayError(requestError.message || 'Could not load payment gateway availability.');
+      });
+    return () => { active = false; };
+  }, []);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === 'doctor') {
@@ -183,6 +208,9 @@ const BookAppointment = () => {
       }
       setBookingTime(new Date().toLocaleString());
       setReport(data);
+      setPaymentAmount(data.balanceDue || '');
+      setPaymentError('');
+      setPaymentSuccess('');
       setAppointments((current) => (
         data.id && current.some((appointment) => appointment.id === data.id)
           ? current
@@ -203,6 +231,62 @@ const BookAppointment = () => {
       }
     } finally {
       setBusy(false);
+    }
+  };
+
+  const recordBookingPayment = async (event) => {
+    event.preventDefault();
+    if (!report?.invoiceId) {
+      setPaymentError('The appointment invoice was not returned. Refresh Billing & Payments before collecting.');
+      return;
+    }
+    setPaymentBusy(true);
+    setPaymentError('');
+    setPaymentSuccess('');
+    try {
+      const response = await apiFetch(`/billing/appointment-invoices/${encodeURIComponent(report.invoiceId)}/payments`, {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: Number(paymentAmount),
+          method: paymentMethod,
+          reference: paymentReference.trim() || undefined,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || data.detail || `Could not record payment (${response.status})`);
+      setReport((current) => ({
+        ...current,
+        billingStatus: data.status,
+        balanceDue: String(data.balanceDue),
+      }));
+      setPaymentAmount(String(data.balanceDue));
+      setPaymentReference('');
+      setPaymentSuccess(data.status === 'PAID' ? 'Payment received. Invoice is fully paid.' : 'Payment recorded against the appointment invoice.');
+    } catch (requestError) {
+      setPaymentError(requestError.message || 'Could not record appointment payment.');
+    } finally {
+      setPaymentBusy(false);
+    }
+  };
+
+  const startOnlinePayment = async (provider) => {
+    setPaymentGatewayBusy(provider);
+    setPaymentError('');
+    setPaymentSuccess('');
+    try {
+      await startAppointmentCheckout(report.invoiceId, provider, (invoice) => {
+        setReport((current) => ({
+          ...current,
+          billingStatus: invoice.status,
+          balanceDue: String(invoice.balanceDue),
+        }));
+        setPaymentAmount(String(invoice.balanceDue));
+        setPaymentSuccess('Online payment verified and recorded on the appointment invoice.');
+      });
+    } catch (requestError) {
+      setPaymentError(requestError.message || `Could not start ${provider} checkout.`);
+    } finally {
+      setPaymentGatewayBusy('');
     }
   };
 
@@ -515,6 +599,45 @@ const BookAppointment = () => {
 
       {report && (
         <div className="appointment-report">
+          <section className="appointment-billing-summary" aria-label="Appointment billing">
+            {paymentError && <div className="workflow-alert error" role="alert">{paymentError}</div>}
+            {paymentSuccess && <div className="workflow-alert success" role="status">{paymentSuccess}</div>}
+            <div>
+              <h3>Appointment invoice</h3>
+              <p>Invoice: {report.invoiceNumber || report.invoiceId || 'Created in Billing & Payments'}</p>
+              <p>Status: <strong>{String(report.billingStatus || 'PENDING').replaceAll('_', ' ')}</strong></p>
+              <p>Consultation fee: <strong>₹{report.fee}</strong>
+                {report.balanceDue !== undefined && <> · Balance due: <strong>₹{report.balanceDue}</strong></>}
+              </p>
+            </div>
+            {Number(report.balanceDue) > 0 && <form onSubmit={recordBookingPayment} className="appointment-payment-form">
+              <h4>Record payment received</h4>
+              <p>Record cash or a card/UPI/bank payment only after it is received or approved at the payment terminal.</p>
+              <label>Amount received<input required type="number" min="0.01" max={report.balanceDue} step="0.01"
+                value={paymentAmount} onChange={(event) => setPaymentAmount(event.target.value)} /></label>
+              <label>Payment method<select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}>
+                <option value="CASH">Cash</option><option value="UPI">UPI</option>
+                <option value="CARD">Card</option><option value="BANK_TRANSFER">Bank transfer</option>
+              </select></label>
+              <label>Receipt / transaction reference (optional)<input value={paymentReference}
+                onChange={(event) => setPaymentReference(event.target.value)} /></label>
+              <button type="submit" className="submit-btn" disabled={paymentBusy || !report.invoiceId}>
+                {paymentBusy ? 'Recording payment…' : 'Record payment'}
+              </button>
+            </form>}
+            {Number(report.balanceDue) > 0 && <div className="appointment-online-payments">
+              <h4>Pay online</h4>
+              {paymentGatewayError && <p role="alert">{paymentGatewayError}</p>}
+              {['RAZORPAY', 'PAYU', 'STRIPE'].some((provider) => paymentGateways[provider]) ? (
+                ['RAZORPAY', 'PAYU', 'STRIPE'].filter((provider) => paymentGateways[provider]).map((provider) => (
+                  <button key={provider} type="button" className="submit-btn" disabled={Boolean(paymentGatewayBusy)}
+                    onClick={() => startOnlinePayment(provider)}>
+                    {paymentGatewayBusy === provider ? `Opening ${provider}…` : `Pay with ${provider}`}
+                  </button>
+                ))
+              ) : <p>No online payment gateway is configured. Staff can record a received payment above.</p>}
+            </div>}
+          </section>
           <div id="appointment-report">
             <h2>🏥 Wellness Hospital</h2>
             <p>123 Health St, Wellness City, IN</p>
@@ -531,6 +654,8 @@ const BookAppointment = () => {
                   <th>Time</th>
                   <th>Reason</th>
                   <th>Fee</th>
+                  <th>Payment status</th>
+                  <th>Balance due</th>
                 </tr>
               </thead>
               <tbody>
@@ -543,6 +668,8 @@ const BookAppointment = () => {
                   <td>{report.time}</td>
                   <td>{report.reason}</td>
                   <td>₹{report.fee}</td>
+                  <td>{String(report.billingStatus || 'PENDING').replaceAll('_', ' ')}</td>
+                  <td>₹{report.balanceDue ?? report.fee}</td>
                 </tr>
               </tbody>
             </table>

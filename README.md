@@ -145,7 +145,8 @@ The same operation is available through the API:
    ```
 
    Supported staff roles are `DOCTOR`, `NURSE`, `HEAD_NURSE`, `RECEPTIONIST`,
-   `CRM_EXECUTIVE`, `BILLING_EXECUTIVE`, `PHARMACIST`, and `LAB_TECHNICIAN`.
+   `CRM_EXECUTIVE`, `BILLING_EXECUTIVE`, `FINANCE`, `HR`, `PHARMACIST`, and
+   `LAB_TECHNICIAN`.
    Hospital and clinic administrators can assign patient and staff roles.
    Only `SUPER_ADMIN` can assign `HOSPITAL_ADMIN`, `CLINIC_ADMIN`, or
    `SUPER_ADMIN`; reserve `SUPER_ADMIN` for system administration.
@@ -242,15 +243,28 @@ Examples: BRCA gene test for breast cancer risk, prenatal genetic screening.
 ## Nurse, ward, and patient assignment
 
 Administrators can grant `NURSE` or `HEAD_NURSE` in **Admin Dashboard → User
-access & roles**. In the hospital workspace, open **Nursing & Ward Management**
-to create nurse profiles, wards, beds, and date-ranged shift rosters. Configure
-each ward's maximum patients per nurse and minimum nurses per shift before
-admitting patients.
+access & roles**. In the hospital workspace, open **Nurse Management** to
+configure wards, rooms, beds, nurse profiles, and date-ranged shift rosters.
+Rooms support building/block, floor, AC type, category, capacity, gender
+restriction, amenities, and status. Creating a room generates its beds;
+numeric room ranges can be created in bulk. Configure each ward's maximum
+patients per nurse and minimum nurses per shift before admitting patients.
+
+The **Wards & beds** tab has a live bed board with status, ward, floor, and AC
+filters, occupancy counts, reservation expiry, blocking/maintenance status, bed
+change history, and a cleaning-completion action. The board refreshes every 30
+seconds. Bed reservations expire when the board or related bed APIs are next
+queried. Beds released by transfer or discharge enter **Cleaning** and must be
+marked clean before they become vacant.
 
 From **Patients → Admit existing patient**, choose a configured ward and vacant
-bed. The backend preserves the existing Patient ID, occupies the bed, and
-auto-assigns an on-duty nurse with capacity. If none is eligible, the admitted
-patient remains visible in the unassigned list for manual assignment. Managers
+bed, optionally filtering by room category and AC preference. The backend
+enforces room gender restrictions and atomically claims a vacant bed, preserves
+the existing Patient ID, and auto-assigns an on-duty nurse with capacity. When
+no matching bed is available, add the patient to the ward waiting list; the bed
+board highlights waiting requests when a matching bed becomes available. If no
+nurse is eligible, the admitted patient remains visible in the unassigned list
+for manual assignment. Managers
 can assign primary and backup nurses per patient or assign a primary nurse to a
 ward/bed range; primary assignments enforce the nurse-to-patient limit.
 
@@ -261,6 +275,11 @@ nurse after handover acknowledgement; Head Nurses or administrators approve
 shift swaps. Managers can view staffing, unassigned patients, assignment
 history, overdue care tasks, export an Excel-compatible CSV, and print/save the
 report as PDF.
+
+Room tariffs, automatic room-charge posting, tariff split billing, CSV room
+imports, and real-time push updates are not yet connected; the bed board uses
+30-second polling instead. No room fees are estimated or added to a patient's
+bill by this module.
 
 6. Microbiological Tests
 Culture and Sensitivity: Identify bacteria/fungi and their antibiotic sensitivity.
@@ -306,3 +325,31 @@ Shifts roster on the scheduled date. The shift stores the attendance timestamps
 and changes from `SCHEDULED` to `ON_DUTY` to `COMPLETED`; duplicate or out-of-order
 attendance actions are rejected by the backend. Attendance actions are
 operator-recorded and are not biometric or doctor-self-service verification.
+
+## Payroll and staff identifiers
+
+The separate **Payroll** tab is available from the admin dashboard and hospital
+workspace. Finance and HR roles can be assigned in **User access & roles**.
+Payroll supports separate doctor/nurse monthly drafts, configurable earning and
+deduction components, versioned salary structures, effective-dated salary
+assignments, configurable statutory rates/ceilings, finalized nurse attendance
+summaries, approved overtime, reviewed adjustments, advances, exception review,
+cycle approval/locking/payment status, employee-only payslips, and CSV export.
+Doctor, nurse, and pharmacist staff identifiers use `DT-`, `NS-`, and `PT-`
+prefixes respectively; existing database primary keys and clinical links are
+preserved.
+
+Payroll monetary values use decimal arithmetic and are rounded per line.
+Statutory rates are not seeded with legal defaults; Finance must configure and
+verify them before a payroll run. Finance can maintain effective-dated doctor
+pay profiles and consultation/procedure rate cards, capture manually verified
+paid/finalized service earnings and completed on-call duties, and resolve
+doctor-raised earning disputes. Refunds and cancellations require a documented
+manual reversal; this CRM still has no authoritative consultation/procedure
+billing ledger to integrate or reconcile automatically. Nurse attendance
+summaries support self-service review and ward-day based allowances, but are
+not automatically reconciled with a biometric or leave source. Formula salary
+components use a bounded arithmetic expression (numbers, `BASIC`, `UNITS`,
+parentheses, and `+ - * /` only). Payslip PDFs are generated on demand; bank
+payment, statutory filing, encrypted PAN/banking details, signed payslip
+storage, bulk PDF download, and payroll reopening are not implemented.

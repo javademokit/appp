@@ -27,11 +27,25 @@ function mockDirectories(patients = [], appointments = []) {
       return { ok: true, json: async () => [{ id: 'doctor-1', doctorName: 'Dr. Example', doctorfee: '500', doctorAvailabletime: ['10:00 AM'] }] };
     }
     if (path === '/patients') return { ok: true, json: async () => patients };
+    if (path === '/billing/appointment-invoices/gateways') {
+      return { ok: true, json: async () => ({ RAZORPAY: false, PAYU: false, STRIPE: false }) };
+    }
     if (path === '/appointments1' && !options.method) return { ok: true, json: async () => appointments };
     if (path.startsWith('/appointments1/availability?')) return { ok: true, json: async () => ['10:00 AM'] };
     if (path === '/appointments1' && options.method === 'POST') {
       const appointment = JSON.parse(options.body);
-      return { ok: true, json: async () => ({ ...appointment, id: 'appointment-1', patientId: appointment.patientId || 'PT-GENERATED' }) };
+      return { ok: true, json: async () => ({
+        ...appointment,
+        id: 'appointment-1',
+        patientId: appointment.patientId || 'PT-GENERATED',
+        invoiceId: 'invoice-1',
+        invoiceNumber: 'INV-123',
+        billingStatus: appointment.fee === '0' ? 'NO_CHARGE' : 'PENDING',
+        balanceDue: appointment.fee === '0' ? '0.00' : appointment.fee,
+      }) };
+    }
+    if (path === '/billing/appointment-invoices/invoice-1/payments' && options.method === 'POST') {
+      return { ok: true, json: async () => ({ status: 'PAID', balanceDue: 0 }) };
     }
     throw new Error(`Unexpected API request: ${path}`);
   });
@@ -66,6 +80,30 @@ test('books a new patient and displays the Patient ID returned by the API', asyn
   expect(JSON.parse(request.body)).toMatchObject({ patientName: 'New Patient', patientAge: '31' });
   expect(JSON.parse(request.body)).toMatchObject({ doctorId: 'doctor-1', doctor: 'Dr. Example' });
   expect(JSON.parse(request.body)).not.toHaveProperty('patientId');
+  expect(await screen.findByText(/INV-123/)).toBeInTheDocument();
+});
+
+test('records payment against the invoice created for a newly booked appointment', async () => {
+  mockDirectories();
+  render(<BookAppointment />);
+  await screen.findByRole('option', { name: 'Dr. Example' });
+  fireEvent.change(screen.getByPlaceholderText('Patient Full Name'), { target: { value: 'New Patient' } });
+  fireEvent.change(screen.getByPlaceholderText('Patient Age'), { target: { value: '31' } });
+  fireEvent.change(screen.getByPlaceholderText('Patient Mobile No'), { target: { value: '5552000' } });
+  fireEvent.change(screen.getByDisplayValue('Select Gender'), { target: { value: 'Female' } });
+  await fillAppointmentDetails();
+  fireEvent.click(screen.getByRole('button', { name: 'Book Appointment' }));
+  await screen.findByText(/INV-123/);
+  fireEvent.click(screen.getByRole('button', { name: 'Record payment' }));
+
+  await waitFor(() => expect(apiFetch).toHaveBeenCalledWith(
+    '/billing/appointment-invoices/invoice-1/payments',
+    expect.objectContaining({
+      method: 'POST',
+      body: '{"amount":500,"method":"CASH"}',
+    }),
+  ));
+  expect(await screen.findByText('Payment received. Invoice is fully paid.')).toBeInTheDocument();
 });
 
 test('books a returning patient using the existing canonical ID without re-entering demographics', async () => {

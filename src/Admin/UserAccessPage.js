@@ -12,6 +12,8 @@ const ASSIGNABLE_ROLES = [
   ROLES.RECEPTIONIST,
   ROLES.CRM_EXECUTIVE,
   ROLES.BILLING_EXECUTIVE,
+  ROLES.FINANCE,
+  ROLES.HR,
   ROLES.PHARMACIST,
   ROLES.LAB_TECHNICIAN,
   ...ADMIN_ROLES,
@@ -45,6 +47,7 @@ async function readResponse(response) {
 export default function UserAccessPage() {
   const [users, setUsers] = useState([]);
   const [doctors, setDoctors] = useState([]);
+  const [nurses, setNurses] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [draftRoles, setDraftRoles] = useState({});
   const [loading, setLoading] = useState(true);
@@ -79,16 +82,18 @@ export default function UserAccessPage() {
     setLoading(true);
     setError('');
     try {
-      const [usersResult, meResult, doctorsResult] = await Promise.all([
+      const [usersResult, meResult, doctorsResult, nursesResult] = await Promise.all([
         apiFetch('/users').then(readResponse),
         apiFetch('/users/me').then(readResponse),
         apiFetch('/doctors').then(readResponse),
+        apiFetch('/nursing/nurses').then(readResponse),
       ]);
-      if (!Array.isArray(usersResult) || !Array.isArray(doctorsResult)) {
+      if (!Array.isArray(usersResult) || !Array.isArray(doctorsResult) || !Array.isArray(nursesResult)) {
         throw new Error('Account or doctor list response is invalid');
       }
       setUsers(usersResult);
       setDoctors(doctorsResult);
+      setNurses(nursesResult);
       setCurrentUser(meResult);
       setDraftRoles(Object.fromEntries(
         usersResult.map((user) => [user.userId, normalizeRoles(user.roles)]),
@@ -324,12 +329,17 @@ export default function UserAccessPage() {
         {loading ? <div className="workflow-empty">Loading accounts…</div>
           : users.length === 0 ? <div className="workflow-empty">No accounts found.</div>
             : <div className="workflow-table-wrap"><table className="workflow-table">
-              <thead><tr><th>Account</th><th>Current roles</th><th>Assign roles</th><th>Doctor profile</th><th>Access</th><th /></tr></thead>
+              <thead><tr><th>Account</th><th>Staff ID</th><th>Current roles</th><th>Assign roles</th><th>Doctor profile</th><th>Access</th><th /></tr></thead>
               <tbody>{users.map((user) => {
                 const editable = mayEdit(user);
                 const selected = draftRoles[user.userId] || [];
                 return <tr key={user.id || user.userId}>
                   <td><strong>{user.userId}</strong><small>{user.emailId}</small></td>
+                  <td>{normalizeRoles(user.roles).includes(ROLES.DOCTOR)
+                    ? doctors.find((doctor) => doctor.id === user.doctorId)?.employeeId || '—'
+                    : normalizeRoles(user.roles).some((role) => [ROLES.NURSE, ROLES.HEAD_NURSE].includes(role))
+                      ? nurses.find((nurse) => nurse.id === user.id)?.profile?.employeeId || '—'
+                      : user.employeeCode || '—'}</td>
                   <td>{normalizeRoles(user.roles).join(', ') || 'PATIENT'}</td>
                   <td><div className="user-role-options">{visibleRoles.map((role) => (
                     <label key={role}>

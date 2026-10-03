@@ -207,6 +207,7 @@ class Doctors extends Component {
                   <thead>
                     <tr>
                       <th>Doctor</th>
+                      <th>Staff ID</th>
                       <th>Department</th>
                       <th>Location</th>
                       <th>Available times</th>
@@ -226,6 +227,7 @@ class Doctors extends Component {
                               <span><strong>{doctor.doctorName || 'Doctor'}</strong><small>{doctor.doctorMobileNo || 'Contact not provided'}</small></span>
                             </div>
                           </td>
+                          <td>{doctor.employeeId || 'Assigning ID…'}</td>
                           <td>{doctor.doctorSpecialistName || 'General medicine'}</td>
                           <td>{doctor.doctorDestination || 'Not assigned'}</td>
                           <td><div className="doctor-slot-list">{slots.length ? slots.map((slot, slotIndex) => <span key={`${slot}-${slotIndex}`} className="doctor-slot-chip">{slot}</span>) : <span className="doctor-no-slots">No hours set</span>}</div></td>
@@ -246,7 +248,7 @@ class Doctors extends Component {
                     <article className="doctor-mobile-card" key={doctor.id || `${doctor.doctorName}-${index}`}>
                       <div className="doctor-mobile-card-header">
                         <span className="doctor-avatar"><Stethoscope size={17} /></span>
-                        <div><strong>{doctor.doctorName || 'Doctor'}</strong><span>{doctor.doctorSpecialistName || 'General medicine'}</span></div>
+                        <div><strong>{doctor.doctorName || 'Doctor'}</strong><span>{doctor.employeeId || 'Assigning ID…'} · {doctor.doctorSpecialistName || 'General medicine'}</span></div>
                         <strong className="doctor-mobile-fee">{doctor.doctorfee ? `₹${doctor.doctorfee}` : '—'}</strong>
                       </div>
                       <div className="doctor-mobile-meta"><span><CalendarDays size={14} />{doctor.doctorDestination || 'Location not assigned'}</span><span><Clock3 size={14} />{slots.length} slots</span></div>

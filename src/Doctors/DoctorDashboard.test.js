@@ -34,6 +34,19 @@ test('doctor reviews a linked patient and completes a consultation using persist
         }),
       };
     }
+    if (path === '/doctor-portal/medications') {
+      return {
+        ok: true,
+        json: async () => [{
+          id: 'med-1',
+          name: 'Amoxicillin',
+          department: 'Pediatrics',
+          strength: '250 mg',
+          dosageForm: 'Capsule',
+          quantityAvailable: 30,
+        }],
+      };
+    }
     if (path === '/doctor-portal/patients/PT-123') {
       return {
         ok: true,
@@ -44,7 +57,30 @@ test('doctor reviews a linked patient and completes a consultation using persist
       };
     }
     if (path === '/doctor-portal/consultations' && options.method === 'POST') {
-      return { ok: true, json: async () => ({ id: 'consultation-1' }) };
+      return {
+        ok: true,
+        json: async () => ({
+          consultation: { id: 'consultation-1' },
+          medicationPrescription: {
+            id: 'rx-1',
+            patientName: 'Aadi Patient',
+            patientId: 'PT-123',
+            doctorName: 'Dr. Example',
+            diagnosis: 'Tension headache',
+            medications: [{
+              medicationId: 'med-1',
+              name: 'Amoxicillin',
+              strength: '250 mg',
+              dosageForm: 'Capsule',
+              dose: '1 capsule',
+              route: 'Oral',
+              frequency: 'Twice daily',
+              duration: '5 days',
+              quantity: 10,
+            }],
+          },
+        }),
+      };
     }
     if (path === '/users/logout') return { ok: true, json: async () => ({}) };
     throw new Error(`Unexpected API request: ${path}`);
@@ -61,6 +97,12 @@ test('doctor reviews a linked patient and completes a consultation using persist
   fireEvent.change(screen.getByLabelText('Blood pressure'), { target: { value: '120/80 mmHg' } });
   fireEvent.change(screen.getByLabelText('Diagnosis'), { target: { value: 'Tension headache' } });
   fireEvent.change(screen.getByLabelText('Prescription'), { target: { value: 'Rest and hydration' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Add medicine' }));
+  fireEvent.change(screen.getByLabelText('Medicine'), { target: { value: 'med-1' } });
+  fireEvent.change(screen.getByLabelText('Dose'), { target: { value: '1 capsule' } });
+  fireEvent.change(screen.getByLabelText('Frequency'), { target: { value: 'Twice daily' } });
+  fireEvent.change(screen.getByLabelText('Duration'), { target: { value: '5 days' } });
+  fireEvent.change(screen.getByLabelText('Total quantity'), { target: { value: '10' } });
   fireEvent.change(screen.getByLabelText('Lab / diagnostic orders'), { target: { value: 'CBC\nCRP' } });
   fireEvent.change(screen.getByLabelText('Doctor notes'), { target: { value: 'Review if symptoms persist' } });
   fireEvent.click(screen.getByRole('button', { name: 'Complete consultation' }));
@@ -81,8 +123,18 @@ test('doctor reviews a linked patient and completes a consultation using persist
     doctorNotes: 'Review if symptoms persist',
     followUpDate: '',
     appointmentId: 'appointment-1',
+    medicationOrders: [{
+      medicationId: 'med-1',
+      dose: '1 capsule',
+      route: 'Oral',
+      frequency: 'Twice daily',
+      duration: '5 days',
+      quantity: 10,
+      instructions: '',
+    }],
   });
   expect(await screen.findByRole('status')).toHaveTextContent('Consultation saved for Aadi Patient');
+  expect(await screen.findByRole('button', { name: 'Print prescription' })).toBeInTheDocument();
 });
 
 test('explains when a restarted backend has expired the doctor session', async () => {

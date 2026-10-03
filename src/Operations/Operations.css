@@ -40,6 +40,32 @@
   text-transform: uppercase;
 }
 
+.printable-prescription { display: none; }
+
+@media print {
+  body * { visibility: hidden !important; }
+  .printable-prescription,
+  .printable-prescription * { visibility: visible !important; }
+  .printable-prescription {
+    position: absolute !important;
+    inset: 0 auto auto 0 !important;
+    display: block !important;
+    width: 100% !important;
+    border: 0 !important;
+    padding: 24px !important;
+    color: #111 !important;
+    background: #fff !important;
+    font: 12pt Arial, sans-serif !important;
+  }
+  .printable-prescription header { display: flex; justify-content: space-between; border-bottom: 2px solid #222; padding-bottom: 12px; font-size: 16pt; }
+  .print-prescription-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 20px 0; }
+  .print-prescription-details div { display: flex; gap: 8px; }
+  .printable-prescription table { width: 100%; border-collapse: collapse; }
+  .printable-prescription th,
+  .printable-prescription td { border: 1px solid #777; padding: 7px; text-align: left; vertical-align: top; }
+  .print-prescription-footer { margin-top: 28px; border-top: 1px solid #777; padding-top: 10px; }
+}
+
 .workflow-button,
 .workflow-icon-button {
   display: inline-flex;
