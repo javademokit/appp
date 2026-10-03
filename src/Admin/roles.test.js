@@ -3,6 +3,7 @@ import { getPortalPathForRoles, HOSPITAL_WORKSPACE_ROLES, normalizeRoles, ROLES,
 test.each([
   [['DOCTOR'], '/DoctorDashboard'],
   [['nurse'], '/HospitalDashboard'],
+  [['head_nurse'], '/HospitalDashboard'],
   [['RECEPTIONIST'], '/HospitalDashboard'],
   [['ROLE_lab_technician'], '/HospitalDashboard'],
   [['BILLING_EXECUTIVE'], '/HospitalDashboard'],
@@ -15,6 +16,7 @@ test.each([
 
 test('staff dashboard accepts every configured staff role', () => {
   expect(STAFF_PORTAL_ROLES).toContain(ROLES.PHARMACIST);
+  expect(STAFF_PORTAL_ROLES).toContain(ROLES.HEAD_NURSE);
   expect(STAFF_PORTAL_ROLES).toContain(ROLES.CRM_EXECUTIVE);
   expect(HOSPITAL_WORKSPACE_ROLES).not.toContain(ROLES.DOCTOR);
   expect(HOSPITAL_WORKSPACE_ROLES).toContain(ROLES.RECEPTIONIST);

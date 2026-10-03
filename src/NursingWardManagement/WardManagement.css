@@ -1,0 +1,12 @@
+.nursing-inline-form {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 170px;
+}
+
+.nursing-bed-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  min-width: 150px;
+}

@@ -1,0 +1,23 @@
+.patient-nurse-assignment {
+  display: grid;
+  min-width: 145px;
+  gap: 0.4rem;
+}
+
+.patient-nurse-assignment-actions {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.patient-nurse-assignment select {
+  box-sizing: border-box;
+  min-height: 34px;
+  max-width: 190px;
+  border: 1px solid var(--clinic-line);
+  border-radius: 5px;
+  padding: 0.4rem 0.55rem;
+  background: #fff;
+  color: var(--clinic-ink);
+  font: inherit;
+  font-size: 0.74rem;
+}

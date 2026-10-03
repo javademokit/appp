@@ -12,7 +12,7 @@ import {
   FaTachometerAlt,
   FaCreditCard
 } from "react-icons/fa";
-import { CalendarClock, FileBadge, FlaskConical, Pill, Siren } from "lucide-react";
+import { Building2, CalendarClock, FileBadge, FlaskConical, Pill, Siren } from "lucide-react";
 
 import Header from "../company/Header";
 import Footer from "../company/Footer";
@@ -32,19 +32,34 @@ import LabsDiagnosticsPage from "../Operations/LabsDiagnosticsPage";
 import EmergencyTriagePage from "../Operations/EmergencyTriagePage";
 import StaffShiftsPage from "../Operations/StaffShiftsPage";
 import DischargePage from "../Operations/DischargePage";
+import WardManagement from "../NursingWardManagement/WardManagement";
 
 const HospitalDashboard = () => {
   const [activePage, setActivePage] = useState("dashboard");
   const [username, setUsername] = useState("");
+  const [roles, setRoles] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     apiFetch("/users/me")
       .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((user) => setUsername(user.username))
+      .then((user) => {
+        const assignedRoles = (user.roles || []).map((role) => String(role).replace(/^ROLE_/, "").toUpperCase());
+        setUsername(user.username);
+        setRoles(assignedRoles);
+        if (assignedRoles.some((role) => ["NURSE", "HEAD_NURSE"].includes(role))
+          && !assignedRoles.some((role) => ["SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN"].includes(role))) {
+          setActivePage("ward-management");
+        }
+      })
       .catch(() => navigate("/UserLogin", { replace: true }));
   }, [navigate]);
 
+  const nursingOnly = roles.some((role) => ["NURSE", "HEAD_NURSE"].includes(role))
+    && !roles.some((role) => ["SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN"].includes(role));
+  const nursingAccess = roles.some((role) => [
+    "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "CRM_EXECUTIVE", "NURSE", "HEAD_NURSE",
+  ].includes(role));
   const handleLogout = async () => {
     try {
       await apiFetch("/users/logout", { method: "POST" });
@@ -80,6 +95,8 @@ const HospitalDashboard = () => {
         return <EmergencyTriagePage />;
       case "staff-shifts":
         return <StaffShiftsPage />;
+      case "ward-management":
+        return <WardManagement />;
       case "DoctorTimeSlots":
         return <Doctors />;
       case "settings":
@@ -97,6 +114,7 @@ const HospitalDashboard = () => {
         {/* Sidebar Navigation */}
         <div className="sidebar">
           <ul>
+            {!nursingOnly && <>
             <li className={activePage === "dashboard" ? "active" : ""} aria-current={activePage === "dashboard" ? "page" : undefined} onClick={() => setActivePage("dashboard")}>
               <FaTachometerAlt /> Dashboard
             </li>
@@ -127,6 +145,11 @@ const HospitalDashboard = () => {
             <li className={activePage === "staff-shifts" ? "active" : ""} aria-current={activePage === "staff-shifts" ? "page" : undefined} onClick={() => setActivePage("staff-shifts")}>
               <CalendarClock size={16} /> Staff &amp; Shifts
             </li>
+            </>}
+            {nursingAccess && <li className={activePage === "ward-management" ? "active" : ""} aria-current={activePage === "ward-management" ? "page" : undefined} onClick={() => setActivePage("ward-management")}>
+              <Building2 size={16} /> Nursing &amp; Ward Management
+            </li>}
+            {!nursingOnly && <>
             <li className={activePage === "pharmacy" ? "active" : ""} aria-current={activePage === "pharmacy" ? "page" : undefined} onClick={() => setActivePage("pharmacy")}>
               <Pill size={16} /> Pharmacy
             </li>
@@ -139,6 +162,7 @@ const HospitalDashboard = () => {
             <li className={activePage === "settings" ? "active" : ""} aria-current={activePage === "settings" ? "page" : undefined} onClick={() => setActivePage("settings")}>
               <FaCogs /> Settings
             </li>
+            </>}
           </ul>
         </div>
 

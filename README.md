@@ -144,7 +144,7 @@ The same operation is available through the API:
    { "roles": ["DOCTOR"] }
    ```
 
-   Supported staff roles are `DOCTOR`, `NURSE`, `RECEPTIONIST`,
+   Supported staff roles are `DOCTOR`, `NURSE`, `HEAD_NURSE`, `RECEPTIONIST`,
    `CRM_EXECUTIVE`, `BILLING_EXECUTIVE`, `PHARMACIST`, and `LAB_TECHNICIAN`.
    Hospital and clinic administrators can assign patient and staff roles.
    Only `SUPER_ADMIN` can assign `HOSPITAL_ADMIN`, `CLINIC_ADMIN`, or
@@ -238,6 +238,29 @@ Histopathology: Microscopic examination of biopsied tissue.
 Detect genetic disorders, carrier status, or predisposition to diseases.
 
 Examples: BRCA gene test for breast cancer risk, prenatal genetic screening.
+
+## Nurse, ward, and patient assignment
+
+Administrators can grant `NURSE` or `HEAD_NURSE` in **Admin Dashboard → User
+access & roles**. In the hospital workspace, open **Nursing & Ward Management**
+to create nurse profiles, wards, beds, and date-ranged shift rosters. Configure
+each ward's maximum patients per nurse and minimum nurses per shift before
+admitting patients.
+
+From **Patients → Admit existing patient**, choose a configured ward and vacant
+bed. The backend preserves the existing Patient ID, occupies the bed, and
+auto-assigns an on-duty nurse with capacity. If none is eligible, the admitted
+patient remains visible in the unassigned list for manual assignment. Managers
+can assign primary and backup nurses per patient or assign a primary nurse to a
+ward/bed range; primary assignments enforce the nurse-to-patient limit.
+
+Nurse accounts open directly to their nursing dashboard and only see patients
+assigned to them. Nurses can record vitals, notes, medicines, and tasks, send
+handover notes, and request shift swaps. Patients transfer to the incoming
+nurse after handover acknowledgement; Head Nurses or administrators approve
+shift swaps. Managers can view staffing, unassigned patients, assignment
+history, overdue care tasks, export an Excel-compatible CSV, and print/save the
+report as PDF.
 
 6. Microbiological Tests
 Culture and Sensitivity: Identify bacteria/fungi and their antibiotic sensitivity.

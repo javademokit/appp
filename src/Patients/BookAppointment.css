@@ -388,6 +388,66 @@
   color: #536761;
 }
 
+.book-container .appointment-mobile-search {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.book-container .appointment-mobile-search > label {
+  color: var(--clinic-ink);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.book-container .appointment-mobile-search-controls {
+  display: flex;
+  gap: 0.55rem;
+}
+
+.book-container .appointment-mobile-search-controls input {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 42px;
+  flex: 1;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #d5dfdb;
+  border-radius: 5px;
+}
+
+.book-container .appointment-mobile-search-controls .submit-btn {
+  flex: 0 0 auto;
+  padding: 0 1rem;
+}
+
+.book-container .appointment-mobile-search-results {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.book-container .appointment-mobile-search-results button {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--clinic-line);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--clinic-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.book-container .appointment-patient-summary .appointment-fee-note,
+.book-container .appointment-fee-note {
+  color: #536761;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .book-container .appointment-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .book-container .appointment-patient-select,
 .book-container .appointment-patient-summary {
   grid-column: 1 / -1;

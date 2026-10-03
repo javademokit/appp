@@ -12,9 +12,15 @@ import {
 } from 'react-icons/fa';
 
 const formatLocalDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+const normalizeMobile = (mobile) => String(mobile || '').replace(/\D/g, '');
+const parseAppointmentDate = (date) => {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date || ''));
+  return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
+};
 
 const BookAppointment = () => {
   const newPatientOption = 'NEW';
+  const followUpWindowDays = 15;
   const minimumDate = formatLocalDate(new Date());
   const [form, setForm] = useState({
     patientName: '',
@@ -35,8 +41,12 @@ const BookAppointment = () => {
   const [bookingTime, setBookingTime] = useState('');
   const [doctors, setDoctors] = useState([]);
   const [patients, setPatients] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [selectedPatientId, setSelectedPatientId] = useState(newPatientOption);
+  const [mobileSearch, setMobileSearch] = useState('');
+  const [mobileSearchResults, setMobileSearchResults] = useState(null);
   const [availableTimes, setAvailableTimes] = useState([]);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [loadingDirectories, setLoadingDirectories] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -45,16 +55,25 @@ const BookAppointment = () => {
   useEffect(() => {
     const fetchDirectories = async () => {
       try {
-        const [doctorResponse, patientResponse] = await Promise.all([
+        const [doctorResponse, patientResponse, appointmentResponse] = await Promise.all([
           apiFetch('/doctors'),
           apiFetch('/patients'),
+          apiFetch('/appointments1'),
         ]);
-        if (!doctorResponse.ok || !patientResponse.ok) {
-          throw new Error('Could not load patient and doctor records. Please refresh and try again.');
+        if (!doctorResponse.ok || !patientResponse.ok || !appointmentResponse.ok) {
+          throw new Error('Could not load patient, doctor, and appointment records. Please refresh and try again.');
         }
-        const [doctorData, patientData] = await Promise.all([doctorResponse.json(), patientResponse.json()]);
+        const [doctorData, patientData, appointmentData] = await Promise.all([
+          doctorResponse.json(),
+          patientResponse.json(),
+          appointmentResponse.json(),
+        ]);
+        if (!Array.isArray(doctorData) || !Array.isArray(patientData) || !Array.isArray(appointmentData)) {
+          throw new Error('Patient, doctor, or appointment service returned invalid records.');
+        }
         setDoctors(doctorData.filter((doctor) => doctor.doctorName));
         setPatients(patientData.filter((patient) => patient.patientId));
+        setAppointments(appointmentData);
       } catch (error) {
         setError(error.message || 'Could not load patient and doctor records.');
       } finally {
@@ -65,13 +84,46 @@ const BookAppointment = () => {
     fetchDirectories();
   }, []);
 
+  useEffect(() => {
+    if (!form.doctorId || !form.date) {
+      setAvailableTimes([]);
+      setLoadingAvailability(false);
+      return undefined;
+    }
+
+    let active = true;
+    const loadAvailability = async () => {
+      setLoadingAvailability(true);
+      setAvailableTimes([]);
+      setForm((current) => ({ ...current, time: '' }));
+      setError('');
+      try {
+        const query = new URLSearchParams({ doctorId: form.doctorId, date: form.date });
+        const response = await apiFetch(`/appointments1/availability?${query}`);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(data.message || data.detail
+            || `Could not check appointment availability (${response.status}).`);
+        }
+        if (!Array.isArray(data)) throw new Error('Appointment availability returned an invalid response.');
+        if (active) setAvailableTimes(data);
+      } catch (requestError) {
+        if (active) setError(requestError.message || 'Could not check appointment availability.');
+      } finally {
+        if (active) setLoadingAvailability(false);
+      }
+    };
+
+    loadAvailability();
+    return () => { active = false; };
+  }, [form.doctorId, form.date]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === 'doctor') {
       const selectedDoctor = doctors.find((d) => d.id === value);
       if (selectedDoctor) {
         setForm({ ...form, doctorId: value, doctor: selectedDoctor.doctorName, fee: selectedDoctor.doctorfee, time: '' });
-        setAvailableTimes(selectedDoctor.doctorAvailabletime || []);
       } else {
         setForm({ ...form, doctorId: '', doctor: '', fee: '', time: '' });
         setAvailableTimes([]);
@@ -81,25 +133,64 @@ const BookAppointment = () => {
     }
   };
 
+  const searchPatientsByMobile = () => {
+    const searchedMobile = normalizeMobile(mobileSearch);
+    if (!searchedMobile) {
+      setMobileSearchResults([]);
+      return;
+    }
+
+    const matches = patients.filter((patient) =>
+      normalizeMobile(patient.patientmobileNo || patient.mobileNo) === searchedMobile
+    );
+    setSelectedPatientId(matches.length === 1 ? matches[0].patientId : newPatientOption);
+    setMobileSearchResults(matches.length === 1 ? null : matches);
+  };
+
+  const selectPatient = (patient) => {
+    setSelectedPatientId(patient.patientId);
+    setMobileSearchResults(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setBusy(true);
     try {
       const patientId = selectedPatientId === newPatientOption ? '' : selectedPatientId;
+      const appointmentFee = selectedPatient && feeDetails.isFollowUp ? 0 : form.fee;
       const response = await apiFetch('/appointments1', {
         method: 'POST',
-        body: JSON.stringify({ ...form, patientId: patientId || undefined }),
+        body: JSON.stringify({ ...form, fee: appointmentFee, patientId: patientId || undefined }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.message || 'Appointment could not be booked.');
+      if (!response.ok) {
+        const serverMessage = data.message || data.detail
+          || (data.title && data.title !== 'Conflict' ? data.title : '')
+          || (data.error && data.error !== 'Conflict' ? data.error : '');
+        const statusMessage = response.status === 409
+          ? 'The appointment conflicts with an existing booking or patient record. Please choose another time or verify the patient details.'
+          : response.status === 401
+            ? 'Your session has expired. Sign in again, then retry the appointment.'
+            : response.status === 403
+              ? 'Your account is not allowed to book appointments. Contact an administrator.'
+              : `Appointment could not be booked (${response.status}).`;
+        throw new Error(serverMessage || statusMessage);
+      }
       if (!data.patientId) {
         setRequiresReload(true);
         throw new Error('The server saved the appointment without returning a Patient ID. Do not submit again; contact support and reload after reconciliation.');
       }
       setBookingTime(new Date().toLocaleString());
       setReport(data);
+      setAppointments((current) => (
+        data.id && current.some((appointment) => appointment.id === data.id)
+          ? current
+          : [data, ...current]
+      ));
       setSelectedPatientId(newPatientOption);
+      setMobileSearch('');
+      setMobileSearchResults(null);
       setForm({
         patientName: '', gender: '', patientAge: '', mobileNo: '', patientEmailId: '',
         patientAddress: '', doctorId: '', doctor: '', date: '', time: '', reason: '', fee: '',
@@ -107,12 +198,35 @@ const BookAppointment = () => {
       setAvailableTimes([]);
     } catch (error) {
       setError(error.message || 'Appointment could not be booked.');
+      if (error.message === 'Selected appointment slot is already booked') {
+        setForm((current) => ({ ...current, time: '' }));
+      }
     } finally {
       setBusy(false);
     }
   };
 
   const selectedPatient = patients.find((patient) => patient.patientId === selectedPatientId);
+  const patientAppointmentHistory = selectedPatient
+    ? appointments.filter((appointment) => appointment.patientId
+      ? appointment.patientId === selectedPatient.patientId
+      : (normalizeMobile(appointment.mobileNo || appointment.patientmobileNo)
+        && normalizeMobile(appointment.mobileNo || appointment.patientmobileNo)
+          === normalizeMobile(selectedPatient.patientmobileNo || selectedPatient.mobileNo)))
+    : [];
+  const latestPastAppointment = patientAppointmentHistory
+    .filter((appointment) => appointment.appointmentStatus !== 'cancelled')
+    .map((appointment) => ({ appointment, date: parseAppointmentDate(appointment.date) }))
+    .filter(({ date }) => date && date <= new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()))
+    .sort((a, b) => b.date - a.date)[0];
+  const daysSinceLastAppointment = latestPastAppointment
+    ? Math.floor((new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()) - latestPastAppointment.date) / 86400000)
+    : null;
+  const feeDetails = {
+    isFollowUp: daysSinceLastAppointment !== null && daysSinceLastAppointment <= followUpWindowDays,
+    daysSinceLastAppointment,
+  };
+  const displayedFee = selectedPatient && feeDetails.isFollowUp ? 0 : form.fee;
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
     '&': '&amp;',
@@ -199,12 +313,47 @@ const BookAppointment = () => {
           </select>
         </label>
 
+        <div className="appointment-mobile-search">
+          <label htmlFor="patient-mobile-search">Find existing patient by mobile number</label>
+          <div className="appointment-mobile-search-controls">
+            <input
+              id="patient-mobile-search"
+              type="tel"
+              autoComplete="tel"
+              placeholder="Enter patient's mobile number"
+              value={mobileSearch}
+              onChange={(event) => {
+                setMobileSearch(event.target.value);
+                setMobileSearchResults(null);
+              }}
+              disabled={loadingDirectories || busy}
+            />
+            <button type="button" className="submit-btn" onClick={searchPatientsByMobile} disabled={loadingDirectories || busy}>
+              Search
+            </button>
+          </div>
+          {mobileSearchResults && (mobileSearchResults.length ? (
+            <div className="appointment-mobile-search-results" aria-live="polite">
+              {mobileSearchResults.map((patient) => (
+                <button key={patient.patientId} type="button" onClick={() => selectPatient(patient)}>
+                  {patient.patientName} · {patient.patientId}
+                </button>
+              ))}
+            </div>
+          ) : <p className="appointment-fee-note" role="status">No patient found with this mobile number. Continue as a new patient.</p>)}
+        </div>
+
         {selectedPatient ? (
           <div className="appointment-patient-summary" aria-live="polite">
             <strong>{selectedPatient.patientName}</strong>
             <span>Patient ID: {selectedPatient.patientId}</span>
             <span>{selectedPatient.patientAge ? `${selectedPatient.patientAge} years` : 'Age not recorded'} · {selectedPatient.gender || 'Gender not recorded'}</span>
             <span>{selectedPatient.patientmobileNo || 'No phone recorded'}</span>
+            {feeDetails.isFollowUp
+              ? <span className="appointment-fee-note">Follow-up within {followUpWindowDays} days of the last appointment ({feeDetails.daysSinceLastAppointment} days ago): no consultation fee.</span>
+              : <span className="appointment-fee-note">{feeDetails.daysSinceLastAppointment === null
+                ? 'No previous appointment found. The consultation fee applies.'
+                : `More than ${followUpWindowDays} days since the last appointment. The consultation fee applies.`}</span>}
           </div>
         ) : <>
         <div className="form-group">
@@ -309,7 +458,7 @@ const BookAppointment = () => {
             <FaRupeeSign className="form-icon" />
             <input
               type="text"
-              value={`₹${form.fee}`}
+              value={`₹${displayedFee}`}
               readOnly
               title="Doctor's Fee"
             />
@@ -335,8 +484,11 @@ const BookAppointment = () => {
             value={form.time}
             onChange={handleChange}
             required
+            disabled={!form.doctorId || !form.date || loadingAvailability || !availableTimes.length}
           >
-            <option value="">Select Time Slot</option>
+            <option value="">
+              {loadingAvailability ? 'Checking availability…' : availableTimes.length ? 'Select Time Slot' : 'No available times'}
+            </option>
             {(Array.isArray(availableTimes) ? availableTimes : String(availableTimes || '').split(',').map((slot) => slot.trim()).filter(Boolean)).map((slot, index) => (
               <option key={index} value={slot}>
                 {slot}
@@ -356,8 +508,8 @@ const BookAppointment = () => {
           />
         </div>
 
-        <button type="submit" className="submit-btn" disabled={busy || loadingDirectories || !doctors.length || requiresReload}>
-          {busy ? 'Booking…' : loadingDirectories ? 'Loading records…' : 'Book Appointment'}
+        <button type="submit" className="submit-btn" disabled={busy || loadingDirectories || loadingAvailability || !availableTimes.includes(form.time) || !doctors.length || requiresReload}>
+          {busy ? 'Booking…' : loadingDirectories ? 'Loading records…' : loadingAvailability ? 'Checking availability…' : 'Book Appointment'}
         </button>
       </form>
 
