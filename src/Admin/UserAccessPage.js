@@ -53,6 +53,7 @@ export default function UserAccessPage() {
   const [loading, setLoading] = useState(true);
   const [savingUser, setSavingUser] = useState('');
   const [creatingUser, setCreatingUser] = useState(false);
+  const [accountType, setAccountType] = useState('staff');
   const [newStaff, setNewStaff] = useState({
     userId: '',
     emailId: '',
@@ -60,6 +61,12 @@ export default function UserAccessPage() {
     password: '',
     doctorId: '',
     roles: [ROLES.CRM_EXECUTIVE],
+  });
+  const [newPatient, setNewPatient] = useState({
+    patientName: '',
+    patientAge: '',
+    gender: '',
+    patientAddress: '',
   });
   const [doctorProfileMode, setDoctorProfileMode] = useState('existing');
   const [newDoctorProfile, setNewDoctorProfile] = useState({
@@ -129,13 +136,30 @@ export default function UserAccessPage() {
     event.preventDefault();
     setError('');
     setSuccess('');
-    if (!newStaff.roles.length) {
+    if (accountType === 'staff' && !newStaff.roles.length) {
       setError('Select at least one staff role for the new account.');
       return;
     }
 
     setCreatingUser(true);
     try {
+      if (accountType === 'patient') {
+        const account = await readResponse(await apiFetch('/users/patients', {
+          method: 'POST',
+          body: JSON.stringify({
+            userId: newStaff.userId,
+            emailId: newStaff.emailId,
+            mobileNo: newStaff.mobileNo,
+            password: newStaff.password,
+            ...newPatient,
+          }),
+        }));
+        setSuccess(`Patient account ${account.userId} created. Share its initial password using your approved secure channel.`);
+        setNewStaff({ userId: '', emailId: '', mobileNo: '', password: '', doctorId: '', roles: [ROLES.CRM_EXECUTIVE] });
+        setNewPatient({ patientName: '', patientAge: '', gender: '', patientAddress: '' });
+        await refresh();
+        return;
+      }
       const staffRequest = {
         userId: newStaff.userId,
         emailId: newStaff.emailId,
@@ -259,7 +283,7 @@ export default function UserAccessPage() {
       </header>
 
       <div className="workflow-alert warning" role="note">
-        Public sign-up creates patient accounts. Create hospital staff accounts here with their required access.
+        Create patient or hospital staff accounts directly. New accounts receive a temporary password that must be shared securely.
         Only a super administrator can grant administrator roles.
       </div>
       {error && <div className="workflow-alert error" role="alert">{error}</div>}
@@ -267,9 +291,14 @@ export default function UserAccessPage() {
 
       <form className="workflow-form-panel" onSubmit={createStaffAccount}>
         <div className="workflow-panel-heading">
-          <div><h2>Create hospital staff account</h2><p>Staff accounts are created with assigned roles and do not need patient sign-up first.</p></div>
+          <div><h2>Create user manually</h2><p>Create a patient login or a hospital staff account with assigned access.</p></div>
         </div>
         <div className="workflow-form-grid">
+          <label>Account type<select value={accountType} disabled={creatingUser}
+            onChange={(event) => setAccountType(event.target.value)}>
+            <option value="staff">Hospital staff</option>
+            <option value="patient">Patient</option>
+          </select></label>
           <label>User ID<input required autoComplete="username" value={newStaff.userId}
             onChange={(event) => setNewStaff({ ...newStaff, userId: event.target.value })} /></label>
           <label>Email<input required type="email" autoComplete="email" value={newStaff.emailId}
@@ -278,7 +307,17 @@ export default function UserAccessPage() {
             onChange={(event) => setNewStaff({ ...newStaff, mobileNo: event.target.value })} /></label>
           <label>Temporary password<input required type="password" autoComplete="new-password" minLength={12}
             value={newStaff.password} onChange={(event) => setNewStaff({ ...newStaff, password: event.target.value })} /></label>
-          {newStaff.roles.includes(ROLES.DOCTOR) && <>
+          {accountType === 'patient' && <>
+            <label>Patient full name<input required value={newPatient.patientName}
+              onChange={(event) => setNewPatient({ ...newPatient, patientName: event.target.value })} /></label>
+            <label>Age<input type="number" min="0" value={newPatient.patientAge}
+              onChange={(event) => setNewPatient({ ...newPatient, patientAge: event.target.value })} /></label>
+            <label>Gender<input value={newPatient.gender}
+              onChange={(event) => setNewPatient({ ...newPatient, gender: event.target.value })} /></label>
+            <label>Address<input value={newPatient.patientAddress}
+              onChange={(event) => setNewPatient({ ...newPatient, patientAddress: event.target.value })} /></label>
+          </>}
+          {accountType === 'staff' && newStaff.roles.includes(ROLES.DOCTOR) && <>
             <label>Doctor profile<select value={doctorProfileMode} disabled={creatingUser}
               onChange={(event) => setDoctorProfileMode(event.target.value)}>
               <option value="existing">Link existing doctor</option>
@@ -304,7 +343,7 @@ export default function UserAccessPage() {
                 onChange={(event) => setNewDoctorProfile({ ...newDoctorProfile, doctorAvailabletime: event.target.value })} /></label>
             </>}
           </>}
-          <div className="workflow-form-wide">
+          {accountType === 'staff' && <div className="workflow-form-wide">
             <p className="workflow-field-label">Staff roles</p>
             <div className="user-role-options">{visibleRoles.map((role) => (
               <label key={role}>
@@ -313,11 +352,12 @@ export default function UserAccessPage() {
                 {role.replaceAll('_', ' ')}
               </label>
             ))}</div>
-          </div>
+          </div>}
         </div>
         <div className="workflow-form-actions">
-          <button className="workflow-button primary" type="submit" disabled={creatingUser || !newStaff.roles.length}>
-            <UserPlus size={14} /> {creatingUser ? 'Creating account…' : 'Create staff account'}
+          <button className="workflow-button primary" type="submit"
+            disabled={creatingUser || (accountType === 'staff' && !newStaff.roles.length)}>
+            <UserPlus size={14} /> {creatingUser ? 'Creating account…' : accountType === 'patient' ? 'Create patient account' : 'Create staff account'}
           </button>
         </div>
       </form>

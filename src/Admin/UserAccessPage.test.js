@@ -85,6 +85,48 @@ test('hospital administrator can create a CRM staff account directly', async () 
   expect(await screen.findByText('crm-one')).toBeInTheDocument();
 });
 
+test('administrator can manually create a patient login and patient profile', async () => {
+  apiFetch.mockImplementation(async (path, options = {}) => {
+    if (path === '/users/patients' && options.method === 'POST') {
+      return { ok: true, json: async () => ({ userId: 'patient-one' }) };
+    }
+    if (path === '/users/me') {
+      return { ok: true, json: async () => ({ username: 'admin-one', roles: ['HOSPITAL_ADMIN'] }) };
+    }
+    if (path === '/doctors') return { ok: true, json: async () => [] };
+    if (path === '/nursing/nurses') return { ok: true, json: async () => [] };
+    if (path === '/users') return { ok: true, json: async () => [] };
+    return { ok: false, json: async () => ({ message: 'Unexpected request' }) };
+  });
+
+  render(<UserAccessPage />);
+  fireEvent.change(await screen.findByLabelText('Account type'), { target: { value: 'patient' } });
+  fireEvent.change(screen.getByLabelText('User ID'), { target: { value: 'patient-one' } });
+  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'patient@example.test' } });
+  fireEvent.change(screen.getByLabelText('Mobile number'), { target: { value: '5557654321' } });
+  fireEvent.change(screen.getByLabelText('Temporary password'), { target: { value: 'StrongPatientPass2026' } });
+  fireEvent.change(screen.getByLabelText('Patient full name'), { target: { value: 'Pat Example' } });
+  fireEvent.change(screen.getByLabelText('Age'), { target: { value: '42' } });
+  fireEvent.change(screen.getByLabelText('Gender'), { target: { value: 'Female' } });
+  fireEvent.change(screen.getByLabelText('Address'), { target: { value: '12 Example Street' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Create patient account' }));
+
+  await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('/users/patients', {
+    method: 'POST',
+    body: JSON.stringify({
+      userId: 'patient-one',
+      emailId: 'patient@example.test',
+      mobileNo: '5557654321',
+      password: 'StrongPatientPass2026',
+      patientName: 'Pat Example',
+      patientAge: '42',
+      gender: 'Female',
+      patientAddress: '12 Example Street',
+    }),
+  }));
+  expect(await screen.findByText(/Patient account patient-one created/)).toBeInTheDocument();
+});
+
 test('administrator can create a doctor login and availability profile together', async () => {
   apiFetch.mockImplementation(async (path, options = {}) => {
     if (path === '/users/staff' && options.method === 'POST') {
