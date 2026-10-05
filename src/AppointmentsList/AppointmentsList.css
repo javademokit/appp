@@ -79,11 +79,39 @@
   color: #dc3545;
 }
 
-.action-dropdown {
-  padding: 5px;
-  font-size: 14px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+.appointment-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.appointment-actions button {
+  border: 0;
+  border-radius: 5px;
+  padding: 7px 9px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.appointment-actions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.appointment-cash-button {
+  color: #fff;
+  background: #147d64;
+}
+
+.appointment-confirm-button {
+  color: #fff;
+  background: #287a43;
+}
+
+.appointment-cancel-button {
+  color: #a52c32;
+  background: #fbe9e9;
 }
 
 /* Mobile Card View */

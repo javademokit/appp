@@ -1,8 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { apiFetch } from '../API/api';
 import PatientPortal from './PatientPortal';
+import { downloadAppointmentConfirmation } from './appointmentConfirmation';
 
 jest.mock('../API/api', () => ({ apiFetch: jest.fn() }));
+jest.mock('./appointmentConfirmation', () => ({
+  downloadAppointmentConfirmation: jest.fn(),
+}));
 
 afterEach(() => jest.clearAllMocks());
 
@@ -20,8 +24,41 @@ test('loads the signed-in account patient profile and its linked appointments', 
 
   expect(await screen.findByText('Patient ID: PT-CANONICAL')).toBeInTheDocument();
   expect(screen.getByText('Dr. Example')).toBeInTheDocument();
+  expect(screen.getByText(/Pay in cash at reception/)).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /pay now|online payment/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Download confirmation' })).not.toBeInTheDocument();
   expect(apiFetch).toHaveBeenCalledWith('/patient-portal/profile');
   expect(apiFetch).toHaveBeenCalledWith('/patient-portal/appointments');
+});
+
+test('confirmed appointments offer a downloadable confirmation', async () => {
+  const appointment = {
+    id: 'booking-confirmed',
+    patientId: 'PT-CANONICAL',
+    date: '2030-01-03',
+    time: '10:00 AM',
+    doctor: 'Dr. Example',
+    reason: 'Checkup',
+    appointmentStatus: 'confirmed',
+    billingStatus: 'PAID',
+    balanceDue: '0.00',
+  };
+  const profile = { patientId: 'PT-CANONICAL', patientName: 'A Patient' };
+  apiFetch.mockImplementation(async (path) => {
+    const responses = {
+      '/patient-portal/profile': profile,
+      '/patient-portal/appointments': [appointment],
+      '/doctors': [],
+    };
+    return { ok: true, json: async () => responses[path] };
+  });
+
+  render(<PatientPortal />);
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Download confirmation' }));
+
+  expect(downloadAppointmentConfirmation).toHaveBeenCalledWith(appointment, profile);
+  expect(screen.getByText('Confirmed')).toBeInTheDocument();
 });
 
 test('books through the selected doctor profile ID', async () => {

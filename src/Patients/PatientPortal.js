@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../API/api';
 import { doctorDepartment, doctorOptionLabel } from '../utils/doctorDisplay';
+import { downloadAppointmentConfirmation } from './appointmentConfirmation';
 import '../Operations/Operations.css';
 
 const emptyAppointment = { doctorId: '', doctor: '', date: '', time: '', reason: '' };
@@ -98,12 +99,20 @@ export default function PatientPortal() {
           || (data.error ? `${data.error} (${response.status})` : `Could not book appointment (${response.status})`));
       }
       setForm(emptyAppointment);
-      setSuccess(`Appointment booked for ${data.date} at ${data.time}.`);
+      setSuccess(`Appointment booked for ${data.date} at ${data.time}. Pay any outstanding fee in cash at reception to confirm.`);
       await refresh();
     } catch (requestError) {
       setError(requestError.message || 'Could not book appointment');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const downloadConfirmation = (appointment) => {
+    try {
+      downloadAppointmentConfirmation(appointment, profile);
+    } catch (downloadError) {
+      setError(downloadError.message || 'Could not download appointment confirmation');
     }
   };
 
@@ -125,7 +134,7 @@ export default function PatientPortal() {
       </section>}
 
       <form className="workflow-form-panel" onSubmit={bookAppointment}>
-        <div className="workflow-panel-heading"><div><h2>Book an appointment</h2><p>Choose an available doctor and time from their schedule.</p></div></div>
+        <div className="workflow-panel-heading"><div><h2>Book an appointment</h2><p>Choose an available doctor and time from their schedule. Pay in cash at reception; your appointment is confirmed after reception records payment. No online payment is taken here.</p></div></div>
         <div className="workflow-form-grid">
           <label>Doctor<select required value={form.doctorId} onChange={(event) => {
             const doctor = doctors.find((entry) => entry.id === event.target.value);
@@ -149,8 +158,21 @@ export default function PatientPortal() {
       <section className="workflow-panel">
         <div className="workflow-panel-heading"><div><h2>Your appointments</h2><p>Bookings associated with your Patient ID.</p></div></div>
         {loading ? <div className="workflow-empty">Loading appointments…</div> : !appointments.length ? <div className="workflow-empty">No appointments found.</div> : <div className="workflow-table-wrap"><table className="workflow-table">
-          <thead><tr><th>Date</th><th>Time</th><th>Doctor</th><th>Reason</th><th>Status</th></tr></thead>
-          <tbody>{appointments.map((appointment) => <tr key={appointment.id}><td>{appointment.date}</td><td>{appointment.time}</td><td>{appointment.doctor}</td><td>{appointment.reason || '—'}</td><td>{appointment.appointmentStatus}</td></tr>)}</tbody>
+          <thead><tr><th>Date</th><th>Time</th><th>Doctor</th><th>Reason</th><th>Payment</th><th>Status</th><th>Confirmation</th></tr></thead>
+          <tbody>{appointments.map((appointment) => {
+            const confirmed = appointment.appointmentStatus?.toLowerCase() === 'confirmed';
+            const paymentStatus = Number(appointment.balanceDue || 0) > 0
+              ? `Cash due ₹${Number(appointment.balanceDue).toLocaleString('en-IN')}`
+              : appointment.billingStatus === 'NO_CHARGE' ? 'No charge'
+                : appointment.invoiceId ? 'Paid' : confirmed ? 'Confirmed' : 'Pay at reception';
+            return <tr key={appointment.id}>
+              <td>{appointment.date}</td><td>{appointment.time}</td><td>{appointment.doctor}</td>
+              <td>{appointment.reason || '—'}</td><td>{paymentStatus}</td>
+              <td>{appointment.appointmentStatus}</td>
+              <td>{confirmed && <button className="workflow-button subtle patient-confirmation-download" type="button"
+                onClick={() => downloadConfirmation(appointment)}>Download confirmation</button>}</td>
+            </tr>;
+          })}</tbody>
         </table></div>}
       </section>
     </section>

@@ -62,6 +62,86 @@ const AppointmentsList = () => {
     }
   };
 
+  const recordCashAndConfirm = async (appointment) => {
+    setBusyId(appointment.id);
+    setError('');
+    try {
+      const paymentResponse = await apiFetch(
+        `/billing/appointment-invoices/${encodeURIComponent(appointment.invoiceId)}/payments`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ amount: Number(appointment.balanceDue), method: 'CASH' }),
+        },
+      );
+      const paymentResult = await paymentResponse.json().catch(() => ({}));
+      if (!paymentResponse.ok) {
+        throw new Error(paymentResult.message || 'Could not record cash payment');
+      }
+
+      const confirmationResponse = await apiFetch(`/appointments1/${encodeURIComponent(appointment.id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: 'confirmed' }),
+      });
+      const confirmationResult = await confirmationResponse.json().catch(() => ({}));
+      if (!confirmationResponse.ok) {
+        throw new Error(`Cash was recorded, but appointment confirmation failed: ${
+          confirmationResult.message || 'Please refresh and confirm the paid appointment.'
+        }`);
+      }
+
+      showAlert('Cash payment recorded and appointment confirmed.');
+      await fetchAppointments();
+    } catch (requestError) {
+      await fetchAppointments();
+      showAlert(requestError.message || 'Could not record cash payment', 'error');
+    } finally {
+      setBusyId('');
+    }
+  };
+
+  const renderAction = (appointment) => {
+    const isPending = !['cancelled', 'confirmed', 'completed'].includes(appointment.appointmentStatus);
+    if (!isPending) return '—';
+    const hasInvoice = appointment.invoiceId && appointment.balanceDue !== undefined
+      && appointment.balanceDue !== null;
+    const balanceDue = hasInvoice ? Number(appointment.balanceDue) : 0;
+
+    return (
+      <div className="appointment-actions">
+        {hasInvoice && balanceDue > 0 ? (
+          <button
+            className="appointment-cash-button"
+            type="button"
+            disabled={busyId === appointment.id}
+            title="Only record this after cash has been received. This records the payment and confirms the appointment."
+            onClick={() => recordCashAndConfirm(appointment)}
+          >
+            {busyId === appointment.id
+              ? 'Recording…'
+              : `Cash received · ₹${balanceDue.toLocaleString('en-IN')}`}
+          </button>
+        ) : (
+          <button
+            className="appointment-confirm-button"
+            type="button"
+            disabled={busyId === appointment.id}
+            onClick={() => updateAppointmentStatus(appointment.id, 'confirm')}
+          >
+            Confirm
+          </button>
+        )}
+        <button
+          className="appointment-cancel-button"
+          type="button"
+          disabled={busyId === appointment.id}
+          onClick={() => updateAppointmentStatus(appointment.id, 'cancel')}
+        >
+          Cancel
+        </button>
+      </div>
+    );
+  };
+
   const filteredAppointments = appointments.filter((appt) =>
     `${appt.patientId || ''} ${appt.patientName || ''} ${appt.doctor || ''}`
       .toLowerCase().includes(searchQuery.toLowerCase())
@@ -103,6 +183,7 @@ const AppointmentsList = () => {
                   <th>Doctor</th>
                   <th>Date</th>
                   <th>Time</th>
+                  <th>Payment</th>
                   <th>Status</th>
                   <th>Action</th>
                 </tr>
@@ -120,6 +201,11 @@ const AppointmentsList = () => {
                     <td>{appt.doctor}</td>
                     <td>{appt.date}</td>
                     <td>{appt.time}</td>
+                    <td>{appt.invoiceId
+                      ? Number(appt.balanceDue || 0) > 0
+                        ? `Cash due ₹${Number(appt.balanceDue).toLocaleString('en-IN')}`
+                        : appt.billingStatus === 'NO_CHARGE' ? 'No charge' : 'Paid'
+                      : 'No invoice'}</td>
                     <td>
                       {appt.appointmentStatus === 'confirmed' ? (
                         <FaCheckCircle className="icon green" />
@@ -129,18 +215,7 @@ const AppointmentsList = () => {
                         'Pending'
                       )}
                     </td>
-                    <td>
-                      <select
-                        disabled={busyId === appt.id || ['cancelled', 'confirmed'].includes(appt.appointmentStatus)}
-                        onChange={(e) => updateAppointmentStatus(appt.id, e.target.value)}
-                        defaultValue=""
-                        className="action-dropdown"
-                      >
-                        <option value="" disabled>Choose</option>
-                        <option value="confirm">✅ Confirm</option>
-                        <option value="cancel">🗑 Cancel</option>
-                      </select>
-                    </td>
+                    <td>{renderAction(appt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -163,6 +238,11 @@ const AppointmentsList = () => {
                 <div><strong>Doctor:</strong> {appt.doctor || '—'}</div>
                 <div><strong>Date:</strong> {appt.date}</div>
                 <div><strong>Time:</strong> {appt.time}</div>
+                <div><strong>Payment:</strong> {appt.invoiceId
+                  ? Number(appt.balanceDue || 0) > 0
+                    ? `Cash due ₹${Number(appt.balanceDue).toLocaleString('en-IN')}`
+                    : appt.billingStatus === 'NO_CHARGE' ? 'No charge' : 'Paid'
+                  : 'No invoice'}</div>
                 <div><strong>Status:</strong>
                   {appt.appointmentStatus === 'confirmed' ? (
                     <FaCheckCircle className="icon green" />
@@ -172,16 +252,7 @@ const AppointmentsList = () => {
                     'Pending'
                   )}
                 </div>
-                <select
-                  disabled={busyId === appt.id || ['cancelled', 'confirmed'].includes(appt.appointmentStatus)}
-                  onChange={(e) => updateAppointmentStatus(appt.id, e.target.value)}
-                  defaultValue=""
-                  className="action-dropdown"
-                >
-                  <option value="" disabled>Choose</option>
-                  <option value="confirm">✅ Confirm</option>
-                  <option value="cancel">🗑 Cancel</option>
-                </select>
+                {renderAction(appt)}
               </div>
             ))}
           </div>
