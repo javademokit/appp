@@ -33,7 +33,7 @@ import EmergencyTriagePage from "../Operations/EmergencyTriagePage";
 import StaffShiftsPage from "../Operations/StaffShiftsPage";
 import DischargePage from "../Operations/DischargePage";
 import WardManagement from "../NursingWardManagement/WardManagement";
-import PayrollPage from "../Operations/PayrollPage";
+import PayrollRun from "../pages/payroll/PayrollRun";
 
 const HospitalDashboard = () => {
   const [activePage, setActivePage] = useState(() => (
@@ -70,7 +70,11 @@ const HospitalDashboard = () => {
     "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "CRM_EXECUTIVE", "NURSE", "HEAD_NURSE",
   ].includes(role));
   const payrollAccess = roles.some((role) => [
-    "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "FINANCE", "HR", "NURSE", "HEAD_NURSE",
+    "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "FINANCE", "HR",
+  ].includes(role));
+  const payslipAccess = !payrollAccess && roles.some((role) => [
+    "NURSE", "HEAD_NURSE", "RECEPTIONIST", "CRM_EXECUTIVE", "BILLING_EXECUTIVE",
+    "PHARMACIST", "LAB_TECHNICIAN",
   ].includes(role));
   const appointmentAccess = roles.some((role) => [
     "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "RECEPTIONIST", "CRM_EXECUTIVE",
@@ -118,7 +122,7 @@ const HospitalDashboard = () => {
       case "ward-management":
         return <WardManagement />;
       case "payroll":
-        return <PayrollPage />;
+        return <PayrollRun />;
       case "DoctorTimeSlots":
         return <Doctors />;
       case "settings":
@@ -171,8 +175,8 @@ const HospitalDashboard = () => {
             {nursingAccess && <li className={activePage === "ward-management" ? "active" : ""} aria-current={activePage === "ward-management" ? "page" : undefined} onClick={() => setActivePage("ward-management")}>
               <Building2 size={16} /> Nurse Management
             </li>}
-            {payrollAccess && <li className={activePage === "payroll" ? "active" : ""} aria-current={activePage === "payroll" ? "page" : undefined} onClick={() => setActivePage("payroll")}>
-              <Wallet size={16} /> {nursingOnly ? "My Payroll" : "Payroll"}
+            {(payrollAccess || payslipAccess) && <li className={activePage === "payroll" ? "active" : ""} aria-current={activePage === "payroll" ? "page" : undefined} onClick={() => setActivePage("payroll")}>
+              <Wallet size={16} /> {payrollAccess ? "HR & Payroll" : "My payslips"}
             </li>}
             {!nursingOnly && <>
             <li className={activePage === "pharmacy" ? "active" : ""} aria-current={activePage === "pharmacy" ? "page" : undefined} onClick={() => setActivePage("pharmacy")}>

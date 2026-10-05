@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './BookAppointment.css';
 import { apiFetch } from '../API/api';
 import { startAppointmentCheckout } from '../PaymentPage/paymentGatewayCheckout';
+import { doctorDepartment, doctorOptionLabel } from '../utils/doctorDisplay';
 import {
   FaUser,
   FaUserMd,
@@ -291,6 +292,7 @@ const BookAppointment = () => {
   };
 
   const selectedPatient = patients.find((patient) => patient.patientId === selectedPatientId);
+  const selectedDoctor = doctors.find((doctor) => doctor.id === form.doctorId);
   const patientAppointmentHistory = selectedPatient
     ? appointments.filter((appointment) => appointment.patientId
       ? appointment.patientId === selectedPatient.patientId
@@ -531,11 +533,19 @@ const BookAppointment = () => {
             </option>
             {doctors.map((doc) => (
               <option key={doc.id} value={doc.id}>
-                {doc.doctorName}
+                {doctorOptionLabel(doc)}
               </option>
             ))}
           </select>
         </div>
+
+        {selectedDoctor && (
+          <div className="appointment-doctor-summary" aria-live="polite">
+            <strong>{selectedDoctor.doctorName}</strong>
+            <span>Specialty: {selectedDoctor.doctorSpecialistName || 'Not assigned'}</span>
+            <span>Department / ward: {doctorDepartment(selectedDoctor) || 'Not assigned'}</span>
+          </div>
+        )}
 
         {form.fee && (
           <div className="form-group">

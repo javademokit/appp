@@ -13,7 +13,7 @@ import { HOSPITAL_WORKSPACE_ROLES, ROLES } from "./Admin/roles";
 import AdminDashboard from "./Admin/AdminDashboard.js"
 import PatientPortal from "./Patients/PatientPortal";
 import DoctorDashboard from "./Doctors/DoctorDashboard";
-import PayrollPage from "./Operations/PayrollPage";
+import PayrollRun from "./pages/payroll/PayrollRun";
 
 const PageWithLayout = ({ children }) => (
   <>
@@ -77,11 +77,8 @@ function App() {
         <Route
           path="/PayrollPortal"
           element={
-            <ProtectedRoute allowedRoles={[
-              ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.CLINIC_ADMIN, ROLES.DOCTOR,
-              ROLES.NURSE, ROLES.HEAD_NURSE, ROLES.FINANCE, ROLES.HR,
-            ]}>
-              <PayrollPage />
+            <ProtectedRoute allowedRoles={[...HOSPITAL_WORKSPACE_ROLES, ROLES.DOCTOR]}>
+              <PayrollRun />
             </ProtectedRoute>
           }
         />

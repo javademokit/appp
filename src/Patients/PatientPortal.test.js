@@ -40,6 +40,7 @@ test('books through the selected doctor profile ID', async () => {
         id: 'doctor-profile-1',
         doctorName: 'Dr. Example',
         doctorSpecialistName: 'Cardiology',
+        doctorDestination: 'Cardiology Department',
         doctorAvailabletime: ['10:00 AM'],
       }] };
     }
@@ -52,6 +53,7 @@ test('books through the selected doctor profile ID', async () => {
   render(<PatientPortal />);
   await screen.findByRole('option', { name: /Dr. Example/ });
   fireEvent.change(await screen.findByLabelText('Doctor'), { target: { value: 'doctor-profile-1' } });
+  expect(await screen.findByText('Department / ward: Cardiology Department')).toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('Date'), { target: { value: '2030-01-03' } });
   await screen.findByRole('option', { name: '10:00 AM' });
   fireEvent.change(screen.getByLabelText('Available time'), { target: { value: '10:00 AM' } });

@@ -146,6 +146,17 @@
 .doctor-stats article strong { color: #203c35; font-size: 1.55rem; line-height: 1.15; }
 .doctor-stats article small { color: #92a099; font-size: 0.67rem; }
 
+.doctor-profile-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.25rem 1rem;
+  padding: 0.75rem 1rem;
+}
+.doctor-profile-summary div { display: grid; gap: 0.2rem; }
+.doctor-profile-summary div span { color: #82918b; font-size: 0.65rem; font-weight: 750; text-transform: uppercase; }
+.doctor-profile-summary div strong { color: #38544b; font-size: 0.8rem; }
+.doctor-profile-summary p { grid-column: 1 / -1; margin: 0.3rem 0 0; color: #87958f; font-size: 0.68rem; }
+
 .doctor-panel {
   margin-bottom: 0.85rem;
   overflow: hidden;
@@ -172,6 +183,9 @@
 .doctor-recent-list button { display: flex; min-width: 150px; flex-direction: column; gap: 0.2rem; border: 1px solid #e1eae6; border-radius: 5px; padding: 0.6rem 0.7rem; background: #fff; text-align: left; cursor: pointer; }
 .doctor-recent-list button span { color: #38544b; font-size: 0.75rem; font-weight: 750; }
 .doctor-recent-list button small { color: #8b9a94; font-size: 0.64rem; }
+.doctor-patient-list-heading { align-items: end; }
+.doctor-patient-search { display: grid; min-width: min(260px, 45%); gap: 0.25rem; color: #70817a; font-size: 0.65rem; font-weight: 750; }
+.doctor-patient-search input { min-height: 34px; border: 1px solid #dce6e2; border-radius: 5px; padding: 0.4rem 0.55rem; color: #38544b; font: inherit; }
 
 .doctor-alert { margin-bottom: 0.75rem; border: 1px solid; border-radius: 5px; padding: 0.65rem 0.8rem; font-size: 0.76rem; }
 .doctor-alert.error { border-color: #e4c3bc; background: #fff5f2; color: #984438; }
@@ -261,6 +275,10 @@
   .doctor-main { padding: 1rem; }
   .doctor-stats { grid-template-columns: 1fr; gap: 0.5rem; }
   .doctor-stats article { min-height: 76px; }
+  .doctor-profile-summary { grid-template-columns: 1fr; }
+  .doctor-profile-summary p { grid-column: auto; }
+  .doctor-patient-list-heading { align-items: stretch; flex-direction: column; }
+  .doctor-patient-search { min-width: 0; }
   .doctor-vitals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .doctor-medication-order { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .doctor-medication-order .doctor-medication-instructions { grid-column: 1 / -1; }

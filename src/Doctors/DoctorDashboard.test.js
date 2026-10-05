@@ -92,6 +92,8 @@ test('doctor reviews a linked patient and completes a consultation using persist
   render(<DoctorDashboard />);
   expect(await screen.findByText('Dr. Example')).toBeInTheDocument();
   expect(screen.getByText('Doctor appointments')).toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: 'My payroll' })).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'My payslips' })).toHaveAttribute('href', '/PayrollPortal');
   expect(screen.getByText('2026-10-02')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Open patient' }));
 
@@ -165,6 +167,50 @@ test('explains when a restarted backend has expired the doctor session', async (
   expect(await screen.findByRole('alert')).toHaveTextContent(
     'Your doctor session has expired. Please sign in again.',
   );
+});
+
+test('shows the linked doctor ID and department and searches only assigned patients', async () => {
+  apiFetch.mockImplementation(async (path) => {
+    if (path === '/doctor-portal/dashboard') {
+      return {
+        ok: true,
+        json: async () => ({
+          doctor: {
+            id: 'doctor-profile-1',
+            employeeId: 'DT-12345678',
+            doctorName: 'Dr. Example',
+            doctorDestination: 'Cardiology',
+          },
+          appointments: [
+            appointment,
+            { ...appointment, id: 'appointment-2', patientId: 'PT-456', patientName: 'Second Patient' },
+          ],
+          waitingCount: 2,
+          followUpCount: 0,
+          fromDate: '2026-10-02',
+        }),
+      };
+    }
+    if (path === '/doctor-portal/medications') {
+      return { ok: true, json: async () => [] };
+    }
+    throw new Error(`Unexpected API request: ${path}`);
+  });
+
+  render(<DoctorDashboard />);
+
+  expect(await screen.findByText('DT-12345678')).toBeInTheDocument();
+  expect(screen.getByText('Cardiology')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Assigned patients' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Aadi Patient/ })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Second Patient/ })).toBeInTheDocument();
+
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Find patient' }), {
+    target: { value: 'pt-456' },
+  });
+
+  expect(screen.queryByRole('button', { name: /Aadi Patient/ })).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: /Second Patient/ })).toBeInTheDocument();
 });
 
 test('shows the backend reason when the doctor profile is not linked', async () => {

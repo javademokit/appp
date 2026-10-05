@@ -326,30 +326,24 @@ and changes from `SCHEDULED` to `ON_DUTY` to `COMPLETED`; duplicate or out-of-or
 attendance actions are rejected by the backend. Attendance actions are
 operator-recorded and are not biometric or doctor-self-service verification.
 
-## Payroll and staff identifiers
+## Staff identifiers
 
-The separate **Payroll** tab is available from the admin dashboard and hospital
-workspace. Finance and HR roles can be assigned in **User access & roles**.
-Payroll supports separate doctor/nurse monthly drafts, configurable earning and
-deduction components, versioned salary structures, effective-dated salary
-assignments, configurable statutory rates/ceilings, finalized nurse attendance
-summaries, approved overtime, reviewed adjustments, advances, exception review,
-cycle approval/locking/payment status, employee-only payslips, and CSV export.
 Doctor, nurse, and pharmacist staff identifiers use `DT-`, `NS-`, and `PT-`
 prefixes respectively; existing database primary keys and clinical links are
 preserved.
 
-Payroll monetary values use decimal arithmetic and are rounded per line.
-Statutory rates are not seeded with legal defaults; Finance must configure and
-verify them before a payroll run. Finance can maintain effective-dated doctor
-pay profiles and consultation/procedure rate cards, capture manually verified
-paid/finalized service earnings and completed on-call duties, and resolve
-doctor-raised earning disputes. Refunds and cancellations require a documented
-manual reversal; this CRM still has no authoritative consultation/procedure
-billing ledger to integrate or reconcile automatically. Nurse attendance
-summaries support self-service review and ward-day based allowances, but are
-not automatically reconciled with a biometric or leave source. Formula salary
-components use a bounded arithmetic expression (numbers, `BASIC`, `UNITS`,
-parentheses, and `+ - * /` only). Payslip PDFs are generated on demand; bank
-payment, statutory filing, encrypted PAN/banking details, signed payslip
-storage, bulk PDF download, and payroll reopening are not implemented.
+## HR and payroll
+
+The **HR & Payroll** workspace is available to HR, Finance, and hospital
+administrators; staff can open **My payslips** from their workspace. It uses one
+employee master and payroll workflow for configurable employee types, with
+organization setup, shifts, attendance, leave requests, salary components and
+structures, payroll review/approval, payslips, and reports. Configure employee
+types and salary components before onboarding and running payroll.
+
+The React entry point is `src/pages/payroll/PayrollRun.jsx`. Dashboard,
+employee, organization, attendance, leave, salary, payroll, and payslip views
+are decomposed under `src/pages/`; API operations are grouped in
+`src/services/`. The payroll preview shows per-employee gross pay, deductions,
+and net pay, while each payslip includes employee details and an earnings,
+deductions, and net salary breakdown.

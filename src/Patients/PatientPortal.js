@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../API/api';
+import { doctorDepartment, doctorOptionLabel } from '../utils/doctorDisplay';
 import '../Operations/Operations.css';
 
 const emptyAppointment = { doctorId: '', doctor: '', date: '', time: '', reason: '' };
@@ -13,6 +14,7 @@ export default function PatientPortal() {
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [form, setForm] = useState(emptyAppointment);
   const [loading, setLoading] = useState(true);
+  const selectedDoctor = doctors.find((doctor) => doctor.id === form.doctorId);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -128,7 +130,12 @@ export default function PatientPortal() {
           <label>Doctor<select required value={form.doctorId} onChange={(event) => {
             const doctor = doctors.find((entry) => entry.id === event.target.value);
             setForm({ ...form, doctorId: event.target.value, doctor: doctor?.doctorName || '', time: '' });
-          }}><option value="">Select doctor</option>{doctors.map((doctor) => <option key={doctor.id} value={doctor.id}>{doctor.doctorName} · {doctor.doctorSpecialistName}</option>)}</select></label>
+          }}><option value="">Select doctor</option>{doctors.map((doctor) => <option key={doctor.id} value={doctor.id}>{doctorOptionLabel(doctor)}</option>)}</select></label>
+          {selectedDoctor && <div className="workflow-form-wide patient-portal-doctor-summary" aria-live="polite">
+            <strong>{selectedDoctor.doctorName}</strong>
+            <span>Specialty: {selectedDoctor.doctorSpecialistName || 'Not assigned'}</span>
+            <span>Department / ward: {doctorDepartment(selectedDoctor) || 'Not assigned'}</span>
+          </div>}
           <label>Date<input required type="date" min={localDate(new Date())} value={form.date} onChange={(event) => setForm({ ...form, date: event.target.value, time: '' })} /></label>
           <label>Available time<select required value={form.time} disabled={!form.doctorId || !form.date || loadingAvailability || !availableTimes.length} onChange={(event) => setForm({ ...form, time: event.target.value })}>
             <option value="">{loadingAvailability ? 'Checking availability…' : availableTimes.length ? 'Select time' : 'No available times'}</option>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, CalendarDays, ClipboardList, LogOut, RefreshCw, Stethoscope, UserRound, Wallet } from 'lucide-react';
+import { Activity, CalendarDays, ClipboardList, FileText, LogOut, RefreshCw, Stethoscope, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../API/api';
 import './DoctorDashboard.css';
@@ -44,6 +44,7 @@ export default function DoctorDashboard() {
   const [dashboard, setDashboard] = useState(null);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [patient360, setPatient360] = useState(null);
+  const [patientSearch, setPatientSearch] = useState('');
   const [consultation, setConsultation] = useState(emptyConsultation);
   const [medicationCatalog, setMedicationCatalog] = useState([]);
   const [medicationDepartment, setMedicationDepartment] = useState('All departments');
@@ -82,14 +83,21 @@ export default function DoctorDashboard() {
 
   const appointments = useMemo(() => dashboard?.appointments ?? [], [dashboard?.appointments]);
   const doctor = dashboard?.doctor;
-  const recentPatients = useMemo(() => {
+  const assignedPatients = useMemo(() => {
     const seen = new Set();
     return appointments.filter((appointment) => {
       if (!appointment.patientId || seen.has(appointment.patientId)) return false;
       seen.add(appointment.patientId);
       return true;
-    }).slice(0, 8);
+    });
   }, [appointments]);
+  const filteredPatients = useMemo(() => {
+    const query = patientSearch.trim().toLocaleLowerCase();
+    if (!query) return assignedPatients;
+    return assignedPatients.filter((appointment) =>
+      [appointment.patientName, appointment.patientId]
+        .some((value) => String(value || '').toLocaleLowerCase().includes(query)));
+  }, [assignedPatients, patientSearch]);
 
   const selectAppointment = async (appointment) => {
     setSelectedAppointment(appointment);
@@ -262,7 +270,7 @@ export default function DoctorDashboard() {
           <a href="#patient-360"><UserRound size={17} /> Patients</a>
           <a href="#consultation"><ClipboardList size={17} /> Consultation</a>
           <a href="#consultation"><Stethoscope size={17} /> Clinical notes</a>
-          <a href="/PayrollPortal"><Wallet size={17} /> My payroll</a>
+          <a href="/PayrollPortal"><FileText size={17} /> My payslips</a>
         </aside>
 
         <section className="doctor-main" id="doctor-dashboard">
@@ -290,6 +298,12 @@ export default function DoctorDashboard() {
             <article><span>Follow-ups</span><strong>{loading ? '—' : dashboard?.followUpCount ?? 0}</strong><small>Marked in visit reason</small></article>
           </div>
 
+          {doctor && <section className="doctor-panel doctor-profile-summary" aria-label="Your doctor profile">
+            <div><span>Doctor ID</span><strong>{doctor.employeeId || doctor.id || 'Not assigned'}</strong></div>
+            <div><span>Department / ward</span><strong>{doctor.doctorDestination || 'Not assigned'}</strong></div>
+            <p>Your account is linked to this doctor profile. Assigned patients are limited to this profile.</p>
+          </section>}
+
           <section className="doctor-panel" id="today-appointments">
             <div className="doctor-panel-heading">
               <div><h2>Doctor appointments</h2><p>Appointments assigned to your doctor profile</p></div>
@@ -312,9 +326,16 @@ export default function DoctorDashboard() {
           </section>
 
           <section className="doctor-panel" id="patient-360">
-            <div className="doctor-panel-heading"><div><h2>Recent patients</h2><p>Patients from this doctor’s appointments</p></div></div>
-            {!recentPatients.length ? <p className="doctor-empty">Patient list will appear when appointments are scheduled.</p>
-              : <div className="doctor-recent-list">{recentPatients.map((appointment) => (
+            <div className="doctor-panel-heading doctor-patient-list-heading">
+              <div><h2>Assigned patients</h2><p>Only patients with appointments assigned to your doctor profile are shown.</p></div>
+              <label className="doctor-patient-search">Find patient
+                <input type="search" value={patientSearch} onChange={(event) => setPatientSearch(event.target.value)}
+                  placeholder="Search name or patient ID" />
+              </label>
+            </div>
+            {!assignedPatients.length ? <p className="doctor-empty">Patient list will appear when appointments are assigned to your profile.</p>
+              : !filteredPatients.length ? <p className="doctor-empty">No assigned patients match that search.</p>
+                : <div className="doctor-recent-list">{filteredPatients.map((appointment) => (
                 <button key={appointment.patientId} type="button" onClick={() => selectAppointment(appointment)}>
                   <span>{appointment.patientName || 'Patient'}</span><small>{appointment.patientId}</small>
                 </button>

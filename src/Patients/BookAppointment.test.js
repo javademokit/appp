@@ -83,6 +83,32 @@ test('books a new patient and displays the Patient ID returned by the API', asyn
   expect(await screen.findByText(/INV-123/)).toBeInTheDocument();
 });
 
+test('shows the selected doctor specialty and department', async () => {
+  apiFetch.mockImplementation(async (path, options = {}) => {
+    if (path === '/doctors') {
+      return { ok: true, json: async () => [{
+        id: 'doctor-1',
+        doctorName: 'Dr. Example',
+        doctorSpecialistName: 'Cardiology',
+        doctorDestination: 'Cardiology Department',
+        doctorfee: '500',
+        doctorAvailabletime: ['10:00 AM'],
+      }] };
+    }
+    if (path === '/patients') return { ok: true, json: async () => [] };
+    if (path === '/billing/appointment-invoices/gateways') return { ok: true, json: async () => ({}) };
+    if (path === '/appointments1') return { ok: true, json: async () => [] };
+    throw new Error(`Unexpected API request: ${path}`);
+  });
+
+  render(<BookAppointment />);
+  await screen.findByRole('option', { name: /Dr. Example · Cardiology · Cardiology Department/ });
+  fireEvent.change(document.querySelector('select[name="doctor"]'), { target: { value: 'doctor-1' } });
+
+  expect(screen.getByText('Department / ward: Cardiology Department')).toBeInTheDocument();
+  expect(screen.getByText('Specialty: Cardiology')).toBeInTheDocument();
+});
+
 test('records payment against the invoice created for a newly booked appointment', async () => {
   mockDirectories();
   render(<BookAppointment />);

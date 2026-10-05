@@ -3,7 +3,7 @@ import React from "react";
 import { useState } from "react";
 import HospitalOperationsBoard from "../components/HospitalOperationsBoard";
 import UserAccessPage from "./UserAccessPage";
-import PayrollPage from "../Operations/PayrollPage";
+import PayrollRun from "../pages/payroll/PayrollRun";
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -18,10 +18,10 @@ const AdminDashboard = () => {
           onClick={() => setActiveSection("users")}>User access &amp; roles</button>
         <button type="button" className={activeSection === "payroll" ? "active" : ""}
           aria-current={activeSection === "payroll" ? "page" : undefined}
-          onClick={() => setActiveSection("payroll")}>Payroll</button>
+          onClick={() => setActiveSection("payroll")}>HR &amp; Payroll</button>
       </nav>
       {activeSection === "users" ? <UserAccessPage />
-        : activeSection === "payroll" ? <PayrollPage />
+        : activeSection === "payroll" ? <PayrollRun />
           : <HospitalOperationsBoard />}
     </main>
   );
