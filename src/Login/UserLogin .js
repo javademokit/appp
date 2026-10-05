@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
+import { FaArrowLeft, FaHospital, FaUserShield } from 'react-icons/fa';
 import { apiFetch } from '../API/api';
 import './LoginPage.css';
 import { getPortalPathForRoles, normalizeRoles, ROLES, STAFF_PORTAL_ROLES } from '../Admin/roles';
@@ -98,20 +99,40 @@ const UserLogin = ({ portal = 'all' }) => {
 
   return (
     <div className="login-container">
-      <motion.div
-        className="login-form"
-        initial={{ opacity: 0, y: -50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: 'easeOut' }}
-      >
-        <h1 className="text-2xl font-bold text-blue-600 mb-8">
+      <div className="auth-layout">
+        <aside className="auth-promo">
+          <Link className="auth-brand" to="/">
+            <span className="auth-brand-icon"><FaHospital aria-hidden="true" /></span>
+            <span>MedSuite</span>
+          </Link>
+          <div className="auth-promo-content">
+            <span className="auth-promo-symbol"><FaUserShield aria-hidden="true" /></span>
+            <p className="auth-kicker">Your care, connected</p>
+            <h2>A simpler way to stay close to your care.</h2>
+            <p className="auth-promo-description">
+              Sign in to continue to appointments and services for your hospital portal.
+            </p>
+          </div>
+          <Link className="auth-back-link" to="/"><FaArrowLeft aria-hidden="true" /> Back to home</Link>
+          <span className="auth-promo-decoration auth-promo-decoration-one" />
+          <span className="auth-promo-decoration auth-promo-decoration-two" />
+        </aside>
+        <motion.div
+          className="login-form auth-card"
+          initial={{ opacity: 0, y: 18 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, ease: 'easeOut' }}
+        >
+        <div className="auth-card-heading">
+        <p className="auth-kicker">Welcome back</p>
+        <h1>
           {portal === 'patient'
             ? 'Patient login'
             : portal === 'doctor'
               ? 'Doctor login'
               : portal === 'hospital'
                 ? 'Hospital CRM / HR login'
-                : '🏥 MedCare login'}
+                : 'MedSuite login'}
         </h1>
         <p className="login-description">
           {portal === 'patient'
@@ -122,8 +143,9 @@ const UserLogin = ({ portal = 'all' }) => {
               ? 'For authorized reception and CRM staff booking patient appointments.'
               : 'Choose the portal assigned to your account.'}
         </p>
+        </div>
         <form onSubmit={handleSubmit}>
-          <div className="input-group">
+          <div className="auth-input-group">
             <input
               type="email"
               placeholder="Email"
@@ -134,7 +156,7 @@ const UserLogin = ({ portal = 'all' }) => {
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
-          <div className="input-group">
+          <div className="auth-input-group">
             <input
               type="password"
               placeholder="Password"
@@ -146,7 +168,7 @@ const UserLogin = ({ portal = 'all' }) => {
             />
           </div>
           {showError && <p className="error" role="alert">{errorMessage}</p>}
-          <button type="submit" className="login-btn" disabled={loading}>
+          <button type="submit" className="auth-submit" disabled={loading}>
             {loading ? 'Logging in...' : 'Log In'}
           </button>
         </form>
@@ -156,7 +178,8 @@ const UserLogin = ({ portal = 'all' }) => {
           {portal !== 'hospital' && <Link to="/HospitalLogin">Hospital CRM / HR login</Link>}
           {portal !== 'hospital' && <Link to="/SignUpPage">Create a patient account</Link>}
         </nav>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 };

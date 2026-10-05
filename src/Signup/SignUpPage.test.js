@@ -3,6 +3,7 @@ import { apiFetch } from '../API/api';
 import SignUpPage from './SignUpPage';
 
 jest.mock('../API/api', () => ({ apiFetch: jest.fn() }));
+jest.mock('react-router-dom', () => ({ Link: 'a' }), { virtual: true });
 
 afterEach(() => jest.clearAllMocks());
 

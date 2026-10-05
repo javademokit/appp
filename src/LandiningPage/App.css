@@ -1033,3 +1033,869 @@
     grid-template-columns: minmax(100px, 0.8fr) minmax(120px, 1fr);
   }
 }
+
+.med-home {
+  --med-home-ink: #173b36;
+  --med-home-muted: #607773;
+  --med-home-primary: #147d70;
+  --med-home-line: #dce9e5;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100%;
+  padding: 1.1rem max(1.25rem, calc((100vw - 1180px) / 2)) 3.25rem;
+  color: var(--med-home-ink);
+  background:
+    radial-gradient(ellipse at 82% 14%, rgba(185, 229, 215, 0.4), transparent 27rem),
+    #f8fbf9;
+  font-family: Inter, "Segoe UI", sans-serif;
+}
+
+.med-home *,
+.med-home *::before,
+.med-home *::after {
+  box-sizing: border-box;
+}
+
+.med-home-header {
+  display: flex;
+  min-height: 3.75rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.med-home-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--med-home-ink);
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+}
+
+.med-home-brand-icon,
+.med-home-service-icon,
+.med-home-image-note-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  color: var(--med-home-primary);
+  background: #e8f5f0;
+}
+
+.med-home-brand-icon {
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 0.8rem;
+  color: #fff;
+  background: var(--med-home-primary);
+  font-size: 1rem;
+}
+
+.med-home-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: clamp(0.75rem, 2vw, 1.7rem);
+}
+
+.med-home-nav a,
+.med-home-section-heading > a {
+  color: #49635d;
+  font-size: 0.86rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition: color 150ms ease;
+}
+
+.med-home-nav a:hover,
+.med-home-section-heading > a:hover {
+  color: var(--med-home-primary);
+}
+
+.med-home-nav .med-home-signup {
+  padding: 0.65rem 0.95rem;
+  border: 1px solid #c7dcd5;
+  border-radius: 0.7rem;
+  color: var(--med-home-primary);
+  background: #fff;
+}
+
+.med-home-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 0.93fr) minmax(0, 1.07fr);
+  align-items: center;
+  gap: clamp(2rem, 6vw, 5.5rem);
+  max-width: 1180px;
+  min-height: 31rem;
+  margin: 1.35rem auto 0;
+  padding: clamp(1rem, 2.5vw, 2rem) 0 2.5rem;
+}
+
+.med-home-copy {
+  position: relative;
+  z-index: 1;
+  padding: 1rem 0;
+}
+
+.med-home-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1.25rem;
+  color: #52716a;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.035em;
+}
+
+.med-home-live-dot {
+  width: 0.52rem;
+  height: 0.52rem;
+  border-radius: 50%;
+  background: #32a581;
+  box-shadow: 0 0 0 4px #e3f3ed;
+}
+
+.med-home-copy h1 {
+  max-width: 12ch;
+  margin: 0;
+  color: var(--med-home-ink);
+  font-size: clamp(2.7rem, 5vw, 4.7rem);
+  font-weight: 780;
+  letter-spacing: -0.065em;
+  line-height: 1.02;
+}
+
+.med-home-copy h1 span {
+  color: var(--med-home-primary);
+}
+
+.med-home-intro {
+  max-width: 29rem;
+  margin: 1.25rem 0 1.6rem;
+  color: var(--med-home-muted);
+  font-size: clamp(0.98rem, 1.5vw, 1.08rem);
+  line-height: 1.75;
+}
+
+.med-home-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.med-home-primary-action,
+.med-home-secondary-action {
+  display: inline-flex;
+  min-height: 2.9rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  padding: 0.75rem 1.05rem;
+  border-radius: 0.7rem;
+  font-size: 0.88rem;
+  font-weight: 750;
+  text-decoration: none;
+  transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.med-home-primary-action {
+  color: white;
+  background: var(--med-home-primary);
+  box-shadow: 0 8px 18px rgba(20, 125, 112, 0.18);
+}
+
+.med-home-primary-action:hover {
+  transform: translateY(-1px);
+  background: #0f6b60;
+  box-shadow: 0 10px 22px rgba(20, 125, 112, 0.22);
+}
+
+.med-home-secondary-action {
+  color: #49635d;
+  background: #edf4f1;
+}
+
+.med-home-secondary-action:hover {
+  background: #e3eeea;
+}
+
+.med-home-emergency {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 1.55rem 0 0;
+  color: #725848;
+  font-size: 0.81rem;
+  font-weight: 650;
+}
+
+.med-home-emergency svg {
+  color: #d27a58;
+}
+
+.med-home-image {
+  position: relative;
+  min-height: 23rem;
+  overflow: hidden;
+  border-radius: 1.45rem;
+  background: #d9e9e2;
+  box-shadow: 0 22px 55px rgba(28, 68, 58, 0.14);
+  isolation: isolate;
+}
+
+.med-home-image::after {
+  position: absolute;
+  inset: 38% 0 0;
+  background: linear-gradient(180deg, transparent, rgba(17, 47, 43, 0.22));
+  content: "";
+  pointer-events: none;
+}
+
+.med-home-image img {
+  display: block;
+  width: 100%;
+  height: 25rem;
+  object-fit: cover;
+  object-position: center;
+}
+
+.med-home-video-scene {
+  animation: med-home-scene-enter 900ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+.med-home-video-scene img {
+  animation: med-home-image-drift 22s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.med-home-scene-tint {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background:
+    linear-gradient(110deg, rgba(17, 67, 58, 0.32), transparent 64%),
+    linear-gradient(0deg, rgba(13, 48, 43, 0.3), transparent 55%);
+  pointer-events: none;
+}
+
+.med-home-scene-live {
+  position: absolute;
+  z-index: 1;
+  top: 1.1rem;
+  left: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(18, 54, 48, 0.38);
+  backdrop-filter: blur(12px);
+  font-size: 0.72rem;
+  font-weight: 700;
+  animation: med-home-float 5s ease-in-out 900ms infinite;
+}
+
+.med-home-scene-live > span {
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 50%;
+  background: #77e0b1;
+  box-shadow: 0 0 0 0 rgba(119, 224, 177, 0.7);
+  animation: med-home-live-pulse 2.1s ease-out infinite;
+}
+
+.med-home-scene-card {
+  position: absolute;
+  z-index: 2;
+  right: 1.1rem;
+  bottom: 5.3rem;
+  width: min(18rem, calc(100% - 2.2rem));
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.68);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 16px 42px rgba(18, 50, 44, 0.2);
+  backdrop-filter: blur(14px);
+  animation: med-home-card-arrive 750ms 450ms cubic-bezier(0.2, 0.75, 0.25, 1) both,
+    med-home-float 6s ease-in-out 1.2s infinite;
+}
+
+.med-home-scene-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.med-home-check {
+  display: inline-flex;
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  color: #167d68;
+  background: #e9f6ef;
+}
+
+.med-home-scene-card-heading > span:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+}
+
+.med-home-scene-card-heading small,
+.med-home-scene-card-heading strong,
+.med-home-scene-stat small,
+.med-home-scene-stat strong {
+  display: block;
+}
+
+.med-home-scene-card-heading small {
+  margin-bottom: 0.18rem;
+  color: #70837c;
+  font-size: 0.61rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.med-home-scene-card-heading strong {
+  color: #23463e;
+  font-size: 0.82rem;
+}
+
+.med-home-scene-status {
+  padding: 0.3rem 0.42rem;
+  border-radius: 999px;
+  color: #267456;
+  background: #ebf7f0;
+  font-size: 0.57rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.med-home-scene-divider {
+  height: 1px;
+  margin: 0.85rem 0 0.65rem;
+  background: #e7efeb;
+}
+
+.med-home-scene-card p {
+  margin: 0 0 0.55rem;
+  color: #698078;
+  font-size: 0.7rem;
+}
+
+.med-home-scene-progress {
+  height: 0.28rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e6efeb;
+}
+
+.med-home-scene-progress span {
+  display: block;
+  width: 38%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #34a887, #8bd8b7);
+  transform-origin: left;
+  animation: med-home-progress 4.5s ease-in-out infinite alternate;
+}
+
+.med-home-scene-stat {
+  position: absolute;
+  z-index: 2;
+  top: 5.7rem;
+  right: 1.15rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 0.8rem;
+  color: #fff;
+  background: rgba(18, 54, 48, 0.5);
+  backdrop-filter: blur(12px);
+  animation: med-home-card-arrive 750ms 700ms cubic-bezier(0.2, 0.75, 0.25, 1) both,
+    med-home-float 5.5s ease-in-out 1.4s infinite;
+}
+
+.med-home-stat-pulse {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: #ff9a79;
+  box-shadow: 0 0 0 4px rgba(255, 154, 121, 0.18);
+}
+
+.med-home-scene-stat strong {
+  font-size: 0.8rem;
+}
+
+.med-home-scene-stat small {
+  margin-top: 0.1rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.61rem;
+}
+
+.med-home-video-scene .med-home-image-note {
+  bottom: 1rem;
+  left: 1rem;
+  animation: med-home-note-arrive 700ms 850ms cubic-bezier(0.2, 0.75, 0.25, 1) both;
+}
+
+@keyframes med-home-scene-enter {
+  from { opacity: 0; transform: translateY(16px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes med-home-image-drift {
+  from { transform: scale(1.02) translate3d(-0.3%, 0, 0); }
+  to { transform: scale(1.1) translate3d(0.7%, -0.5%, 0); }
+}
+
+@keyframes med-home-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes med-home-card-arrive {
+  from { opacity: 0; transform: translate3d(18px, 8px, 0) scale(0.97); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes med-home-note-arrive {
+  from { opacity: 0; transform: translateY(9px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes med-home-live-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(119, 224, 177, 0.65); }
+  70%, 100% { box-shadow: 0 0 0 7px rgba(119, 224, 177, 0); }
+}
+
+@keyframes med-home-progress {
+  from { transform: scaleX(0.7); }
+  to { transform: scaleX(1.7); }
+}
+
+.med-home-image-note {
+  position: absolute;
+  z-index: 1;
+  right: 1rem;
+  bottom: 1rem;
+  left: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: fit-content;
+  max-width: calc(100% - 2rem);
+  padding: 0.75rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 24px rgba(22, 49, 43, 0.12);
+}
+
+.med-home-image-note-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+}
+
+.med-home-image-note strong,
+.med-home-image-note small {
+  display: block;
+}
+
+.med-home-image-note strong {
+  color: var(--med-home-ink);
+  font-size: 0.85rem;
+}
+
+.med-home-image-note small {
+  margin-top: 0.2rem;
+  color: var(--med-home-muted);
+  font-size: 0.72rem;
+}
+
+.med-home-services {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-top: 1.6rem;
+  border-top: 1px solid var(--med-home-line);
+}
+
+.med-home-section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.med-home-section-heading p {
+  margin: 0 0 0.35rem;
+  color: var(--med-home-primary);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.med-home-section-heading h2 {
+  margin: 0;
+  color: var(--med-home-ink);
+  font-size: 1.45rem;
+  letter-spacing: -0.035em;
+}
+
+.med-home-section-heading > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding-bottom: 0.1rem;
+}
+
+.med-home-service-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.med-home-service-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.8rem;
+  min-height: 6rem;
+  padding: 1rem;
+  border: 1px solid var(--med-home-line);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.med-home-service-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  font-size: 0.95rem;
+}
+
+.med-home-service-card h3 {
+  margin: 0.12rem 0 0.35rem;
+  color: var(--med-home-ink);
+  font-size: 0.88rem;
+}
+
+.med-home-service-card p {
+  margin: 0;
+  color: var(--med-home-muted);
+  font-size: 0.77rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 760px) {
+  .med-home {
+    padding: 0.75rem 1rem 2.5rem;
+  }
+
+  .med-home-header {
+    align-items: flex-start;
+  }
+
+  .med-home-nav {
+    gap: 0.7rem;
+    flex-wrap: wrap;
+  }
+
+  .med-home-nav a {
+    font-size: 0.77rem;
+  }
+
+  .med-home-nav .med-home-signup {
+    padding: 0.48rem 0.65rem;
+  }
+
+  .med-home-hero {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    min-height: 0;
+    margin-top: 1rem;
+    padding: 1.25rem 0 1.8rem;
+  }
+
+  .med-home-copy {
+    padding: 0;
+  }
+
+  .med-home-copy h1 {
+    max-width: 14ch;
+    font-size: clamp(2.8rem, 10vw, 4.3rem);
+  }
+
+  .med-home-image {
+    min-height: 16rem;
+  }
+
+  .med-home-image img {
+    height: clamp(16rem, 62vw, 22rem);
+  }
+
+  .med-home-service-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 460px) {
+  .med-home-header {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .med-home-nav {
+    width: 100%;
+    justify-content: space-between;
+    gap: 0.4rem;
+  }
+
+  .med-home-nav a {
+    font-size: 0.72rem;
+  }
+
+  .med-home-nav .med-home-signup {
+    padding: 0.4rem 0.5rem;
+  }
+
+  .med-home-eyebrow {
+    margin-bottom: 1rem;
+    font-size: 0.7rem;
+  }
+
+  .med-home-copy h1 {
+    font-size: 2.7rem;
+  }
+
+  .med-home-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+.med-home-chat {
+  position: fixed;
+  right: max(1.15rem, calc((100vw - 1240px) / 2));
+  bottom: 1.15rem;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.75rem;
+  font-family: Inter, "Segoe UI", sans-serif;
+}
+
+.med-home-chat-toggle {
+  display: inline-flex;
+  min-height: 3.1rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  background: #147d70;
+  box-shadow: 0 10px 28px rgba(21, 85, 74, 0.25);
+  font-size: 0.85rem;
+  font-weight: 750;
+  transition: transform 150ms ease, background 150ms ease;
+}
+
+.med-home-chat-toggle:hover {
+  transform: translateY(-2px);
+  background: #106b60;
+}
+
+.med-home-chat-panel {
+  display: flex;
+  width: min(360px, calc(100vw - 2rem));
+  min-height: 390px;
+  max-height: min(490px, calc(100vh - 7rem));
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #dce9e5;
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 18px 50px rgba(24, 59, 53, 0.2);
+}
+
+.med-home-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.9rem;
+  color: #fff;
+  background: #176e63;
+}
+
+.med-home-chat-avatar {
+  display: inline-flex;
+  width: 2.35rem;
+  height: 2.35rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0.7rem;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.med-home-chat-header > span:nth-child(2) {
+  flex: 1;
+}
+
+.med-home-chat-header strong,
+.med-home-chat-header small {
+  display: block;
+}
+
+.med-home-chat-header strong {
+  font-size: 0.85rem;
+}
+
+.med-home-chat-header small {
+  margin-top: 0.15rem;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.7rem;
+}
+
+.med-home-chat-header > button {
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 50%;
+  color: white;
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.med-home-chat-messages {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.6rem;
+  overflow-y: auto;
+  padding: 1rem;
+  background: #f7faf8;
+}
+
+.med-home-chat-message {
+  max-width: 88%;
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.8rem;
+  color: #34544d;
+  background: #e8f2ee;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.med-home-chat-message.user {
+  align-self: flex-end;
+  color: #fff;
+  background: #147d70;
+}
+
+.med-home-chat-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding: 0 0.8rem 0.65rem;
+  background: #f7faf8;
+}
+
+.med-home-chat-suggestions button {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #cfe1da;
+  border-radius: 999px;
+  color: #286258;
+  background: #fff;
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.med-home-chat-suggestions button:hover {
+  border-color: #85b9aa;
+  background: #edf6f2;
+}
+
+.med-home-chat-form {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-top: 1px solid #e7efeb;
+}
+
+.med-home-chat-form input {
+  min-width: 0;
+  flex: 1;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #dce9e5;
+  border-radius: 0.65rem;
+  outline: none;
+  color: #183b35;
+  font-size: 0.8rem;
+}
+
+.med-home-chat-form input:focus {
+  border-color: #65ab9d;
+  box-shadow: 0 0 0 3px rgba(20, 125, 112, 0.1);
+}
+
+.med-home-chat-form button {
+  display: inline-flex;
+  width: 2.55rem;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0.65rem;
+  color: #fff;
+  background: #147d70;
+}
+
+.med-home-chat-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .med-home-video-scene,
+  .med-home-video-scene img,
+  .med-home-scene-live,
+  .med-home-scene-live > span,
+  .med-home-scene-card,
+  .med-home-scene-stat,
+  .med-home-video-scene .med-home-image-note,
+  .med-home-scene-progress span {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .med-home-primary-action,
+  .med-home-secondary-action,
+  .med-home-chat-toggle {
+    transition: none;
+  }
+}
