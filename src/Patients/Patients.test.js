@@ -74,3 +74,43 @@ test('shows and searches patient records even when ward and nurse data cannot lo
   expect(screen.queryByText('Ravi Kumar')).not.toBeInTheDocument();
   expect(screen.getByText('Showing 1 of 2 patient records')).toBeInTheDocument();
 });
+
+test('explains when patient records cannot load because the staff session expired', async () => {
+  apiFetch.mockImplementation(async (path) => {
+    if (path === '/patients') return {
+      ok: false,
+      status: 401,
+      json: async () => ({}),
+    };
+    if (path === '/nursing/nurses' || path === '/nursing/wards' || path === '/users/me') {
+      return { ok: false, status: 401, json: async () => ({}) };
+    }
+    throw new Error(`Unexpected API request: ${path}`);
+  });
+
+  render(<Patients />);
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Your session has expired or you are not signed in. Sign in again to load patient records.',
+  );
+});
+
+test('explains when the signed-in staff member lacks patient-directory access', async () => {
+  apiFetch.mockImplementation(async (path) => {
+    if (path === '/patients') return {
+      ok: false,
+      status: 403,
+      json: async () => ({}),
+    };
+    if (path === '/nursing/nurses' || path === '/nursing/wards' || path === '/users/me') {
+      return { ok: false, status: 401, json: async () => ({}) };
+    }
+    throw new Error(`Unexpected API request: ${path}`);
+  });
+
+  render(<Patients />);
+
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Your account does not have permission to view patient records. Contact an administrator if you need access.',
+  );
+});

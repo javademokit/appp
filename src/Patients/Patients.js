@@ -37,7 +37,16 @@ export default function Patients() {
         wardResponse.json().catch(() => ({})),
         userResponse.json().catch(() => ({})),
       ]);
-      if (!patientResponse.ok) throw new Error(patientData.message || patientData.detail || 'Could not load patient records');
+      if (!patientResponse.ok) {
+        const serverMessage = patientData.message || patientData.detail || patientData.title;
+        if (patientResponse.status === 401) {
+          throw new Error('Your session has expired or you are not signed in. Sign in again to load patient records.');
+        }
+        if (patientResponse.status === 403) {
+          throw new Error('Your account does not have permission to view patient records. Contact an administrator if you need access.');
+        }
+        throw new Error(serverMessage || `Could not load patient records (${patientResponse.status}).`);
+      }
       if (!Array.isArray(patientData)) throw new Error('Patient service returned an invalid patient list');
 
       const sortedPatients = [...patientData].sort((first, second) =>
