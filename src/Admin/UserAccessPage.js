@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { RefreshCw, Save, UserPlus } from 'lucide-react';
+import { RefreshCw, Save, ShieldCheck, UserPlus, UserRound, UsersRound } from 'lucide-react';
 import { apiFetch } from '../API/api';
 import { normalizeRoles, ROLES } from './roles';
 import '../Operations/Operations.css';
+import './UserAccessPage.css';
 
 const ADMIN_ROLES = [ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.CLINIC_ADMIN];
 const ASSIGNABLE_ROLES = [
@@ -268,30 +269,41 @@ export default function UserAccessPage() {
   const visibleRoles = isSuperAdmin
     ? ASSIGNABLE_ROLES
     : ASSIGNABLE_ROLES.filter((role) => !ADMIN_ROLES.includes(role));
+  const patientCount = users.filter((user) => {
+    const roles = normalizeRoles(user.roles);
+    return roles.length === 0 || roles.includes(ROLES.PATIENT);
+  }).length;
+  const staffCount = users.length - patientCount;
 
   return (
-    <section className="workflow-page" aria-labelledby="user-access-title" aria-busy={loading}>
-      <header className="workflow-header">
-        <div>
+    <section className="workflow-page user-access-page" aria-labelledby="user-access-title" aria-busy={loading}>
+      <header className="workflow-header user-access-header">
+        <div className="user-access-heading">
           <p className="workflow-eyebrow">Account administration</p>
           <h1 id="user-access-title">User access &amp; roles</h1>
-          <p>Assign appropriate portal access to registered hospital users.</p>
+          <p>Manage accounts and assign the right portal access to each member of your care team.</p>
         </div>
-        <button className="workflow-button subtle" type="button" onClick={refresh} disabled={loading}>
+        <button className="workflow-button subtle user-access-refresh" type="button" onClick={refresh} disabled={loading}>
           <RefreshCw size={15} /> Refresh
         </button>
       </header>
 
-      <div className="workflow-alert warning" role="note">
-        Create patient or hospital staff accounts directly. New accounts receive a temporary password that must be shared securely.
-        Only a super administrator can grant administrator roles.
+      <div className="user-access-summary" aria-label="Account summary">
+        <article><span className="user-access-summary-icon total"><UserPlus size={17} /></span><div><strong>{users.length}</strong><small>Total accounts</small></div></article>
+        <article><span className="user-access-summary-icon staff"><UsersRound size={17} /></span><div><strong>{staffCount}</strong><small>Staff accounts</small></div></article>
+        <article><span className="user-access-summary-icon patients"><UserRound size={17} /></span><div><strong>{patientCount}</strong><small>Patient accounts</small></div></article>
+      </div>
+
+      <div className="workflow-alert warning user-access-guidance" role="note">
+        <ShieldCheck size={18} />
+        <span>Create patient or hospital staff accounts here. Share temporary passwords securely. Only a super administrator can grant administrator roles.</span>
       </div>
       {error && <div className="workflow-alert error" role="alert">{error}</div>}
       {success && <div className="workflow-alert success" role="status">{success}</div>}
 
-      <form className="workflow-form-panel" onSubmit={createStaffAccount}>
-        <div className="workflow-panel-heading">
-          <div><h2>Create user manually</h2><p>Create a patient login or a hospital staff account with assigned access.</p></div>
+      <form className="workflow-form-panel user-access-create" onSubmit={createStaffAccount}>
+        <div className="workflow-panel-heading user-access-panel-heading">
+          <div><span className="user-access-section-kicker">New account</span><h2>Create user manually</h2><p>Create a patient login or a hospital staff account with assigned access.</p></div>
         </div>
         <div className="workflow-form-grid">
           <label>Account type<select value={accountType} disabled={creatingUser}
@@ -343,9 +355,9 @@ export default function UserAccessPage() {
                 onChange={(event) => setNewDoctorProfile({ ...newDoctorProfile, doctorAvailabletime: event.target.value })} /></label>
             </>}
           </>}
-          {accountType === 'staff' && <div className="workflow-form-wide">
-            <p className="workflow-field-label">Staff roles</p>
-            <div className="user-role-options">{visibleRoles.map((role) => (
+          {accountType === 'staff' && <div className="workflow-form-wide user-access-role-field">
+            <p className="workflow-field-label">Staff roles <span>Select all that apply</span></p>
+            <div className="user-role-options user-access-role-options">{visibleRoles.map((role) => (
               <label key={role}>
                 <input type="checkbox" checked={newStaff.roles.includes(role)} disabled={creatingUser}
                   onChange={() => toggleNewStaffRole(role)} />
@@ -362,41 +374,45 @@ export default function UserAccessPage() {
         </div>
       </form>
 
-      <section className="workflow-panel">
-        <div className="workflow-panel-heading">
-          <div><h2>Registered accounts</h2><p>{users.length} accounts</p></div>
+      <section className="workflow-panel user-access-accounts">
+        <div className="workflow-panel-heading user-access-panel-heading">
+          <div><span className="user-access-section-kicker">Access control</span><h2>Registered accounts</h2><p>Review account roles and update portal access.</p></div>
+          {!loading && <span className="user-access-account-count">{users.length} {users.length === 1 ? 'account' : 'accounts'}</span>}
         </div>
         {loading ? <div className="workflow-empty">Loading accounts…</div>
           : users.length === 0 ? <div className="workflow-empty">No accounts found.</div>
-            : <div className="workflow-table-wrap"><table className="workflow-table">
-              <thead><tr><th>Account</th><th>Staff ID</th><th>Current roles</th><th>Assign roles</th><th>Doctor profile</th><th>Access</th><th /></tr></thead>
+            : <div className="workflow-table-wrap user-access-table-wrap"><table className="workflow-table user-access-table">
+              <thead><tr><th>Account</th><th>Staff ID</th><th>Current roles</th><th>Assign roles</th><th>Doctor profile</th><th>Access</th><th>Action</th></tr></thead>
               <tbody>{users.map((user) => {
                 const editable = mayEdit(user);
                 const selected = draftRoles[user.userId] || [];
+                const currentRoles = normalizeRoles(user.roles);
                 return <tr key={user.id || user.userId}>
-                  <td><strong>{user.userId}</strong><small>{user.emailId}</small></td>
-                  <td>{normalizeRoles(user.roles).includes(ROLES.DOCTOR)
+                  <td className="user-access-account-cell"><strong>{user.userId}</strong><small>{user.emailId || 'No email provided'}</small></td>
+                  <td className="user-access-id-cell">{currentRoles.includes(ROLES.DOCTOR)
                     ? doctors.find((doctor) => doctor.id === user.doctorId)?.employeeId || '—'
-                    : normalizeRoles(user.roles).some((role) => [ROLES.NURSE, ROLES.HEAD_NURSE].includes(role))
+                    : currentRoles.some((role) => [ROLES.NURSE, ROLES.HEAD_NURSE].includes(role))
                       ? nurses.find((nurse) => nurse.id === user.id)?.profile?.employeeId || '—'
                       : user.employeeCode || '—'}</td>
-                  <td>{normalizeRoles(user.roles).join(', ') || 'PATIENT'}</td>
-                  <td><div className="user-role-options">{visibleRoles.map((role) => (
+                  <td><div className="user-access-current-roles">{(currentRoles.length ? currentRoles : [ROLES.PATIENT]).map((role) => (
+                    <span className={`user-access-role-badge ${ADMIN_ROLES.includes(role) ? 'admin' : ''}`} key={role}>{role.replaceAll('_', ' ')}</span>
+                  ))}</div></td>
+                  <td><div className="user-role-options user-access-role-options">{visibleRoles.map((role) => (
                     <label key={role}>
                       <input type="checkbox" checked={selected.includes(role)} disabled={!editable || savingUser !== ''}
                         onChange={() => toggleRole(user.userId, role)} />
                       {role.replaceAll('_', ' ')}
                     </label>
                   ))}</div></td>
-                  <td>{normalizeRoles(user.roles).includes(ROLES.DOCTOR)
+                  <td>{currentRoles.includes(ROLES.DOCTOR)
                     ? <select aria-label={`Doctor profile for ${user.userId}`} value={user.doctorId || ''}
                       disabled={!editable} onChange={(event) => assignDoctorProfile(user, event.target.value)} required>
                       <option value="">Select profile</option>
                       {doctors.map((doctor) => <option key={doctor.id} value={doctor.id}>{doctor.doctorName}</option>)}
                     </select>
                     : '—'}</td>
-                  <td>{user.active === false ? 'Inactive' : 'Active'}</td>
-                  <td><button className="workflow-button primary" type="button" disabled={!editable || savingUser !== ''}
+                  <td><span className={`user-access-status ${user.active === false ? 'inactive' : 'active'}`}>{user.active === false ? 'Inactive' : 'Active'}</span></td>
+                  <td><button className="workflow-button primary user-access-save" type="button" disabled={!editable || savingUser !== ''}
                     onClick={() => saveRoles(user)} title={!editable ? 'This account cannot be managed by your role' : undefined}>
                     <Save size={14} /> {savingUser === user.userId ? 'Saving…' : 'Save'}
                   </button></td>

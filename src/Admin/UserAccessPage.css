@@ -1,0 +1,551 @@
+.user-access-page {
+  --access-ink: #18332f;
+  --access-muted: #70827c;
+  --access-line: #e1ebe7;
+  --access-green: #176b60;
+  display: grid;
+  gap: 1rem;
+}
+
+.user-access-page .user-access-header {
+  align-items: flex-end;
+  margin: 0;
+}
+
+.user-access-page .user-access-heading h1 {
+  color: var(--access-ink);
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 760;
+  letter-spacing: -0.04em;
+}
+
+.user-access-page .user-access-heading p:not(.workflow-eyebrow) {
+  max-width: 650px;
+  color: var(--access-muted);
+  font-size: 0.9rem;
+}
+
+.user-access-page .user-access-refresh {
+  min-height: 40px;
+  border-radius: 8px;
+}
+
+.user-access-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.user-access-summary article {
+  display: flex;
+  min-height: 76px;
+  align-items: center;
+  gap: 0.85rem;
+  box-sizing: border-box;
+  border: 1px solid var(--access-line);
+  border-radius: 11px;
+  padding: 0.85rem 1rem;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(27, 61, 52, 0.035);
+}
+
+.user-access-summary-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 11px;
+}
+
+.user-access-summary-icon.total { background: #e9f3f0; color: #176b60; }
+.user-access-summary-icon.staff { background: #eef1fb; color: #5267a5; }
+.user-access-summary-icon.patients { background: #fff3e8; color: #ae7137; }
+
+.user-access-summary article > div {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.user-access-summary strong {
+  color: var(--access-ink);
+  font-size: 1.3rem;
+  line-height: 1.1;
+}
+
+.user-access-summary small {
+  color: var(--access-muted);
+  font-size: 0.73rem;
+  font-weight: 650;
+}
+
+.user-access-page .user-access-guidance {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0;
+  border-color: #d9e8dc;
+  border-radius: 9px;
+  padding: 0.8rem 0.95rem;
+  background: #f1f8f1;
+  color: #456a4f;
+  line-height: 1.5;
+}
+
+.user-access-guidance svg {
+  flex: 0 0 auto;
+}
+
+.user-access-page .workflow-alert.error,
+.user-access-page .workflow-alert.success {
+  margin: 0;
+  border-radius: 9px;
+}
+
+.user-access-page .user-access-create,
+.user-access-page .user-access-accounts {
+  margin: 0;
+  border-color: var(--access-line);
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(27, 61, 52, 0.045);
+}
+
+.user-access-page .user-access-create {
+  overflow: hidden;
+  padding: 0 1.2rem 1.15rem;
+}
+
+.user-access-page .user-access-panel-heading {
+  align-items: center;
+  min-height: 83px;
+  padding: 1rem 1.2rem;
+  border-color: #edf2ef;
+}
+
+.user-access-page .user-access-create > .user-access-panel-heading {
+  margin: 0 -1.2rem 1.1rem;
+  background: linear-gradient(90deg, #fbfdfc, #f5faf7);
+}
+
+.user-access-section-kicker {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--access-green);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.095em;
+  text-transform: uppercase;
+}
+
+.user-access-page .user-access-panel-heading h2 {
+  color: var(--access-ink);
+  font-size: 1rem;
+  letter-spacing: -0.015em;
+}
+
+.user-access-page .user-access-panel-heading p {
+  margin-top: 0.28rem;
+  color: var(--access-muted);
+  font-size: 0.76rem;
+}
+
+.user-access-page .workflow-form-grid {
+  gap: 0.9rem;
+}
+
+.user-access-page .workflow-form-grid label {
+  gap: 0.4rem;
+  color: #536760;
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+.user-access-page .workflow-form-grid input,
+.user-access-page .workflow-form-grid select {
+  min-height: 42px;
+  border-color: #dce7e2;
+  border-radius: 7px;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.82rem;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.user-access-page .workflow-form-grid input:focus,
+.user-access-page .workflow-form-grid select:focus,
+.user-access-page .user-access-table select:focus {
+  border-color: #70a99a;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(23, 107, 96, 0.12);
+}
+
+.user-access-role-field {
+  margin-top: 0.15rem;
+  padding: 0.9rem;
+  border: 1px solid #e6eeea;
+  border-radius: 9px;
+  background: #f9fbfa;
+}
+
+.user-access-role-field .workflow-field-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  margin-bottom: 0.65rem;
+  color: var(--access-ink);
+  font-size: 0.76rem;
+}
+
+.user-access-role-field .workflow-field-label span {
+  color: var(--access-muted);
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+.user-access-page .user-access-role-options {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.42rem;
+}
+
+.user-access-role-options label {
+  position: relative;
+  display: inline-flex;
+  min-height: 33px;
+  align-items: center;
+  gap: 0.42rem;
+  box-sizing: border-box;
+  border: 1px solid #e0e9e5;
+  border-radius: 6px;
+  padding: 0.35rem 0.55rem;
+  background: #fff;
+  color: #566c64;
+  cursor: pointer;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.15;
+  white-space: normal;
+  transition: border-color 130ms ease, background-color 130ms ease, color 130ms ease;
+}
+
+.user-access-role-options label:has(input:checked) {
+  border-color: #b6d7cb;
+  background: #eaf5f0;
+  color: #155c51;
+}
+
+.user-access-role-options label:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.user-access-role-options input {
+  width: 14px;
+  min-height: 14px !important;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--access-green);
+}
+
+.user-access-page .workflow-form-actions {
+  margin-top: 1rem;
+}
+
+.user-access-page .workflow-button {
+  min-height: 38px;
+  border-radius: 7px;
+  font-size: 0.76rem;
+  font-weight: 750;
+}
+
+.user-access-page .workflow-button.primary {
+  background: var(--access-green);
+}
+
+.user-access-page .workflow-button.primary:hover:not(:disabled) {
+  background: #10564d;
+}
+
+.user-access-page .user-access-accounts {
+  overflow: hidden;
+}
+
+.user-access-page .user-access-accounts > .user-access-panel-heading {
+  justify-content: space-between;
+}
+
+.user-access-account-count {
+  flex: 0 0 auto;
+  border: 1px solid #dfebe6;
+  border-radius: 99px;
+  padding: 0.38rem 0.65rem;
+  background: #f7faf8;
+  color: #5b726a;
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.user-access-table-wrap {
+  max-height: min(66vh, 720px);
+  overflow: auto;
+}
+
+.user-access-page .user-access-table {
+  min-width: 1120px;
+  table-layout: auto;
+}
+
+.user-access-page .user-access-table thead {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+}
+
+.user-access-page .user-access-table th {
+  padding: 0.75rem 0.8rem;
+  background: #f4f8f6;
+  color: #63766f;
+  font-size: 0.63rem;
+  letter-spacing: 0.045em;
+}
+
+.user-access-page .user-access-table td {
+  padding: 0.78rem 0.8rem;
+  border-color: #edf2ef;
+  color: #51635d;
+  font-size: 0.73rem;
+  vertical-align: top;
+}
+
+.user-access-page .user-access-table tbody tr:hover {
+  background: #fbfdfc;
+}
+
+.user-access-page .user-access-table .user-access-account-cell {
+  min-width: 150px;
+}
+
+.user-access-page .user-access-account-cell strong {
+  color: var(--access-ink);
+  font-size: 0.8rem;
+}
+
+.user-access-page .user-access-account-cell small {
+  max-width: 180px;
+  overflow-wrap: anywhere;
+  color: #84948e;
+  font-size: 0.67rem;
+}
+
+.user-access-id-cell {
+  min-width: 90px;
+  color: #647770;
+  font-variant-numeric: tabular-nums;
+}
+
+.user-access-page .user-access-current-roles {
+  display: flex;
+  min-width: 115px;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.user-access-role-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #e0ebe5;
+  border-radius: 5px;
+  padding: 0.23rem 0.38rem;
+  background: #f3f8f5;
+  color: #41695a;
+  font-size: 0.59rem;
+  font-weight: 800;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.user-access-role-badge.admin {
+  border-color: #d9dff1;
+  background: #f1f3fb;
+  color: #536497;
+}
+
+.user-access-page .user-access-table .user-access-role-options {
+  width: 280px;
+  gap: 0.3rem;
+}
+
+.user-access-table .user-access-role-options label {
+  min-height: 28px;
+  padding: 0.28rem 0.4rem;
+  font-size: 0.59rem;
+}
+
+.user-access-table .user-access-role-options input {
+  width: 12px;
+  min-height: 12px !important;
+  height: 12px;
+}
+
+.user-access-page .user-access-table select {
+  box-sizing: border-box;
+  min-width: 125px;
+  min-height: 34px;
+  border: 1px solid #dce7e2;
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  background: #fff;
+  color: var(--access-ink);
+  font: inherit;
+  font-size: 0.7rem;
+}
+
+.user-access-status {
+  display: inline-flex;
+  min-width: 54px;
+  justify-content: center;
+  border-radius: 99px;
+  padding: 0.28rem 0.48rem;
+  font-size: 0.63rem;
+  font-weight: 800;
+}
+
+.user-access-status.active { background: #eaf5ee; color: #38734d; }
+.user-access-status.inactive { background: #fcecea; color: #a14f45; }
+
+.user-access-page .user-access-save {
+  min-height: 33px;
+  padding: 0.4rem 0.6rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .user-access-page {
+    gap: 0.75rem;
+  }
+
+  .user-access-page .user-access-header {
+    align-items: flex-start;
+    flex-direction: row;
+  }
+
+  .user-access-page .user-access-heading h1 {
+    font-size: 1.45rem;
+  }
+
+  .user-access-page .user-access-heading p:not(.workflow-eyebrow) {
+    max-width: 34rem;
+    font-size: 0.79rem;
+  }
+
+  .user-access-page .user-access-refresh {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 0.45rem 0.6rem;
+    font-size: 0;
+  }
+
+  .user-access-page .user-access-refresh svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .user-access-summary {
+    gap: 0.45rem;
+  }
+
+  .user-access-summary article {
+    min-height: 68px;
+    gap: 0.5rem;
+    padding: 0.55rem;
+  }
+
+  .user-access-summary-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+  }
+
+  .user-access-summary-icon svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .user-access-summary strong {
+    font-size: 1.05rem;
+  }
+
+  .user-access-summary small {
+    font-size: 0.61rem;
+  }
+
+  .user-access-page .user-access-guidance {
+    align-items: flex-start;
+    font-size: 0.73rem;
+  }
+
+  .user-access-page .user-access-create {
+    padding: 0 0.85rem 0.9rem;
+  }
+
+  .user-access-page .user-access-create > .user-access-panel-heading {
+    margin: 0 -0.85rem 0.85rem;
+    padding: 0.85rem;
+  }
+
+  .user-access-page .user-access-panel-heading {
+    min-height: 72px;
+    padding: 0.85rem;
+  }
+
+  .user-access-page .workflow-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.7rem;
+  }
+
+  .user-access-page .workflow-form-grid label {
+    font-size: 0.68rem;
+  }
+
+  .user-access-page .workflow-form-grid input,
+  .user-access-page .workflow-form-grid select {
+    min-height: 39px;
+    padding: 0.45rem 0.55rem;
+    font-size: 0.75rem;
+  }
+
+  .user-access-role-field {
+    grid-column: 1 / -1;
+    padding: 0.7rem;
+  }
+
+  .user-access-role-options label {
+    min-height: 31px;
+    font-size: 0.6rem;
+  }
+
+  .user-access-page .user-access-accounts > .user-access-panel-heading {
+    flex-direction: row;
+  }
+}
+
+@media (max-width: 430px) {
+  .user-access-page .user-access-heading h1 {
+    font-size: 1.25rem;
+  }
+
+  .user-access-page .workflow-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .user-access-role-field {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .user-access-page * {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
