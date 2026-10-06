@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, CalendarDays, ClipboardList, FileText, LogOut, RefreshCw, Stethoscope, UserRound } from 'lucide-react';
+import { Activity, CalendarDays, ClipboardList, Clock3, FileText, LogOut, RefreshCw, Stethoscope, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../API/api';
 import './DoctorDashboard.css';
+
+const localDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
 const emptyConsultation = {
   symptoms: '',
@@ -42,6 +44,7 @@ function escapePrintValue(value) {
 
 export default function DoctorDashboard() {
   const [dashboard, setDashboard] = useState(null);
+  const [shifts, setShifts] = useState([]);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
   const [patient360, setPatient360] = useState(null);
   const [patientSearch, setPatientSearch] = useState('');
@@ -52,6 +55,7 @@ export default function DoctorDashboard() {
   const [printablePrescription, setPrintablePrescription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [attendanceBusy, setAttendanceBusy] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const navigate = useNavigate();
@@ -60,18 +64,22 @@ export default function DoctorDashboard() {
     setLoading(true);
     setError('');
     try {
-      const [dashboardResponse, medicationResponse] = await Promise.all([
+      const [dashboardResponse, medicationResponse, shiftsResponse] = await Promise.all([
         apiFetch('/doctor-portal/dashboard'),
         apiFetch('/doctor-portal/medications'),
+        apiFetch('/staff/shifts/mine'),
       ]);
-      const [result, medications] = await Promise.all([
+      const [result, medications, ownShifts] = await Promise.all([
         readResponse(dashboardResponse, 'Could not load today’s doctor dashboard'),
         readResponse(medicationResponse, 'Could not load the pharmacy medicine catalog'),
+        readResponse(shiftsResponse, 'Could not load your attendance schedule'),
       ]);
       if (!Array.isArray(result.appointments)) throw new Error('Doctor dashboard returned an invalid appointment list');
       if (!Array.isArray(medications)) throw new Error('The pharmacy medicine catalog returned an invalid list');
+      if (!Array.isArray(ownShifts)) throw new Error('Doctor attendance returned an invalid shift list');
       setDashboard(result);
       setMedicationCatalog(medications);
+      setShifts(ownShifts);
     } catch (requestError) {
       setError(requestError.message || 'Could not load doctor dashboard');
     } finally {
@@ -183,8 +191,26 @@ export default function DoctorDashboard() {
   const updateMedicationOrder = (index, field, value) => setMedicationOrders((current) =>
     current.map((order, orderIndex) => orderIndex === index ? { ...order, [field]: value } : order));
 
-  const printPrescription = () => {
-    if (!printablePrescription) return;
+  const recordShiftAttendance = async (shift, action) => {
+    setAttendanceBusy(true);
+    setError('');
+    setSuccess('');
+    try {
+      const result = await readResponse(await apiFetch(
+        `/staff/shifts/mine/${encodeURIComponent(shift.id)}/${action}`,
+        { method: 'POST' },
+      ), `Could not record shift ${action === 'check-in' ? 'check-in' : 'check-out'}`);
+      setShifts((current) => current.map((item) => item.id === result.id ? result : item));
+      setSuccess(action === 'check-in' ? 'Shift check-in recorded.' : 'Shift check-out recorded.');
+    } catch (requestError) {
+      setError(requestError.message || 'Could not record attendance');
+    } finally {
+      setAttendanceBusy(false);
+    }
+  };
+
+  const printPrescription = (prescription = printablePrescription) => {
+    if (!prescription) return;
     setError('');
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
@@ -192,10 +218,10 @@ export default function DoctorDashboard() {
       return;
     }
 
-    const prescriptionDate = printablePrescription.createdAt
-      ? new Date(printablePrescription.createdAt).toLocaleDateString()
+    const prescriptionDate = prescription.createdAt
+      ? new Date(prescription.createdAt).toLocaleDateString()
       : new Date().toLocaleDateString();
-    const medicationRows = (printablePrescription.medications || []).map((item) => `
+    const medicationRows = (prescription.medications || []).map((item) => `
       <tr>
         <td>${escapePrintValue(item.name)} ${escapePrintValue([item.strength, item.dosageForm].filter(Boolean).join(' · '))}</td>
         <td>${escapePrintValue(item.dose)} · ${escapePrintValue(item.route)}</td>
@@ -212,7 +238,7 @@ export default function DoctorDashboard() {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>Medication prescription · ${escapePrintValue(printablePrescription.patientName)}</title>
+          <title>Medication prescription · ${escapePrintValue(prescription.patientName)}</title>
           <style>
             @page { size: A4; margin: 16mm; }
             body { color: #111; background: #fff; font: 12px Arial, sans-serif; }
@@ -233,11 +259,11 @@ export default function DoctorDashboard() {
         <body>
           <header><strong>MEDCARE HOSPITAL</strong><span>Medication prescription</span></header>
           <section class="details">
-            <div><b>Patient</b><span>${escapePrintValue(printablePrescription.patientName)}</span></div>
-            <div><b>Patient ID</b><span>${escapePrintValue(printablePrescription.patientId)}</span></div>
-            <div><b>Doctor</b><span>${escapePrintValue(printablePrescription.doctorName)}</span></div>
+            <div><b>Patient</b><span>${escapePrintValue(prescription.patientName)}</span></div>
+            <div><b>Patient ID</b><span>${escapePrintValue(prescription.patientId)}</span></div>
+            <div><b>Doctor</b><span>${escapePrintValue(prescription.doctorName)}</span></div>
             <div><b>Date</b><span>${escapePrintValue(prescriptionDate)}</span></div>
-            <div><b>Diagnosis</b><span>${escapePrintValue(printablePrescription.diagnosis)}</span></div>
+            <div><b>Diagnosis</b><span>${escapePrintValue(prescription.diagnosis)}</span></div>
           </section>
           <h2>Medicines</h2>
           <table>
@@ -270,7 +296,9 @@ export default function DoctorDashboard() {
           <a href="#patient-360"><UserRound size={17} /> Patients</a>
           <a href="#consultation"><ClipboardList size={17} /> Consultation</a>
           <a href="#consultation"><Stethoscope size={17} /> Clinical notes</a>
+          <a href="#doctor-attendance"><CalendarDays size={17} /> Attendance</a>
           <a href="/PayrollPortal"><FileText size={17} /> My payslips</a>
+          <a href="/PayrollPortal?section=overtime-allowances"><Clock3 size={17} /> Apply overtime</a>
         </aside>
 
         <section className="doctor-main" id="doctor-dashboard">
@@ -289,7 +317,7 @@ export default function DoctorDashboard() {
           {success && <div className="doctor-alert success" role="status">{success}</div>}
           {printablePrescription && <div className="doctor-alert success">
             Prescription is ready for the patient and has been sent to the pharmacy.
-            <button type="button" className="doctor-open-button doctor-print-button" onClick={printPrescription}>Print prescription</button>
+            <button type="button" className="doctor-open-button doctor-print-button" onClick={() => printPrescription()}>Print prescription</button>
           </div>}
 
           <div className="doctor-stats">
@@ -297,6 +325,31 @@ export default function DoctorDashboard() {
             <article><span>Waiting / upcoming</span><strong>{loading ? '—' : dashboard?.waitingCount ?? 0}</strong><small>Pending or confirmed</small></article>
             <article><span>Follow-ups</span><strong>{loading ? '—' : dashboard?.followUpCount ?? 0}</strong><small>Marked in visit reason</small></article>
           </div>
+
+          <section className="doctor-panel" id="doctor-attendance">
+            <div className="doctor-panel-heading"><div><h2>My attendance</h2><p>Your assigned doctor shifts and today’s check-in status.</p></div></div>
+            {!shifts.length ? <p className="doctor-empty">No shifts are assigned to your doctor profile.</p>
+              : <div className="doctor-table-scroll"><table className="doctor-table">
+                <thead><tr><th>Date</th><th>Department</th><th>Shift</th><th>Status / times</th><th>Attendance</th></tr></thead>
+                <tbody>{shifts.map((shift) => {
+                  const isToday = shift.shiftDate === localDate(new Date());
+                  return <tr key={shift.id}>
+                    <td>{shift.shiftDate}</td><td>{shift.department}</td><td>{shift.startTime}–{shift.endTime}</td>
+                    <td>{shift.status.replaceAll('_', ' ')}
+                      {shift.checkInAt && <small>In: {new Date(shift.checkInAt).toLocaleTimeString()}</small>}
+                      {shift.checkOutAt && <small>Out: {new Date(shift.checkOutAt).toLocaleTimeString()}</small>}
+                    </td>
+                    <td>
+                      {isToday && shift.status === 'SCHEDULED' && <button type="button" className="doctor-open-button"
+                        disabled={attendanceBusy} onClick={() => recordShiftAttendance(shift, 'check-in')}>Check in</button>}
+                      {isToday && shift.status === 'ON_DUTY' && <button type="button" className="doctor-open-button"
+                        disabled={attendanceBusy} onClick={() => recordShiftAttendance(shift, 'check-out')}>Check out</button>}
+                      {(!isToday || !['SCHEDULED', 'ON_DUTY'].includes(shift.status)) && '—'}
+                    </td>
+                  </tr>;
+                })}</tbody>
+              </table></div>}
+          </section>
 
           {doctor && <section className="doctor-panel doctor-profile-summary" aria-label="Your doctor profile">
             <div><span>Doctor ID</span><strong>{doctor.employeeId || doctor.id || 'Not assigned'}</strong></div>
@@ -356,6 +409,22 @@ export default function DoctorDashboard() {
                 <span>{patient360.patient.patientmobileNo || 'Phone not recorded'}</span>
                 <span>Prior visits: {patient360.consultations?.length || 0}</span>
               </div>
+              <section className="doctor-history">
+                <h3>Medication prescription history</h3>
+                {patient360.prescriptions?.length
+                  ? patient360.prescriptions.map((prescription) => <article key={prescription.id}>
+                    <strong>{prescription.diagnosis || 'Medication prescription'}</strong>
+                    <span>{prescription.createdAt ? new Date(prescription.createdAt).toLocaleString() : 'Date not recorded'}</span>
+                    <p>Prescribed by {prescription.doctorName || 'Doctor'}</p>
+                    {prescription.medications?.map((item, index) => <p key={`${item.medicationId}-${index}`}>
+                      {item.name} — {item.dose}, {item.route}, {item.frequency} for {item.duration}; quantity {item.quantity}
+                    </p>)}
+                    <button type="button" className="doctor-open-button" onClick={() => printPrescription(prescription)}>
+                      Print prescription
+                    </button>
+                  </article>)
+                  : <p>No medication prescription history is available.</p>}
+              </section>
               <section className="doctor-history">
                 <h3>Medical history</h3>
                 {patient360.consultations?.length

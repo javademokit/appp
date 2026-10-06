@@ -12,7 +12,7 @@ import {
   FaTachometerAlt,
   FaCreditCard
 } from "react-icons/fa";
-import { Building2, CalendarClock, FileBadge, FlaskConical, Pill, Siren, Wallet } from "lucide-react";
+import { Ambulance as AmbulanceIcon, Building2, CalendarClock, FileBadge, FlaskConical, Pill, Siren, Wallet } from "lucide-react";
 
 import Header from "../company/Header";
 import Footer from "../company/Footer";
@@ -30,6 +30,8 @@ import { apiFetch } from "../API/api";
 import PharmacyPage from "../Operations/PharmacyPage";
 import LabsDiagnosticsPage from "../Operations/LabsDiagnosticsPage";
 import EmergencyTriagePage from "../Operations/EmergencyTriagePage";
+import AmbulancePage from "../Operations/AmbulancePage";
+import AmbulanceBillingPage from "../Operations/AmbulanceBillingPage";
 import StaffShiftsPage from "../Operations/StaffShiftsPage";
 import DischargePage from "../Operations/DischargePage";
 import WardManagement from "../NursingWardManagement/WardManagement";
@@ -83,6 +85,9 @@ const HospitalDashboard = () => {
     "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "RECEPTIONIST", "CRM_EXECUTIVE",
     "BILLING_EXECUTIVE", "FINANCE",
   ].includes(role));
+  const ambulanceBillingAccess = roles.some((role) => [
+    "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "BILLING_EXECUTIVE", "FINANCE",
+  ].includes(role));
   const handleLogout = async () => {
     try {
       await apiFetch("/users/logout", { method: "POST" });
@@ -117,6 +122,10 @@ const HospitalDashboard = () => {
         return <LabsDiagnosticsPage />;
       case "emergency":
         return <EmergencyTriagePage />;
+      case "ambulance":
+        return <AmbulancePage />;
+      case "ambulance-billing":
+        return ambulanceBillingAccess ? <AmbulanceBillingPage /> : <Dashboard />;
       case "staff-shifts":
         return <StaffShiftsPage />;
       case "ward-management":
@@ -175,8 +184,8 @@ const HospitalDashboard = () => {
             {nursingAccess && <li className={activePage === "ward-management" ? "active" : ""} aria-current={activePage === "ward-management" ? "page" : undefined} onClick={() => setActivePage("ward-management")}>
               <Building2 size={16} /> Nurse Management
             </li>}
-            {(payrollAccess || payslipAccess) && <li className={activePage === "payroll" ? "active" : ""} aria-current={activePage === "payroll" ? "page" : undefined} onClick={() => setActivePage("payroll")}>
-              <Wallet size={16} /> {payrollAccess ? "HR & Payroll" : "My payslips"}
+            {payslipAccess && <li className={activePage === "payroll" ? "active" : ""} aria-current={activePage === "payroll" ? "page" : undefined} onClick={() => setActivePage("payroll")}>
+              <Wallet size={16} /> My payslips
             </li>}
             {!nursingOnly && <>
             <li className={activePage === "pharmacy" ? "active" : ""} aria-current={activePage === "pharmacy" ? "page" : undefined} onClick={() => setActivePage("pharmacy")}>
@@ -188,6 +197,15 @@ const HospitalDashboard = () => {
             <li className={activePage === "emergency" ? "active" : ""} aria-current={activePage === "emergency" ? "page" : undefined} onClick={() => setActivePage("emergency")}>
               <Siren size={16} /> Triage &amp; Emergency
             </li>
+            {roles.some((role) => [
+              "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "CRM_EXECUTIVE",
+              "RECEPTIONIST", "BILLING_EXECUTIVE", "FINANCE",
+            ].includes(role)) && <li className={activePage === "ambulance" ? "active" : ""} aria-current={activePage === "ambulance" ? "page" : undefined} onClick={() => setActivePage("ambulance")}>
+              <AmbulanceIcon size={16} /> Ambulance booking
+            </li>}
+            {ambulanceBillingAccess && <li className={activePage === "ambulance-billing" ? "active" : ""} aria-current={activePage === "ambulance-billing" ? "page" : undefined} onClick={() => setActivePage("ambulance-billing")}>
+              <FaCreditCard /> Ambulance billing
+            </li>}
             <li className={activePage === "settings" ? "active" : ""} aria-current={activePage === "settings" ? "page" : undefined} onClick={() => setActivePage("settings")}>
               <FaCogs /> Settings
             </li>

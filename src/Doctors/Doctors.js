@@ -8,7 +8,10 @@ class Doctors extends Component {
     super(props);
     this.state = {
       doctors: [],
+      doctorEmployees: [],
       showModal: false,
+      doctorType: 'EMPLOYEE',
+      selectedEmployeeId: '',
       newDoctor: {
         doctorName: '',
         doctorSpecialistName: '',
@@ -31,10 +34,16 @@ class Doctors extends Component {
 
   fetchDoctors = async () => {
     try {
-      const response = await apiFetch('/doctors');
-      if (!response.ok) throw new Error('Could not load doctors');
-      const data = await response.json();
-      this.setState({ doctors: data, errorMessage: '' });
+      const [doctorsResponse, employeesResponse] = await Promise.all([
+        apiFetch('/doctors'),
+        apiFetch('/doctors/employees'),
+      ]);
+      if (!doctorsResponse.ok || !employeesResponse.ok) throw new Error('Could not load doctors');
+      const [doctors, doctorEmployees] = await Promise.all([
+        doctorsResponse.json(),
+        employeesResponse.json(),
+      ]);
+      this.setState({ doctors, doctorEmployees, errorMessage: '' });
     } catch (error) {
       this.setState({ errorMessage: error.message || 'Could not load doctors' });
     } finally {
@@ -47,6 +56,42 @@ class Doctors extends Component {
       newDoctor: {
         ...this.state.newDoctor,
         [e.target.name]: e.target.value,
+      },
+    });
+  };
+
+  handleDoctorTypeChange = (event) => {
+    const doctorType = event.target.value;
+    this.setState({
+      doctorType,
+      selectedEmployeeId: '',
+      newDoctor: {
+        doctorName: '',
+        doctorSpecialistName: '',
+        doctorMobileNo: '',
+        doctorDestination: '',
+        doctorfee: '',
+      },
+    });
+  };
+
+  handleEmployeeChange = (event) => {
+    const selectedEmployeeId = event.target.value;
+    const employee = this.state.doctorEmployees.find((item) => item.id === selectedEmployeeId);
+    this.setState({
+      selectedEmployeeId,
+      newDoctor: employee ? {
+        doctorName: employee.doctorName || '',
+        doctorSpecialistName: employee.doctorSpecialistName || '',
+        doctorMobileNo: employee.doctorMobileNo || '',
+        doctorDestination: employee.doctorDestination || '',
+        doctorfee: employee.doctorfee ?? '',
+      } : {
+        doctorName: '',
+        doctorSpecialistName: '',
+        doctorMobileNo: '',
+        doctorDestination: '',
+        doctorfee: '',
       },
     });
   };
@@ -67,38 +112,55 @@ class Doctors extends Component {
   };
 
   handleCreateDoctor = async () => {
-    const { newDoctor, availableSlots } = this.state;
+    const { doctorType, selectedEmployeeId, newDoctor, availableSlots } = this.state;
 
     if (!availableSlots.length) {
       this.setState({ errorMessage: 'Add at least one available time slot.' });
       return;
     }
-    if (!newDoctor.doctorName.trim() || !newDoctor.doctorSpecialistName.trim()) {
+    if (doctorType === 'NON_EMPLOYEE'
+      && (!newDoctor.doctorName.trim() || !newDoctor.doctorSpecialistName.trim())) {
       this.setState({ errorMessage: 'Enter a doctor name and specialty.' });
       return;
     }
 
-    const newEntry = {
-      doctorName: newDoctor.doctorName,
-      doctorMobileNo: newDoctor.doctorMobileNo,
-      doctorDestination: newDoctor.doctorDestination,
-      doctorSpecialistName: newDoctor.doctorSpecialistName,
-      doctorAvailabletime: availableSlots,
-      doctorslot: availableSlots.length,
-      doctorfee: newDoctor.doctorfee,
-    };
+    if (doctorType === 'EMPLOYEE' && !selectedEmployeeId) {
+      this.setState({ errorMessage: 'Select a doctor employee first.' });
+      return;
+    }
 
     try {
-      const response = await apiFetch('/doctors', {
-        method: 'POST',
-        body: JSON.stringify(newEntry),
-      });
-
-      if (response.ok) {
-        const savedDoctor = await response.json();
-        this.setState({
-          doctors: [...this.state.doctors, savedDoctor],
+      const employedDoctor = doctorType === 'EMPLOYEE';
+      const response = await apiFetch(
+        employedDoctor ? `/doctors/employees/${encodeURIComponent(selectedEmployeeId)}/schedule` : '/doctors',
+        {
+          method: employedDoctor ? 'PUT' : 'POST',
+          body: JSON.stringify(employedDoctor ? {
+            availableTimes: availableSlots,
+            consultationFee: newDoctor.doctorfee === '' ? null : Number(newDoctor.doctorfee),
+          } : {
+            doctorName: newDoctor.doctorName,
+            doctorMobileNo: newDoctor.doctorMobileNo,
+            doctorDestination: newDoctor.doctorDestination,
+            doctorSpecialistName: newDoctor.doctorSpecialistName,
+            doctorAvailabletime: availableSlots,
+            doctorslot: availableSlots.length,
+            doctorfee: newDoctor.doctorfee,
+          }),
+        },
+      );
+      if (!response.ok) throw new Error('Failed to save doctor schedule');
+      const savedDoctor = await response.json();
+      this.setState((current) => {
+        const existingDoctorIndex = current.doctors.findIndex((doctor) => doctor.id === savedDoctor.id);
+        const doctors = [...current.doctors];
+        if (existingDoctorIndex >= 0) doctors[existingDoctorIndex] = savedDoctor;
+        else doctors.push(savedDoctor);
+        return {
+          doctors,
           showModal: false,
+          doctorType: 'EMPLOYEE',
+          selectedEmployeeId: '',
           newDoctor: {
             doctorName: '',
             doctorSpecialistName: '',
@@ -108,14 +170,12 @@ class Doctors extends Component {
           },
           availableSlots: [],
           slotInput: '',
-          successMessage: 'Doctor added successfully!',
+          successMessage: employedDoctor ? 'Doctor schedule updated successfully!' : 'Doctor added successfully!',
           errorMessage: '',
-        });
+        };
+      });
 
-        setTimeout(() => this.setState({ successMessage: '' }), 3000);
-      } else {
-        throw new Error('Failed to save doctor');
-      }
+      setTimeout(() => this.setState({ successMessage: '' }), 3000);
     } catch (error) {
       this.setState({ errorMessage: error.message || 'Could not save doctor' });
     }
@@ -124,7 +184,10 @@ class Doctors extends Component {
   render() {
     const {
       doctors,
+      doctorEmployees,
       showModal,
+      doctorType,
+      selectedEmployeeId,
       newDoctor,
       availableSlots,
       slotInput,
@@ -153,7 +216,21 @@ class Doctors extends Component {
             <h1 id="doctor-schedule-title">Doctor availability</h1>
             <p className="doctor-schedule-description">Manage clinician details and appointment hours.</p>
           </div>
-          <button className="doctor-add-button" type="button" onClick={() => this.setState({ showModal: true, errorMessage: '' })}>
+          <button className="doctor-add-button" type="button" onClick={() => this.setState({
+            showModal: true,
+            doctorType: doctorEmployees.length ? 'EMPLOYEE' : 'NON_EMPLOYEE',
+            selectedEmployeeId: '',
+            newDoctor: {
+              doctorName: '',
+              doctorSpecialistName: '',
+              doctorMobileNo: '',
+              doctorDestination: '',
+              doctorfee: '',
+            },
+            availableSlots: [],
+            slotInput: '',
+            errorMessage: '',
+          })}>
             <Plus size={17} aria-hidden="true" /> Add doctor
           </button>
         </header>
@@ -271,10 +348,25 @@ class Doctors extends Component {
               {errorMessage && <div className="doctor-notice error" role="alert">{errorMessage}</div>}
               <form onSubmit={(event) => { event.preventDefault(); this.handleCreateDoctor(); }}>
                 <div className="doctor-form-grid">
-                  <label>Full name<input required name="doctorName" value={newDoctor.doctorName} onChange={this.handleInputChange} /></label>
-                  <label>Specialty<input required name="doctorSpecialistName" value={newDoctor.doctorSpecialistName} onChange={this.handleInputChange} /></label>
-                  <label>Phone<input name="doctorMobileNo" type="tel" value={newDoctor.doctorMobileNo} onChange={this.handleInputChange} /></label>
-                  <label>Department / ward<input name="doctorDestination" value={newDoctor.doctorDestination} onChange={this.handleInputChange} /></label>
+                  <label>Doctor type<select aria-label="Doctor type" value={doctorType} onChange={this.handleDoctorTypeChange}>
+                    <option value="EMPLOYEE">HR doctor employee</option>
+                    <option value="NON_EMPLOYEE">Non-employee doctor</option>
+                  </select></label>
+                  {doctorType === 'EMPLOYEE' && <label>Doctor employee<select required aria-label="Doctor employee"
+                    value={selectedEmployeeId} onChange={this.handleEmployeeChange}>
+                    <option value="">Select a doctor employee</option>
+                    {doctorEmployees.map((employee) => <option key={employee.id} value={employee.id}>
+                      {employee.doctorName} · {employee.employeeCode}
+                    </option>)}
+                  </select></label>}
+                  <label>Full name<input required name="doctorName" value={newDoctor.doctorName}
+                    readOnly={doctorType === 'EMPLOYEE'} onChange={this.handleInputChange} /></label>
+                  <label>Specialty<input required name="doctorSpecialistName" value={newDoctor.doctorSpecialistName}
+                    readOnly={doctorType === 'EMPLOYEE'} onChange={this.handleInputChange} /></label>
+                  <label>Phone<input name="doctorMobileNo" type="tel" value={newDoctor.doctorMobileNo}
+                    readOnly={doctorType === 'EMPLOYEE'} onChange={this.handleInputChange} /></label>
+                  <label>Department / ward<input name="doctorDestination" value={newDoctor.doctorDestination}
+                    readOnly={doctorType === 'EMPLOYEE'} onChange={this.handleInputChange} /></label>
                   <label>Consultation fee<input min="0" name="doctorfee" type="number" value={newDoctor.doctorfee} onChange={this.handleInputChange} /></label>
                 </div>
                 <div className="doctor-slot-editor">

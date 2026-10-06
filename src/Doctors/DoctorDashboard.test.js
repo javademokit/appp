@@ -50,6 +50,7 @@ test('doctor reviews a linked patient and completes a consultation using persist
         }],
       };
     }
+    if (path === '/staff/shifts/mine') return { ok: true, json: async () => [] };
     if (path === '/doctor-portal/patients/PT-123') {
       return {
         ok: true,
@@ -194,6 +195,7 @@ test('shows the linked doctor ID and department and searches only assigned patie
     if (path === '/doctor-portal/medications') {
       return { ok: true, json: async () => [] };
     }
+    if (path === '/staff/shifts/mine') return { ok: true, json: async () => [] };
     throw new Error(`Unexpected API request: ${path}`);
   });
 
@@ -204,6 +206,9 @@ test('shows the linked doctor ID and department and searches only assigned patie
   expect(screen.getByRole('heading', { name: 'Assigned patients' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Aadi Patient/ })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Second Patient/ })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Apply overtime' })).toHaveAttribute(
+    'href', '/PayrollPortal?section=overtime-allowances',
+  );
 
   fireEvent.change(screen.getByRole('searchbox', { name: 'Find patient' }), {
     target: { value: 'pt-456' },
@@ -211,6 +216,109 @@ test('shows the linked doctor ID and department and searches only assigned patie
 
   expect(screen.queryByRole('button', { name: /Aadi Patient/ })).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Second Patient/ })).toBeInTheDocument();
+});
+
+test('doctor can check in to their assigned shift and open their overtime request page', async () => {
+  const date = new Date();
+  const today = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const shift = {
+    id: 'shift-1',
+    shiftDate: today,
+    startTime: '08:00',
+    endTime: '16:00',
+    department: 'Cardiology',
+    status: 'SCHEDULED',
+  };
+  apiFetch.mockImplementation(async (path, options = {}) => {
+    if (path === '/doctor-portal/dashboard') {
+      return { ok: true, json: async () => ({
+        doctor: { id: 'doctor-1', doctorName: 'Dr. Example' },
+        appointments: [appointment],
+        waitingCount: 1,
+        followUpCount: 0,
+      }) };
+    }
+    if (path === '/doctor-portal/medications') return { ok: true, json: async () => [] };
+    if (path === '/staff/shifts/mine') {
+      return { ok: true, json: async () => [shift] };
+    }
+    if (path === '/staff/shifts/mine/shift-1/check-in' && options.method === 'POST') {
+      return { ok: true, json: async () => ({ ...shift, status: 'ON_DUTY' }) };
+    }
+    throw new Error(`Unexpected API request: ${path}`);
+  });
+
+  render(<DoctorDashboard />);
+
+  fireEvent.click(await screen.findByRole('button', { name: 'Check in' }));
+
+  await waitFor(() => expect(apiFetch).toHaveBeenCalledWith(
+    '/staff/shifts/mine/shift-1/check-in', { method: 'POST' },
+  ));
+  expect(await screen.findByText('Shift check-in recorded.')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Check in' })).not.toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Apply overtime' })).toHaveAttribute(
+    'href', '/PayrollPortal?section=overtime-allowances',
+  );
+});
+
+test('doctor can review and print an earlier prescription for an assigned patient', async () => {
+  apiFetch.mockImplementation(async (path) => {
+    if (path === '/doctor-portal/dashboard') {
+      return { ok: true, json: async () => ({
+        doctor: { id: 'doctor-1', doctorName: 'Dr. Example' },
+        appointments: [appointment],
+        waitingCount: 1,
+        followUpCount: 0,
+      }) };
+    }
+    if (path === '/doctor-portal/medications') return { ok: true, json: async () => [] };
+    if (path === '/staff/shifts/mine') return { ok: true, json: async () => [] };
+    if (path === '/doctor-portal/patients/PT-123') {
+      return { ok: true, json: async () => ({
+        patient: { patientId: 'PT-123', patientName: 'Aadi Patient' },
+        consultations: [],
+        prescriptions: [{
+          id: 'rx-old',
+          patientId: 'PT-123',
+          patientName: 'Aadi Patient',
+          doctorName: 'Dr. Example',
+          diagnosis: 'Earlier diagnosis',
+          createdAt: '2026-09-01T10:00:00Z',
+          medications: [{
+            medicationId: 'med-old',
+            name: 'Previously prescribed medicine',
+            dose: '1 tablet',
+            route: 'Oral',
+            frequency: 'Daily',
+            duration: '5 days',
+            quantity: 5,
+          }],
+        }],
+      }) };
+    }
+    throw new Error(`Unexpected API request: ${path}`);
+  });
+  const printWindow = {
+    document: { open: jest.fn(), write: jest.fn(), close: jest.fn() },
+    focus: jest.fn(),
+    setTimeout: jest.fn((callback) => callback()),
+    print: jest.fn(),
+    close: jest.fn(),
+  };
+  jest.spyOn(window, 'open').mockReturnValue(printWindow);
+
+  render(<DoctorDashboard />);
+  fireEvent.click(await screen.findByRole('button', { name: 'Open patient' }));
+
+  await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('/doctor-portal/patients/PT-123'));
+  expect(await screen.findByRole('heading', { name: 'Medication prescription history' })).toBeInTheDocument();
+  expect(await screen.findByText(/Previously prescribed medicine/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Print prescription' }));
+
+  expect(printWindow.document.write).toHaveBeenCalledWith(expect.stringContaining('Earlier diagnosis'));
+  expect(printWindow.document.write).toHaveBeenCalledWith(expect.stringContaining('Previously prescribed medicine'));
+  expect(printWindow.print).toHaveBeenCalled();
 });
 
 test('shows the backend reason when the doctor profile is not linked', async () => {

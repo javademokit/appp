@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { employeeDocumentUrl } from '../../services/employeeService';
 import { HrField, asArray, titleCase } from '../hrUi';
 import { findDoctorDepartment } from '../../utils/doctorDisplay';
 
@@ -20,6 +21,13 @@ export default function EmployeeForm({ data = {}, employee }) {
   const [departmentId, setDepartmentId] = useState(initialDepartment);
   const [departmentName, setDepartmentName] = useState(
     employee?.departmentName || existingProfileDepartment?.name || existingProfileDepartmentName,
+  );
+  const [doctorFee, setDoctorFee] = useState(
+    employee?.doctorConsultationFee ?? existingDoctorProfile?.doctorfee ?? '',
+  );
+  const initialDoctorTimes = employee?.doctorAvailableTimes ?? existingDoctorProfile?.doctorAvailabletime ?? [];
+  const [doctorTimes, setDoctorTimes] = useState(
+    Array.isArray(initialDoctorTimes) ? initialDoctorTimes.join(', ') : String(initialDoctorTimes),
   );
   const selectedDoctor = doctorProfiles.find((doctor) => doctor.id === doctorProfileId);
   const selectedProfileDepartmentName = selectedDoctor?.departmentName || selectedDoctor?.department
@@ -43,6 +51,22 @@ export default function EmployeeForm({ data = {}, employee }) {
       <HrField label="Address"><input name="address" defaultValue={employee?.address} /></HrField>
       <HrField label="Emergency contact"><input name="emergencyContact" defaultValue={employee?.emergencyContact} /></HrField>
     </div></div>
+    <div className="hr-form-section"><h3>Statutory identifiers</h3><div className="hr-form-grid">
+      <HrField label="PAN"><input name="panNumber" autoComplete="off" maxLength="10"
+        defaultValue={employee?.panNumber} placeholder="ABCDE1234F" /></HrField>
+      <HrField label="Aadhaar last four digits"><input name="aadhaarLastFour" inputMode="numeric"
+        autoComplete="off" maxLength="4" pattern="[0-9]{4}" placeholder="Optional"
+        aria-describedby="aadhaar-help" />
+        <span id="aadhaar-help" className="hr-form-hint">
+          {employee?.hasAadhaarNumber
+          ? `Saved as •••• ${employee.aadhaarLastFour || '••••'}. Leave blank to keep it unchanged.`
+          : 'Optional. Do not enter the full Aadhaar number; only the last four digits are stored.'}
+        </span>
+      </HrField>
+      <HrField label="PF / UAN number"><input name="pfUanNumber" autoComplete="off" maxLength="30"
+        defaultValue={employee?.pfUanNumber} /></HrField>
+    </div></div>
+    <p className="hr-form-hint">The PF / UAN field identifies the employee account. Set that employee’s PF deduction amount separately in Salary → Salary Structures.</p>
     <div className="hr-form-section"><h3>Employment information</h3><div className="hr-form-grid">
       <HrField label="Employee type" required><select name="employeeType" required value={employeeType}
         onChange={(event) => setEmployeeType(event.target.value)}>
@@ -89,6 +113,9 @@ export default function EmployeeForm({ data = {}, employee }) {
           const profileName = profile?.departmentName || profile?.department || profile?.doctorDestination || '';
           setDepartmentId(profileDepartment?.id || (profileName ? PROFILE_DEPARTMENT_VALUE : ''));
           setDepartmentName(profileDepartment?.name || profileName);
+          setDoctorFee(profile?.doctorfee ?? '');
+          const profileTimes = profile?.doctorAvailabletime || [];
+          setDoctorTimes(Array.isArray(profileTimes) ? profileTimes.join(', ') : String(profileTimes));
         }}>
           <option value="">No doctor profile linked</option>
           {asArray(data.doctors).map((doctor) => <option key={doctor.id} value={doctor.id}>
@@ -102,6 +129,14 @@ export default function EmployeeForm({ data = {}, employee }) {
             ? ` · ${selectedDoctor.departmentName || selectedDoctor.department || selectedDoctor.doctorDestination}` : ''}
         </span>}
       </HrField>}
+      {employeeType === 'DOCTOR' && <>
+        <HrField label="Consultation fee"><input name="doctorConsultationFee" type="number" min="0" step="0.01"
+          value={doctorFee} onChange={(event) => setDoctorFee(event.target.value)} /></HrField>
+        <HrField label="Available appointment times"><input name="doctorAvailableTimes" placeholder="09:00, 09:30"
+          value={doctorTimes} onChange={(event) => setDoctorTimes(event.target.value)} />
+          <span className="hr-form-hint">Optional. Separate appointment start times with commas. You can set or update these in Doctor Schedule.</span>
+        </HrField>
+      </>}
     </div></div>
     <div className="hr-form-section"><h3>Professional information</h3><div className="hr-form-grid">
       <HrField label={registrationLabel}><input name="registrationNumber" defaultValue={professionalInfo.registrationNumber} /></HrField>
@@ -111,8 +146,27 @@ export default function EmployeeForm({ data = {}, employee }) {
       <HrField label="License expiry"><input name="licenseExpiryDate" type="date" defaultValue={professionalInfo.licenseExpiryDate} /></HrField>
       <HrField label="Certification"><input name="certification" defaultValue={professionalInfo.certification} /></HrField>
     </div><p className="hr-form-hint">Professional details are optional and remain part of the generic employee record.</p></div>
-    <div className="hr-form-section"><h3>Documents</h3><HrField label="Document links (one URL per line)">
-      <textarea name="documentLinks" rows="3" placeholder="https://..." defaultValue={asArray(employee?.documentLinks).join('\n')} />
-    </HrField></div>
+    <div className="hr-form-section"><h3>Joining documents</h3>
+      <p className="hr-form-hint">PAN card, Aadhaar card, and experience letter are optional. You can save the employee without these files and upload them later. PDF, PNG, or JPEG up to 10 MB.</p>
+      <div className="hr-form-grid">
+        {[
+          ['PAN card', 'PAN_CARD'],
+          ['Aadhaar card', 'AADHAAR_CARD'],
+          ['Experience letter', 'EXPERIENCE_LETTER'],
+        ].map(([label, type]) => {
+          const savedDocument = employee?.onboardingDocuments?.[type];
+          return <HrField key={type} label={label}>
+            <input name={`document-${type}`} type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg" />
+            {savedDocument?.fileName && <a className="hr-link-button" href={employeeDocumentUrl(employee.id, type)}>
+              View uploaded file: {savedDocument.fileName}
+            </a>}
+          </HrField>;
+        })}
+      </div>
+      <HrField label="Other document links (one URL per line)">
+        <textarea name="documentLinks" rows="2" placeholder="https://..."
+          defaultValue={asArray(employee?.documentLinks).join('\n')} />
+      </HrField>
+    </div>
   </>;
 }

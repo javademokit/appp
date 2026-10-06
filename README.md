@@ -347,3 +347,49 @@ are decomposed under `src/pages/`; API operations are grouped in
 `src/services/`. The payroll preview shows per-employee gross pay, deductions,
 and net pay, while each payslip includes employee details and an earnings,
 deductions, and net salary breakdown.
+
+Creating a doctor employee in HR automatically creates and links the doctor
+profile used by **Doctor Schedule**. HR can optionally enter the consultation
+fee and comma-separated appointment start times during onboarding; these can
+also be configured later from Doctor Schedule by selecting the HR-created
+doctor employee. This updates the existing linked doctor profile without
+creating a duplicate. Non-employee clinicians can still be added directly.
+
+The backend can also bootstrap dedicated pharmacist, doctor, nurse, and lab
+technician accounts during startup. Set `APP_BOOTSTRAP_PHARMACIST_PASSWORD`,
+`APP_BOOTSTRAP_DOCTOR_PASSWORD`, `APP_BOOTSTRAP_NURSE_PASSWORD`, and
+`APP_BOOTSTRAP_TECHNICIAN_PASSWORD` to unique passwords of at least 12
+characters; account IDs and emails have `application.properties` defaults and
+can be overridden with their corresponding `APP_BOOTSTRAP_*` variables. The
+doctor bootstrap account is linked to its own doctor profile. Passwords are
+never stored in the properties file. A missing password skips only that
+account; set `APP_SECURITY_BOOTSTRAP_STAFF_ENABLED=false` to disable staff
+account bootstrap entirely. Existing accounts are not promoted or modified.
+
+Ambulance operations are available from **Hospital Dashboard → Ambulance
+booking**. Create branches, assign registered vehicles to a branch, then use
+the branch selector to see its ambulance topology, live map, vehicle status,
+and last reported locations. GPS points refresh on the dashboard every 10
+seconds and are marked stale after 60 seconds without a phone update. Map
+tiles are provided by OpenStreetMap.
+
+To share a vehicle's location, generate a single-use pairing code from its
+fleet row. On the driver's phone, open `/AmbulanceDriver`, enter the code, and
+allow location access. Phone GPS updates are sent about every 10 seconds while
+the driver page remains open. Use HTTPS in deployment: browser geolocation
+requires a secure context, and mobile browsers may suspend tracking when the
+page is backgrounded or closed.
+
+Dispatch staff select an existing patient, branch, pickup/drop-off addresses,
+and distance, and choose cash or configured Razorpay payment. Cash bookings
+remain pending until a billing user confirms receipt in **Hospital Dashboard →
+Ambulance billing**; unconfirmed cash cannot be dispatched or counted as a
+collection. A verified online payment is marked paid immediately. The separate
+billing dashboard shows gross collections, completed and pending refunds, net
+revenue, and a six-month collection/refund graph. The fare is
+calculated server-side using `ambulance.rate-per-kilometer` (default ₹100/km;
+override with `AMBULANCE_RATE_PER_KILOMETER`). Only paid bookings can be
+dispatched, and dispatch assignment is constrained to the booking's branch.
+Before dispatch, online cancellations request a Razorpay refund; cash
+cancellations remain marked refund-due until staff confirm that cash has been
+returned. A booking cannot be cancelled after dispatch.

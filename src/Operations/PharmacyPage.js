@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Boxes, ClipboardList, Pill, Plus, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Boxes, ClipboardList, Pill, Plus, Printer, RefreshCw } from 'lucide-react';
 import { apiFetch } from '../API/api';
+import { startPharmacyCheckout } from '../PaymentPage/paymentGatewayCheckout';
 import './Operations.css';
 
 const medicineDepartments = [
@@ -18,13 +19,18 @@ async function readResponse(response) {
   return data;
 }
 
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+})[character]);
+
 export default function PharmacyPage() {
   const [activeTab, setActiveTab] = useState('inventory');
   const [inventory, setInventory] = useState([]);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
   const [issues, setIssues] = useState([]);
   const [doctorPrescriptions, setDoctorPrescriptions] = useState([]);
-  const [patients, setPatients] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [paymentGateways, setPaymentGateways] = useState({});
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -43,22 +49,29 @@ export default function PharmacyPage() {
     setLoading(true);
     setError('');
     try {
-      const [inventoryResponse, ordersResponse, issuesResponse, patientsResponse, prescriptionsResponse] = await Promise.all([
+      const [inventoryResponse, ordersResponse, issuesResponse, prescriptionsResponse] = await Promise.all([
         apiFetch('/pharmacy/medications'),
         apiFetch('/pharmacy/purchase-orders'),
         apiFetch('/pharmacy/prescription-issues'),
-        apiFetch('/patients'),
         apiFetch('/pharmacy/prescriptions'),
       ]);
-      const [inventoryData, ordersData, issuesData, patientData, prescriptionData] = await Promise.all([
-        readResponse(inventoryResponse), readResponse(ordersResponse), readResponse(issuesResponse), readResponse(patientsResponse),
+      const [inventoryData, ordersData, issuesData, prescriptionData] = await Promise.all([
+        readResponse(inventoryResponse), readResponse(ordersResponse), readResponse(issuesResponse),
         readResponse(prescriptionsResponse),
+      ]);
+      const [invoiceResponse, gatewaysResponse] = await Promise.all([
+        apiFetch('/pharmacy/invoices'),
+        apiFetch('/pharmacy/invoices/gateways'),
+      ]);
+      const [invoiceData, gatewaysData] = await Promise.all([
+        readResponse(invoiceResponse), readResponse(gatewaysResponse),
       ]);
       setInventory(inventoryData);
       setPurchaseOrders(ordersData);
       setIssues(issuesData);
-      setPatients(patientData.filter((patient) => patient.patientId));
       setDoctorPrescriptions(prescriptionData);
+      setInvoices(invoiceData);
+      setPaymentGateways(gatewaysData);
     } catch (requestError) {
       setError(requestError.message || 'Could not load pharmacy data');
     } finally {
@@ -75,6 +88,10 @@ export default function PharmacyPage() {
     return daysLeft >= 0 && daysLeft <= 90;
   });
   const pendingOrders = purchaseOrders.filter((order) => order.status !== 'RECEIVED');
+  const invoicesByReference = useMemo(
+    () => new Map(invoices.map((invoice) => [invoice.referenceKey, invoice])),
+    [invoices],
+  );
   const filteredInventory = useMemo(() => inventory.filter((item) =>
     (departmentFilter === 'All departments' || (item.department || 'General Medicine') === departmentFilter)
       && `${item.name} ${item.department || ''} ${item.strength || ''} ${item.batchNumber || ''} ${item.supplier || ''}`
@@ -152,6 +169,60 @@ export default function PharmacyPage() {
     finally { setBusy(false); }
   };
 
+  const collectCash = async (invoice) => {
+    setBusy(true); setError(''); setSuccess('');
+    try {
+      await readResponse(await apiFetch(`/pharmacy/invoices/${encodeURIComponent(invoice.id)}/payments`, {
+        method: 'POST',
+        body: JSON.stringify({ amount: Number(invoice.balanceDue).toFixed(2), method: 'CASH' }),
+      }));
+      setSuccess(`Cash payment recorded for ${invoice.invoiceNumber}.`);
+      await refresh();
+    } catch (requestError) { setError(requestError.message || 'Could not record pharmacy payment'); }
+    finally { setBusy(false); }
+  };
+
+  const payOnline = async (invoice) => {
+    setBusy(true); setError(''); setSuccess('');
+    try {
+      await startPharmacyCheckout(invoice.id, 'RAZORPAY', async () => {
+        setSuccess(`Online payment verified for ${invoice.invoiceNumber}.`);
+        await refresh();
+      });
+    } catch (requestError) { setError(requestError.message || 'Could not start online pharmacy payment'); }
+    finally { setBusy(false); }
+  };
+
+  const printInvoice = (invoice) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      setError('Your browser blocked the pharmacy bill print window. Allow pop-ups for this site, then try again.');
+      return;
+    }
+    const rows = (invoice.items || []).map((item) => `
+      <tr><td>${escapeHtml(item.medicationName)} ${escapeHtml([item.strength, item.dosageForm].filter(Boolean).join(' · '))}</td>
+      <td>${escapeHtml(item.quantity)}</td><td>₹${escapeHtml(Number(item.unitPrice).toFixed(2))}</td>
+      <td>₹${escapeHtml(Number(item.lineTotal).toFixed(2))}</td></tr>`).join('');
+    printWindow.document.open();
+    printWindow.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8">
+      <title>Pharmacy bill ${escapeHtml(invoice.invoiceNumber)}</title>
+      <style>body{font:14px Arial,sans-serif;color:#172a24;padding:28px}header{display:flex;justify-content:space-between;border-bottom:2px solid #176b5d;padding-bottom:12px}
+      table{width:100%;border-collapse:collapse;margin-top:24px}th,td{border:1px solid #cbd7d2;padding:9px;text-align:left}
+      .total{text-align:right;margin-top:22px}</style></head><body>
+      <header><strong>MEDCARE HOSPITAL · PHARMACY</strong><span>${escapeHtml(invoice.invoiceNumber)}</span></header>
+      <p>Patient: <strong>${escapeHtml(invoice.patientName)}</strong> · ID: ${escapeHtml(invoice.patientId)}</p>
+      <p>Bill date: ${escapeHtml(invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : '')}</p>
+      <table><thead><tr><th>Medicine</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="total"><p>Total: ₹${escapeHtml(Number(invoice.amount).toFixed(2))}</p>
+      <p>Paid: ₹${escapeHtml(Number(invoice.paidAmount).toFixed(2))}</p>
+      <strong>Balance due: ₹${escapeHtml(Number(invoice.balanceDue).toFixed(2))}</strong></div>
+      </body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.onafterprint = () => printWindow.close();
+    printWindow.setTimeout(() => printWindow.print(), 250);
+  };
+
   const printPrescription = (prescription) => {
     setPrintablePrescription(prescription);
     window.setTimeout(() => window.print(), 0);
@@ -195,7 +266,7 @@ export default function PharmacyPage() {
       )}
 
       <div className="workflow-tabs" role="tablist" aria-label="Pharmacy workspace">
-        {[['inventory', 'Inventory'], ['orders', 'Purchase orders'], ['prescriptions', `Doctor prescriptions (${doctorPrescriptions.filter((item) => item.status === 'PENDING').length})`], ['issues', 'Manual prescription issues']].map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={activeTab === id} className={activeTab === id ? 'active' : ''} onClick={() => setActiveTab(id)}>{label}</button>)}
+        {[['inventory', 'Inventory'], ['orders', 'Purchase orders'], ['prescriptions', `Doctor prescriptions (${doctorPrescriptions.filter((item) => item.status === 'PENDING').length})`], ['billing', `Pharmacy billing (${invoices.filter((invoice) => Number(invoice.balanceDue) > 0).length})`], ['issues', 'Manual prescription issues']].map(([id, label]) => <button key={id} type="button" role="tab" aria-selected={activeTab === id} className={activeTab === id ? 'active' : ''} onClick={() => setActiveTab(id)}>{label}</button>)}
       </div>
 
       <section className="workflow-panel">
@@ -222,17 +293,50 @@ export default function PharmacyPage() {
                 <td>{prescription.medications?.map((item, index) => <small key={`${item.medicationId}-${index}`}>
                   {item.name} {[item.strength, item.dosageForm].filter(Boolean).join(' · ')} — {item.dose}, {item.frequency}, {item.duration}; qty {item.quantity}<br />
                 </small>)}</td>
-                <td><span className={`workflow-status ${prescription.status === 'DISPENSED' ? 'ready' : 'neutral'}`}>{prescription.status}</span></td>
+                <td><span className={`workflow-status ${prescription.status === 'DISPENSED' ? 'ready' : 'neutral'}`}>{prescription.status}</span>
+                  <small>Billing: {invoicesByReference.get(`PRESCRIPTION:${prescription.id}`)?.status || 'Invoice pending'}</small></td>
                 <td><div className="workflow-row-actions"><button className="workflow-button subtle" type="button" onClick={() => printPrescription(prescription)}>Print</button>
-                  {prescription.status === 'PENDING' && <button className="workflow-button primary" type="button" disabled={busy} onClick={() => dispenseDoctorPrescription(prescription.id)}>Dispense all</button>}
+                  {prescription.status === 'PENDING' && <button className="workflow-button primary" type="button"
+                    disabled={busy || !['PAID', 'NO_CHARGE'].includes(invoicesByReference.get(`PRESCRIPTION:${prescription.id}`)?.status)}
+                    onClick={() => dispenseDoctorPrescription(prescription.id)}>Dispense all</button>}
                 </div></td>
               </tr>)}</tbody></table></div>}
         </>}
 
+        {activeTab === 'billing' && <>
+          <div className="workflow-panel-heading"><div><h2>Pharmacy bills</h2>
+            <p>Collect cash at the pharmacy or use Razorpay online when it is configured. Medicines can only be dispensed after the bill is paid.</p>
+          </div></div>
+          {loading ? <div className="workflow-empty">Loading pharmacy bills…</div> : !invoices.length
+            ? <div className="workflow-empty">No pharmacy bills have been created.</div>
+            : <div className="workflow-table-wrap"><table className="workflow-table">
+              <thead><tr><th>Bill / reference</th><th>Patient</th><th>Medicines</th><th>Total</th><th>Paid</th><th>Due</th><th>Status</th><th>Payment / print</th></tr></thead>
+              <tbody>{invoices.map((invoice) => <tr key={invoice.id}>
+                <td><strong>{invoice.invoiceNumber}</strong><small>{invoice.referenceType} · {invoice.referenceId}</small></td>
+                <td><strong>{invoice.patientName}</strong><small>{invoice.patientId}</small></td>
+                <td>{invoice.items?.map((item) => <small key={item.medicationId}>{item.medicationName} × {item.quantity}<br /></small>)}</td>
+                <td>₹{Number(invoice.amount).toFixed(2)}</td>
+                <td>₹{Number(invoice.paidAmount).toFixed(2)}</td>
+                <td>₹{Number(invoice.balanceDue).toFixed(2)}</td>
+                <td><span className={`workflow-status ${['PAID', 'NO_CHARGE'].includes(invoice.status) ? 'ready' : 'warning'}`}>{invoice.status}</span></td>
+                <td><div className="workflow-row-actions">
+                  <button className="workflow-button subtle" type="button" onClick={() => printInvoice(invoice)}><Printer size={14} /> Print bill</button>
+                  {Number(invoice.balanceDue) > 0 && <button className="workflow-button primary" type="button"
+                    disabled={busy} onClick={() => collectCash(invoice)}>Collect cash</button>}
+                  {Number(invoice.balanceDue) > 0 && paymentGateways.RAZORPAY && <button className="workflow-button subtle" type="button"
+                    disabled={busy} onClick={() => payOnline(invoice)}>Pay online</button>}
+                </div></td>
+              </tr>)}</tbody>
+            </table></div>}
+        </>}
+
         {activeTab === 'issues' && <>
           <div className="workflow-panel-heading"><div><h2>Prescription issues</h2><p>Track items awaiting dispense and completed issues.</p></div><button className="workflow-button primary" type="button" onClick={() => setShowIssueForm((shown) => !shown)}><Plus size={15} /> Add prescription</button></div>
-          {showIssueForm && <form className="workflow-inline-form" onSubmit={submitIssue}><label>Prescription ID<input required value={issueForm.prescriptionId} onChange={(e) => setIssueForm({ ...issueForm, prescriptionId: e.target.value })} /></label><label>Patient<select required value={issueForm.patientId} onChange={(e) => setIssueForm({ ...issueForm, patientId: e.target.value })}><option value="">Select patient</option>{patients.map((patient) => <option key={patient.patientId} value={patient.patientId}>{patient.patientName} · {patient.patientId}</option>)}</select></label><label>Medication<select required value={issueForm.medicationId} onChange={(e) => setIssueForm({ ...issueForm, medicationId: e.target.value })}><option value="">Select medication</option>{inventory.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.strength}</option>)}</select></label><label>Dosage<input required value={issueForm.dosage} placeholder="e.g. 1 tablet twice daily" onChange={(e) => setIssueForm({ ...issueForm, dosage: e.target.value })} /></label><label>Quantity<input required type="number" min="1" value={issueForm.quantity} onChange={(e) => setIssueForm({ ...issueForm, quantity: e.target.value })} /></label><button className="workflow-button primary" disabled={busy} type="submit">Add to queue</button></form>}
-          {!issues.length ? <div className="workflow-empty">No prescriptions in the dispensing queue.</div> : <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Prescription</th><th>Patient</th><th>Medication</th><th>Dosage</th><th>Quantity</th><th>Status</th><th>Action</th></tr></thead><tbody>{issues.map((issue) => <tr key={issue.id}><td>{issue.prescriptionId}</td><td>{issue.patientName || issue.patientId}</td><td><strong>{issue.medicationName}</strong></td><td>{issue.dosage}</td><td>{issue.quantity}</td><td><span className={`workflow-status ${issue.status === 'ISSUED' ? 'ready' : 'neutral'}`}>{issue.status}</span></td><td>{issue.status === 'PENDING' && <button className="workflow-button subtle" disabled={busy} type="button" onClick={() => dispenseIssue(issue.id)}>Dispense</button>}</td></tr>)}</tbody></table></div>}
+          {showIssueForm && <form className="workflow-inline-form" onSubmit={submitIssue}><label>Prescription ID<input required value={issueForm.prescriptionId} onChange={(e) => setIssueForm({ ...issueForm, prescriptionId: e.target.value })} /></label><label>Patient ID<input required value={issueForm.patientId} onChange={(e) => setIssueForm({ ...issueForm, patientId: e.target.value })} /></label><label>Medication<select required value={issueForm.medicationId} onChange={(e) => setIssueForm({ ...issueForm, medicationId: e.target.value })}><option value="">Select medication</option>{inventory.map((item) => <option key={item.id} value={item.id}>{item.name} · {item.strength}</option>)}</select></label><label>Dosage<input required value={issueForm.dosage} placeholder="e.g. 1 tablet twice daily" onChange={(e) => setIssueForm({ ...issueForm, dosage: e.target.value })} /></label><label>Quantity<input required type="number" min="1" value={issueForm.quantity} onChange={(e) => setIssueForm({ ...issueForm, quantity: e.target.value })} /></label><button className="workflow-button primary" disabled={busy} type="submit">Add to queue</button></form>}
+            {!issues.length ? <div className="workflow-empty">No prescriptions in the dispensing queue.</div> : <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Prescription</th><th>Patient</th><th>Medication</th><th>Dosage</th><th>Quantity</th><th>Status</th><th>Billing / action</th></tr></thead><tbody>{issues.map((issue) => {
+              const invoice = invoicesByReference.get(`ISSUE:${issue.id}`);
+              return <tr key={issue.id}><td>{issue.prescriptionId}</td><td>{issue.patientName || issue.patientId}</td><td><strong>{issue.medicationName}</strong></td><td>{issue.dosage}</td><td>{issue.quantity}</td><td><span className={`workflow-status ${issue.status === 'ISSUED' ? 'ready' : 'neutral'}`}>{issue.status}</span></td><td><small>{invoice?.status || 'Invoice pending'}</small>{issue.status === 'PENDING' && <button className="workflow-button subtle" disabled={busy || !['PAID', 'NO_CHARGE'].includes(invoice?.status)} type="button" onClick={() => dispenseIssue(issue.id)}>Dispense</button>}</td></tr>;
+            })}</tbody></table></div>}
         </>}
       </section>
       {printablePrescription && <section className="printable-prescription" aria-label="Printable medication prescription">

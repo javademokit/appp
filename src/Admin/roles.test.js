@@ -5,6 +5,7 @@ test.each([
   [['nurse'], '/HospitalDashboard'],
   [['head_nurse'], '/HospitalDashboard'],
   [['RECEPTIONIST'], '/HospitalDashboard'],
+  [['CRM_EXECUTIVE'], '/HospitalDashboard'],
   [['ROLE_lab_technician'], '/HospitalDashboard'],
   [['BILLING_EXECUTIVE'], '/HospitalDashboard'],
   [['CLINIC_ADMIN'], '/AdminDashboard'],

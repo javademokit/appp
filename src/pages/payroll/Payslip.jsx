@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowDownToLine } from 'lucide-react';
+import { ArrowDownToLine, Building2 } from 'lucide-react';
 import { HrPanelHeading, formatMoney, asArray } from '../hrUi';
 
 const amount = (item) => item.amount ?? item.value ?? 0;
@@ -21,11 +21,17 @@ export function PayslipDetails({ payslip, onClose }) {
         {onClose && <button className="hr-text-button" onClick={onClose}>Close</button>}
       </div>} />
     <div className="hr-payslip-identity">
-      <strong>MEDICAL CRM · PAYSLIP</strong>
-      <span>Employee: {payslip.employeeName || '—'}</span><span>Employee ID: {payslip.employeeCode || '—'}</span>
-      <span>Designation: {payslip.designation || payslip.designationName || '—'}</span>
-      <span>Department: {payslip.department || payslip.departmentName || '—'}</span>
-      <span>Payroll month: {payslip.month || '—'}</span>
+      <div className="hr-payslip-brand"><span className="hr-payslip-logo"><Building2 size={22} /></span>
+        <span><strong>MEDCARE</strong><small>MONTHLY SALARY SLIP</small></span>
+      </div>
+      <span><b>Employee</b>{payslip.employeeName || '—'}</span>
+      <span><b>Employee ID</b>{payslip.employeeCode || '—'}</span>
+      <span><b>Designation</b>{payslip.designation || payslip.designationName || '—'}</span>
+      <span><b>Department</b>{payslip.department || payslip.departmentName || '—'}</span>
+      <span><b>Pay period</b>{payslip.month || '—'}</span>
+      <span><b>PAN</b>{payslip.panNumber || '—'}</span>
+      <span><b>Aadhaar</b>{payslip.aadhaarLastFour ? `•••• •••• ${payslip.aadhaarLastFour}` : '—'}</span>
+      <span><b>PF / UAN number</b>{payslip.pfUanNumber || '—'}</span>
     </div>
     <div className="hr-payslip-columns">
       <section><h3>Earnings</h3>{earnings.length ? earnings.map((item, index) =>

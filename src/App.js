@@ -14,6 +14,7 @@ import AdminDashboard from "./Admin/AdminDashboard.js"
 import PatientPortal from "./Patients/PatientPortal";
 import DoctorDashboard from "./Doctors/DoctorDashboard";
 import PayrollRun from "./pages/payroll/PayrollRun";
+import AmbulanceDriverPage from "./Operations/AmbulanceDriverPage";
 
 const PageWithLayout = ({ children }) => (
   <>
@@ -40,6 +41,7 @@ function App() {
         <Route path="/DoctorLogin" element={<UserLogin portal="doctor" />} />
         <Route path="/HospitalLogin" element={<UserLogin portal="hospital" />} />
         <Route path="/SignUpPage" element={<SignUpPage />} />
+        <Route path="/AmbulanceDriver" element={<AmbulanceDriverPage />} />
 
         {/* Role-Based Protected Routes */}
         <Route

@@ -1,4 +1,5 @@
 import React from 'react';
+import { employeeDocumentUrl } from '../../services/employeeService';
 import { HrField, HrStatusBadge, formatMoney, titleCase } from '../hrUi';
 
 export default function EmployeeDetails({ employee }) {
@@ -16,6 +17,17 @@ export default function EmployeeDetails({ employee }) {
       <HrField label="Joining date"><span>{employee.joiningDate || '—'}</span></HrField>
       <HrField label="Mobile"><span>{employee.mobile || '—'}</span></HrField>
       <HrField label="Email"><span>{employee.email || '—'}</span></HrField>
+      <HrField label="PAN"><span>{employee.panNumber || '—'}</span></HrField>
+      <HrField label="Aadhaar"><span>{employee.hasAadhaarNumber
+        ? `•••• •••• ${employee.aadhaarLastFour || '••••'}` : '—'}</span></HrField>
+      <HrField label="PF / UAN number"><span>{employee.pfUanNumber || '—'}</span></HrField>
+      {Object.entries(employee.onboardingDocuments || {}).map(([type, document]) => (
+        <HrField key={type} label={type.replaceAll('_', ' ')}>
+          <a className="hr-link-button" href={employeeDocumentUrl(employee.id, type)}>
+            {document.fileName || 'Download document'}
+          </a>
+        </HrField>
+      ))}
     </div></div>
     <div className="hr-form-section"><h3>Professional information</h3><div className="hr-form-grid">
       <HrField label="Registration"><span>{professionalInfo.registrationNumber || '—'}</span></HrField>

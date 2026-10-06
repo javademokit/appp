@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { apiFetch } from '../API/api';
 import PayrollPage from '../pages/payroll/PayrollRun';
 
@@ -61,6 +62,9 @@ describe('PayrollPage', () => {
     expect(screen.getByRole('dialog', { name: 'Add employee' })).toBeInTheDocument();
     expect(screen.getByLabelText(/First name/)).toBeRequired();
     expect(screen.getByLabelText(/Employee type/)).toBeInTheDocument();
+    expect(screen.getByLabelText('PAN card')).not.toBeRequired();
+    expect(screen.getByLabelText('Aadhaar card')).not.toBeRequired();
+    expect(screen.getByLabelText('Experience letter')).not.toBeRequired();
   });
 
   it('shows doctor profiles for doctor employees and keeps Other selectable', async () => {
@@ -116,6 +120,88 @@ describe('PayrollPage', () => {
       && options?.method === 'POST'
       && JSON.parse(options.body).departmentId === 'department-cardio'
     ))).toBe(true);
+  });
+
+  it('saves optional joining documents after creating an employee', async () => {
+    apiFetch.mockImplementation(async (path, options = {}) => {
+      if (path === '/users/me') return jsonResponse({ username: 'hr-user', roles: ['HR'] });
+      if (path === '/employees' && options.method === 'POST') return jsonResponse({ id: 'employee-1' });
+      if (path.startsWith('/employees/employee-1/documents/')) return jsonResponse({ fileName: 'pan-card.pdf' });
+      const responses = {
+        '/employees': [],
+        '/departments': [],
+        '/designations': [],
+        '/shifts': [],
+        '/employee-types': [{ id: 'type-other', code: 'OTHER', name: 'Other', status: 'ACTIVE' }],
+        '/doctors': [],
+      };
+      const body = Object.entries(responses).find(([key]) => path.startsWith(key))?.[1] || [];
+      return jsonResponse(body);
+    });
+
+    render(<PayrollPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Employees' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Add employee', exact: true }));
+    fireEvent.change(await screen.findByLabelText(/Employee type/), { target: { value: 'OTHER' } });
+    fireEvent.change(screen.getByLabelText(/First name/), { target: { value: 'Riya' } });
+    fireEvent.change(screen.getByLabelText(/Last name/), { target: { value: 'Shah' } });
+    fireEvent.change(screen.getByLabelText(/Mobile/), { target: { value: '5551234567' } });
+    fireEvent.change(screen.getByLabelText(/Joining date/), { target: { value: '2026-10-01' } });
+    const panCardInput = screen.getByLabelText('PAN card');
+    userEvent.upload(panCardInput, new File(['PAN'], 'pan-card.pdf', { type: 'application/pdf' }));
+    expect(panCardInput.files).toHaveLength(1);
+    expect(panCardInput.files[0]).toMatchObject({ name: 'pan-card.pdf', size: 3 });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledWith(
+      '/employees/employee-1/documents/PAN_CARD',
+      expect.objectContaining({ method: 'POST', body: expect.any(FormData) }),
+    ));
+  });
+
+  it('creates a doctor employee with linked schedule details for the Doctor Schedule roster', async () => {
+    apiFetch.mockImplementation(async (path, options = {}) => {
+      const responses = {
+        '/users/me': { username: 'hr-user', roles: ['HR'] },
+        '/employees': [],
+        '/departments': [],
+        '/designations': [],
+        '/shifts': [],
+        '/employee-types': [{ id: 'type-doctor', code: 'DOCTOR', name: 'Doctor', status: 'ACTIVE' }],
+        '/doctors': [],
+      };
+      if (path === '/employees' && options.method === 'POST') return jsonResponse({ id: 'employee-1' });
+      const body = Object.entries(responses).find(([key]) => path.startsWith(key))?.[1] || [];
+      return jsonResponse(body);
+    });
+
+    render(<PayrollPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Employees' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Add employee', exact: true }));
+    fireEvent.change(await screen.findByLabelText(/Employee type/), { target: { value: 'DOCTOR' } });
+    fireEvent.change(screen.getByLabelText(/First name/), { target: { value: 'Mira' } });
+    fireEvent.change(screen.getByLabelText(/Last name/), { target: { value: 'Patel' } });
+    fireEvent.change(screen.getByLabelText(/Mobile/), { target: { value: '5551234567' } });
+    fireEvent.change(screen.getByLabelText(/Joining date/), { target: { value: '2026-10-01' } });
+    fireEvent.change(screen.getByLabelText('Specialization'), { target: { value: 'Cardiology' } });
+    fireEvent.change(screen.getByLabelText('Consultation fee'), { target: { value: '650' } });
+    fireEvent.change(screen.getByLabelText(/^Available appointment times/), { target: { value: '09:00, 09:30' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('/employees', expect.objectContaining({
+      method: 'POST',
+      body: expect.any(String),
+    })));
+    const [, request] = apiFetch.mock.calls.find(([path, options]) => (
+      path === '/employees' && options?.method === 'POST'
+    ));
+    expect(JSON.parse(request.body)).toMatchObject({
+      employeeType: 'DOCTOR',
+      doctorProfileId: '',
+      doctorConsultationFee: 650,
+      doctorAvailableTimes: ['09:00', '09:30'],
+      professionalInfo: { specialization: 'Cardiology' },
+    });
   });
 
   it('shows a profile department in the department selector when no organization match exists', async () => {
@@ -196,6 +282,61 @@ describe('PayrollPage', () => {
     expect(apiFetch.mock.calls.some(([path]) => path.startsWith('/employees'))).toBe(false);
   });
 
+  it('lets employees submit an overtime allowance request for review', async () => {
+    apiFetch.mockImplementation(async (path, options = {}) => {
+      if (path === '/users/me') return jsonResponse({ username: 'nurse-one', roles: ['NURSE'] });
+      if (path === '/overtime-allowances' && options.method === 'POST') {
+        return jsonResponse({ id: 'ot-1', status: 'PENDING' });
+      }
+      if (path === '/overtime-allowances/mine') return jsonResponse([]);
+      return jsonResponse({});
+    });
+
+    render(<PayrollPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Overtime allowances' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Request allowance' }));
+    const overtimeDate = new Date().toISOString().slice(0, 10);
+    fireEvent.change(screen.getByLabelText(/Overtime date/), { target: { value: overtimeDate } });
+    fireEvent.change(screen.getByLabelText(/Hours/), { target: { value: '2.5' } });
+    fireEvent.change(screen.getByLabelText(/Reason/), { target: { value: 'Emergency ward coverage' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Submit request' }));
+
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('/overtime-allowances', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({
+        overtimeDate,
+        hours: 2.5,
+        reason: 'Emergency ward coverage',
+      }),
+    })));
+  });
+
+  it('lets HR set the approved allowance amount for a pending request', async () => {
+    const pending = {
+      id: 'ot-1', employeeName: 'Anita Singh', employeeCode: 'EMP-10026', month: '2026-10',
+      overtimeDate: '2026-10-04', hours: 2.5, reason: 'Emergency ward coverage', status: 'PENDING',
+    };
+    apiFetch.mockImplementation(async (path, options = {}) => {
+      if (path === '/users/me') return jsonResponse({ username: 'hr-user', roles: ['HR'] });
+      if (path.startsWith('/overtime-allowances?month=')) return jsonResponse([pending]);
+      if (path === '/overtime-allowances/ot-1/approve' && options.method === 'PUT') {
+        return jsonResponse({ ...pending, status: 'APPROVED', approvedAmount: 1250.75 });
+      }
+      return jsonResponse({});
+    });
+
+    render(<PayrollPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Overtime allowances' }));
+    expect(await screen.findByText('Anita Singh')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Approved amount for Anita Singh'), { target: { value: '1250.75' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Approve Anita Singh' }));
+
+    await waitFor(() => expect(apiFetch).toHaveBeenCalledWith(
+      '/overtime-allowances/ot-1/approve',
+      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ approvedAmount: '1250.75' }) }),
+    ));
+  });
+
   it('previews employee pay and keeps payroll approval connected to its action endpoint', async () => {
     apiFetch.mockImplementation(async (path) => {
       const responses = {
@@ -224,5 +365,38 @@ describe('PayrollPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
     await waitFor(() => expect(apiFetch.mock.calls.some(([path, options]) =>
       path === '/payroll/run-1/approve' && options?.method === 'POST')).toBe(true));
+  });
+
+  it('shows the server explanation when payroll calculation needs salary setup', async () => {
+    apiFetch.mockImplementation(async (path, options = {}) => {
+      if (path === '/users/me') return jsonResponse({ username: 'hr-user', roles: ['HR'] });
+      if (path === '/payroll?month=2026-10') {
+        return jsonResponse([{
+          id: 'run-1', month: '2026-10', status: 'DRAFT', employeeCount: 0,
+          totalGross: 0, totalDeduction: 0, totalNet: 0,
+        }]);
+      }
+      if (path === '/payroll/run-1/calculate' && options.method === 'POST') {
+        return {
+          ok: false,
+          status: 422,
+          headers: { get: () => 'application/problem+json' },
+          json: async () => ({
+            status: 422,
+            message: 'Payroll cannot be calculated: DT-100 (Dr Example) is missing an active salary structure covering the full payroll month (2026-10). Open Salary → Salary Structures and assign each listed employee an active structure whose effective dates cover the full payroll month, then calculate again.',
+          }),
+        };
+      }
+      return jsonResponse({});
+    });
+
+    render(<PayrollPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Payroll', exact: true }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Calculate' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Payroll cannot be calculated: DT-100 (Dr Example) is missing an active salary structure covering the full payroll month (2026-10). Open Salary → Salary Structures and assign each listed employee an active structure whose effective dates cover the full payroll month, then calculate again.',
+    );
+    expect(screen.getByRole('alert')).not.toHaveTextContent('Unprocessable Entity');
   });
 });

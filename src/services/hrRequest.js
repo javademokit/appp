@@ -6,7 +6,10 @@ export async function request(path, options) {
     let message = `Request failed (${response.status})`;
     try {
       const body = await response.json();
-      message = body.message || body.error || message;
+      const validationErrors = Array.isArray(body.errors)
+        ? body.errors.map((entry) => entry.defaultMessage || entry.message || entry).filter(Boolean).join('; ')
+        : '';
+      message = body.detail || body.message || validationErrors || body.error || body.title || message;
     } catch {
       // Keep the HTTP status message when the server did not return JSON.
     }

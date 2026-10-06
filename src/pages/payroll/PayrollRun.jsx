@@ -25,6 +25,7 @@ import SalaryStructure from '../salary/SalaryStructure';
 import PayrollHistory from './PayrollHistory';
 import PayrollPreview from './PayrollPreview';
 import Payslip, { PayslipDetails } from './Payslip';
+import OvertimeAllowances from './OvertimeAllowances';
 
 const ATTENDANCE_STATUSES = ['PRESENT', 'ABSENT', 'HALF_DAY', 'LEAVE', 'HOLIDAY', 'WEEK_OFF'];
 const ADMIN_ROLES = ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'CLINIC_ADMIN'];
@@ -42,6 +43,7 @@ const NAV_ITEMS = [
   { id: 'leaves', label: 'Leave', icon: CalendarDays, roles: LEAVE_ROLES },
   { id: 'salary', label: 'Salary', icon: BadgeIndianRupee, roles: PAYROLL_ROLES },
   { id: 'payroll', label: 'Payroll', icon: Wallet, roles: PAYROLL_ROLES },
+  { id: 'overtime-allowances', label: 'Overtime allowances', icon: Clock3, roles: STAFF_ROLES },
   { id: 'payslips', label: 'Payslips', icon: FileText, roles: STAFF_ROLES },
   { id: 'reports', label: 'Reports', icon: Activity, roles: PAYROLL_ROLES },
 ];
@@ -157,7 +159,13 @@ export default function PayrollPage() {
         setAccount({ ...user, roles: assignedRoles });
         const hrManager = assignedRoles.some((role) => HR_ROLES.includes(role));
         const payrollManager = assignedRoles.some((role) => PAYROLL_ROLES.includes(role));
-        setSection(hrManager ? 'overview' : payrollManager ? 'payroll' : 'payslips');
+        const requestedSection = new URLSearchParams(window.location.search).get('section');
+        const availableSections = NAV_ITEMS
+          .filter((item) => item.roles.some((role) => assignedRoles.includes(role)))
+          .map((item) => item.id);
+        setSection(availableSections.includes(requestedSection)
+          ? requestedSection
+          : hrManager ? 'overview' : payrollManager ? 'payroll' : 'payslips');
       })
       .catch((requestError) => {
         if (active) setError(requestError.message);
@@ -209,6 +217,8 @@ export default function PayrollPage() {
         next = { components: asArray(components), structures: asArray(structures), employees: asArray(employees) };
       } else if (selectedSection === 'payroll') {
         next.payrolls = asArray(await payrollService.getPayrollHistory(month));
+      } else if (selectedSection === 'overtime-allowances') {
+        next = {};
       } else if (selectedSection === 'payslips') {
         const employeeOnly = !canManagePayroll;
         next.payslips = asArray(employeeOnly
@@ -245,10 +255,19 @@ export default function PayrollPage() {
     }
   };
 
-  const createRecord = (kind, payload) => {
+  const createRecord = (kind, payload, documents = []) => {
     const updatingEmployee = kind === 'employee' && editingEmployee?.id;
     const createMethods = {
-      employee: () => employeeService.saveEmployee(editingEmployee, payload),
+      employee: async () => {
+        const savedEmployee = await employeeService.saveEmployee(editingEmployee, payload);
+        if (documents.length) {
+          setEditingEmployee(savedEmployee);
+          for (const { documentType, file } of documents) {
+            await employeeService.uploadEmployeeDocument(savedEmployee.id, documentType, file);
+          }
+        }
+        return savedEmployee;
+      },
       attendance: () => attendanceService.recordAttendance(payload),
       leave: () => leaveService.createLeaveRequest(payload),
       component: () => salaryService.createSalaryComponent(payload),
@@ -267,7 +286,26 @@ export default function PayrollPage() {
     event.preventDefault();
     const submitted = new FormData(event.currentTarget);
     const values = Object.fromEntries(submitted.entries());
+    const documents = kind === 'employee'
+      ? ['PAN_CARD', 'AADHAAR_CARD', 'EXPERIENCE_LETTER'].flatMap((documentType) => {
+        const file = event.currentTarget.elements.namedItem(`document-${documentType}`)?.files?.[0];
+        return file && file.size > 0 ? [{ documentType, file }] : [];
+      }) : [];
+    ['document-PAN_CARD', 'document-AADHAAR_CARD', 'document-EXPERIENCE_LETTER']
+      .forEach((key) => delete values[key]);
     if (kind === 'employee') {
+      if (String(values.employeeType || '').toUpperCase() === 'DOCTOR') {
+        values.doctorAvailableTimes = values.doctorAvailableTimes
+          .split(',')
+          .map((time) => time.trim())
+          .filter(Boolean);
+        values.doctorConsultationFee = values.doctorConsultationFee
+          ? Number(values.doctorConsultationFee)
+          : null;
+      } else {
+        delete values.doctorAvailableTimes;
+        delete values.doctorConsultationFee;
+      }
       const professionalInfo = {
         registrationNumber: values.registrationNumber,
         qualification: values.qualification,
@@ -306,7 +344,7 @@ export default function PayrollPage() {
       delete values.amount;
       delete values.units;
     }
-    void createRecord(kind, values);
+    void createRecord(kind, values, documents);
   };
 
   const runPayroll = () => runAction(
@@ -483,6 +521,9 @@ export default function PayrollPage() {
               {selectedPayslip && <PayslipDetails payslip={{ ...selectedPayslip, onDownload: downloadPayslip }}
                 onClose={() => setSelectedPayslip(null)} />}
             </>
+          )}
+          {!loading && activeNav === 'overtime-allowances' && (
+            <OvertimeAllowances month={month} canApprove={canManageHr} />
           )}
           {!loading && activeNav === 'reports' && <Reports data={data.reports || {}} month={month} onExport={async () => {
             try {

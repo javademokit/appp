@@ -17,8 +17,9 @@ function loadRazorpay() {
   });
 }
 
-export async function startAppointmentCheckout(invoiceId, provider, onPaid) {
-  const checkout = await readResponse(await apiFetch(`/billing/appointment-invoices/${encodeURIComponent(invoiceId)}/checkout`, {
+async function startCheckout(invoiceId, provider, onPaid, invoiceEndpoint) {
+  const endpoint = `${invoiceEndpoint}/${encodeURIComponent(invoiceId)}`;
+  const checkout = await readResponse(await apiFetch(`${endpoint}/checkout`, {
     method: 'POST',
     body: JSON.stringify({ provider }),
   }));
@@ -37,7 +38,7 @@ export async function startAppointmentCheckout(invoiceId, provider, onPaid) {
         handler: async (result) => {
           try {
             const invoice = await readResponse(await apiFetch(
-              `/billing/appointment-invoices/${encodeURIComponent(invoiceId)}/verify`,
+              `${endpoint}/verify`,
               {
                 method: 'POST',
                 body: JSON.stringify({
@@ -83,3 +84,15 @@ export async function startAppointmentCheckout(invoiceId, provider, onPaid) {
 
   throw new Error('Unsupported payment provider.');
 }
+
+export const startAppointmentCheckout = (invoiceId, provider, onPaid) => startCheckout(
+  invoiceId, provider, onPaid, '/billing/appointment-invoices',
+);
+
+export const startPharmacyCheckout = (invoiceId, provider, onPaid) => startCheckout(
+  invoiceId, provider, onPaid, '/pharmacy/invoices',
+);
+
+export const startAmbulanceCheckout = (bookingId, onPaid) => startCheckout(
+  bookingId, 'RAZORPAY', onPaid, '/ambulance/bookings',
+);
