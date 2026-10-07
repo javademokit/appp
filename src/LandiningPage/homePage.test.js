@@ -9,27 +9,51 @@ jest.mock('react-router-dom', () => {
   };
 }, { virtual: true });
 
-test('shows a clear appointment action and links to each portal', () => {
+test('presents Medora AI and links visitors to the feature modules and hospital portals', () => {
   render(<HomePage />);
 
-  expect(screen.getByRole('heading', { name: 'Ayurved Hospital Patna' })).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: /Book an appointment/ })).toHaveAttribute('href', '/PatientLogin');
-  expect(screen.getByRole('link', { name: 'Patient login' })).toHaveAttribute('href', '/PatientLogin');
-  expect(screen.getByRole('link', { name: 'Doctor login' })).toHaveAttribute('href', '/DoctorLogin');
-  expect(screen.getByRole('link', { name: 'Hospital portal' })).toHaveAttribute('href', '/HospitalLogin');
-  expect(screen.getByRole('heading', { name: 'Hospital services' })).toBeInTheDocument();
-  expect(screen.getByRole('img', { name: 'Hospital entrance' }).parentElement)
-    .toHaveClass('med-home-video-scene');
-  expect(screen.getByText('Book an appointment', { selector: 'strong' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Run your hospital smarter with AI' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Start free trial' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Login' })).toHaveAttribute('href', '/HospitalLogin');
+  expect(screen.getByRole('link', { name: 'Features' })).toHaveAttribute('href', '#care-services');
+  expect(screen.getByRole('link', { name: 'Modules' })).toHaveAttribute('href', '#modules');
+  expect(screen.getByRole('button', { name: /Book a demo/ })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'See features' })).toHaveAttribute('href', '#care-services');
+  expect(screen.getByRole('heading', { name: 'Core modules' })).toBeInTheDocument();
+  ['Patient CRM', 'Appointments', 'Patient monitoring', 'Medicine timetable'].forEach((name) => {
+    expect(screen.getByRole('heading', { name })).toBeInTheDocument();
+  });
+  expect(screen.getByText('128')).toBeInTheDocument();
+  expect(screen.getByText('34')).toBeInTheDocument();
+  expect(screen.getByText('3 patients need a medicine check')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Open Ask Medora chat' })).toHaveTextContent('Ask Medora');
 });
 
 test('offers appointment help through the home-page assistant', () => {
   render(<HomePage />);
-  fireEvent.click(screen.getByRole('button', { name: 'Open assistant for help' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Open Ask Medora chat' }));
 
-  expect(screen.getByRole('region', { name: 'MedSuite assistance' })).toBeInTheDocument();
+  expect(screen.getByRole('region', { name: 'Medora AI assistance' })).toBeInTheDocument();
   expect(screen.getByText(/I can help with appointments/)).toBeInTheDocument();
   expect(screen.getByRole('textbox', { name: 'Ask the assistant' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Appointments' }));
   expect(screen.getByText(/choose “Book an appointment”/)).toBeInTheDocument();
+});
+
+test('opens Ask Medora from the demo action with demo scheduling guidance', () => {
+  render(<HomePage />);
+  fireEvent.click(screen.getByRole('button', { name: /Book a demo/ }));
+
+  expect(screen.getByRole('region', { name: 'Medora AI assistance' })).toBeInTheDocument();
+  expect(screen.getByText('Thanks for your interest in Medora AI. Please contact your hospital administrator to arrange a product demo.'))
+    .toBeInTheDocument();
+});
+
+test('opens Ask Medora from the free trial button with trial access guidance', () => {
+  render(<HomePage />);
+  fireEvent.click(screen.getByRole('button', { name: 'Start free trial' }));
+
+  expect(screen.getByRole('region', { name: 'Medora AI assistance' })).toBeInTheDocument();
+  expect(screen.getByText('Thanks for your interest in a Medora AI free trial. Please contact your hospital administrator to discuss trial access.'))
+    .toBeInTheDocument();
 });

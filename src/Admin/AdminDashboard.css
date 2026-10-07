@@ -84,15 +84,14 @@
   position: relative;
   z-index: 1;
   display: grid;
-  width: 76px;
-  height: 76px;
+  width: 142px;
+  min-height: 80px;
   flex: 0 0 auto;
   place-items: center;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.11);
-  color: #dcf5ec;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  background: #fff;
+  padding: 0.2rem;
 }
 
 .admin-navigation {
@@ -202,14 +201,9 @@
   }
 
   .admin-hero-mark {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-  }
-
-  .admin-hero-mark svg {
-    width: 21px;
-    height: 21px;
+    width: 92px;
+    min-height: 52px;
+    border-radius: 10px;
   }
 
   .admin-hero p {

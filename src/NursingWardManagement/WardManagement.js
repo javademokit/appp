@@ -255,7 +255,8 @@ function NurseDashboard({ dashboard, handovers, nurses, rosters, shiftSwaps, ref
                 </td>
                 <td><form className="workflow-form-grid" onSubmit={(event) => submitHandover(event, patientId)}>
                   <label>Incoming nurse<select required value={handover.nurseId || ''} onChange={(event) => setHandoverForms((current) => ({ ...current, [patientId]: { ...current[patientId], nurseId: event.target.value } }))}>
-                    <option value="">Select nurse</option>{nurses.filter((nurse) => nurse.profileComplete && nurse.status === 'ACTIVE' && nurse.id !== item.assignment?.nurseId).map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.name}</option>)}
+                    <option value="">Select nurse</option>{nurses.filter((nurse) => nurse.profileComplete && nurse.employmentActive
+                      && nurse.status === 'ACTIVE' && nurse.id !== item.assignment?.nurseId).map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.name} · {nurse.employeeCode}</option>)}
                   </select></label>
                   <label>Incoming shift<select required value={handover.shift || ''} onChange={(event) => setHandoverForms((current) => ({ ...current, [patientId]: { ...current[patientId], shift: event.target.value } }))}>
                     <option value="">Select shift</option><option value="MORNING">Morning</option><option value="EVENING">Evening</option><option value="NIGHT">Night</option>
@@ -282,8 +283,9 @@ function NurseDashboard({ dashboard, handovers, nurses, rosters, shiftSwaps, ref
             <option value="">Select roster entry</option>{rosters.map((roster) => <option key={roster.id} value={roster.id}>{roster.wardId} · {roster.shift} · {roster.startDate} to {roster.endDate}</option>)}
           </select></label>
           <label>Swap with<select required value={swapForm.toNurseId} onChange={(event) => setSwapForm({ ...swapForm, toNurseId: event.target.value })}>
-            <option value="">Select nurse</option>{nurses.filter((nurse) => nurse.profileComplete && nurse.status === 'ACTIVE'
-              && nurse.id !== rosters.find((roster) => roster.id === swapForm.rosterId)?.nurseId).map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.name}</option>)}
+            <option value="">Select nurse</option>{nurses.filter((nurse) => nurse.profileComplete && nurse.employmentActive
+              && nurse.status === 'ACTIVE' && nurse.id !== rosters.find((roster) => roster.id === swapForm.rosterId)?.nurseId)
+              .map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.name} · {nurse.employeeCode}</option>)}
           </select></label>
           <label>Shift date<input required type="date" value={swapForm.date} onChange={(event) => setSwapForm({ ...swapForm, date: event.target.value })} /></label>
           <label>Reason<input value={swapForm.note} onChange={(event) => setSwapForm({ ...swapForm, note: event.target.value })} /></label>
@@ -323,11 +325,12 @@ export default function WardManagement() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [activeNursingTab, setActiveNursingTab] = useState('overview');
+  const [activeSetupStep, setActiveSetupStep] = useState('basics');
   const [wardForm, setWardForm] = useState({ name: '', type: 'GENERAL', maxPatientsPerNurse: 8, minimumNursesPerShift: 1 });
   const [roomForm, setRoomForm] = useState({ id: '', wardId: '', building: '', floor: '', roomNumber: '', acType: 'NON_AC', category: 'GENERAL', bedCapacity: 1, defaultBedType: 'STANDARD', genderRestriction: 'ANY', status: 'ACTIVE', amenities: '', notes: '' });
   const [bulkRoomForm, setBulkRoomForm] = useState({ ...roomForm, roomNumber: '', roomNumberEnd: '' });
   const [bedFilters, setBedFilters] = useState({ wardId: '', status: '', acType: '', floor: '' });
-  const [nurseForm, setNurseForm] = useState({ accountId: '', name: '', employeeId: '', phone: '', qualification: '', licenseNumber: '', designation: 'STAFF_NURSE', specialization: 'GENERAL', status: 'ACTIVE', photoUrl: '' });
+  const [nurseForm, setNurseForm] = useState({ accountId: '', status: 'ACTIVE' });
   const [rosterForm, setRosterForm] = useState({ nurseId: '', wardId: '', shift: 'MORNING', startDate: '', endDate: '' });
   const [bulkForm, setBulkForm] = useState({ wardId: '', nurseId: '', shift: 'MORNING', bedFrom: '', bedTo: '' });
   const canManage = useMemo(() => (currentUser?.roles || []).some((role) => managerRoles.includes(String(role).replace(/^ROLE_/, '').toUpperCase())), [currentUser]);
@@ -341,6 +344,23 @@ export default function WardManagement() {
     ...(canManageStaff || canReviewSwaps ? [{ id: 'staff', label: 'Nurses & shifts', icon: Users }] : []),
     { id: 'assignments', label: 'Patient assignments', icon: UserRoundCheck },
     { id: 'activity', label: 'History & care', icon: History },
+  ];
+  const today = new Date();
+  const todayDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const activeNurseCount = nurses.filter((nurse) => nurse.employmentActive
+    && nurse.profileComplete && nurse.status === 'ACTIVE').length;
+  const hasCurrentRoster = rosters.some((roster) => roster.status === 'SCHEDULED'
+    && roster.startDate <= todayDate && roster.endDate >= todayDate);
+  const rulesConfigured = wards.length > 0 && wards.every((ward) => Number(ward.maxPatientsPerNurse) > 0
+    && Number(ward.minimumNursesPerShift) >= 0);
+  const nursingSetupReady = wards.length > 0 && activeNurseCount > 0 && hasCurrentRoster && rulesConfigured;
+  const setupSteps = [
+    { id: 'basics', label: 'Basics', detail: 'Review the nursing setup', complete: true, tab: 'overview', anchor: 'nurse-go-live' },
+    { id: 'wards', label: 'Wards', detail: 'Create wards and beds', complete: wards.length > 0, tab: 'wards', anchor: 'nurse-ward-setup' },
+    { id: 'nurses', label: 'Nurses', detail: 'Link active HR employees', complete: activeNurseCount > 0, tab: 'staff', anchor: 'nurse-employment-link' },
+    { id: 'shifts', label: 'Shifts', detail: 'Schedule employed nurses', complete: hasCurrentRoster, tab: 'staff', anchor: 'nurse-shift-setup' },
+    { id: 'rules', label: 'Rules', detail: 'Set staffing and patient ratios', complete: rulesConfigured, tab: 'wards', anchor: 'nurse-rules-setup' },
+    { id: 'go-live', label: 'Go live', detail: 'Confirm readiness', complete: nursingSetupReady, tab: 'overview', anchor: 'nurse-go-live' },
   ];
 
   const refresh = useCallback(async () => {
@@ -432,10 +452,17 @@ export default function WardManagement() {
     event.preventDefault();
     if (!nurseForm.accountId) return;
     const { accountId, ...profile } = nurseForm;
-    const savedProfile = await submit(`/nursing/nurses/${encodeURIComponent(accountId)}/profile`, 'PUT', profile, 'Nurse profile saved.');
-    if (savedProfile && savedProfile.employeeId) {
-      setNurseForm((current) => ({ ...current, employeeId: savedProfile.employeeId }));
-    }
+    await submit(`/nursing/nurses/${encodeURIComponent(accountId)}/profile`, 'PUT', profile,
+      'Nurse linked to the active HR employment record.');
+  };
+
+  const openSetupStep = (step) => {
+    setActiveSetupStep(step.id);
+    setActiveNursingTab(step.tab);
+    window.setTimeout(() => document.getElementById(step.anchor)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    }), 60);
   };
 
   const createRoom = async (event) => {
@@ -611,7 +638,7 @@ export default function WardManagement() {
 
   return (
     <section className="workflow-page nurse-management-layout" aria-labelledby="ward-management-title">
-      <header className="workflow-header"><div><p className="workflow-eyebrow">Hospital operations</p><h1 id="ward-management-title">{canManage ? 'Nurse Management' : 'My Nursing Dashboard'}</h1>
+      <header className="workflow-header"><div><h1 id="ward-management-title">{canManage ? 'Nurse Management' : 'My Nursing Dashboard'}</h1>
         <p>{canManage ? 'Manage nurse profiles, ward beds and shifts, assign patients, and monitor workload and handovers.' : 'View assigned patients, shift tasks, care notes, and patient handovers.'}</p></div>
         <div className="workflow-toolbar-actions">
           {canManage && <>
@@ -623,10 +650,31 @@ export default function WardManagement() {
       </header>
       {error && <div className="workflow-alert error" role="alert">{error}</div>}
       {success && <div className="workflow-alert success" role="status">{success}</div>}
-      {isNurse && <NurseDashboard dashboard={dashboard} handovers={handovers} nurses={nurses}
+      {isNurse && !canManage && <NurseDashboard dashboard={dashboard} handovers={handovers} nurses={nurses}
         rosters={nurseRosters} shiftSwaps={shiftSwaps} reviewSwaps={canReviewSwaps}
         refresh={refresh} setError={setError} setSuccess={setSuccess} />}
       {canManage && <>
+        <section className="nurse-setup-flow" aria-label="Guided nursing setup">
+          <div className="nurse-setup-flow-heading">
+            <div><span>GETTING STARTED</span><h2>Set up your nursing workflow</h2>
+              <p>Complete the prerequisites in order: wards, employed nurses, shifts, then staffing rules.</p></div>
+            <span className={`nurse-setup-readiness ${nursingSetupReady ? 'ready' : ''}`}>
+              {nursingSetupReady ? 'Ready to go live' : 'Setup in progress'}
+            </span>
+          </div>
+          <ol className="nurse-setup-steps">
+            {setupSteps.map((step, index) => <li key={step.id}>
+              <button type="button"
+                className={`${activeSetupStep === step.id ? 'active' : ''} ${step.complete ? 'complete' : ''}`}
+                aria-current={activeSetupStep === step.id ? 'step' : undefined}
+                onClick={() => openSetupStep(step)}>
+                <span className="nurse-setup-step-number">{step.complete ? <UserRoundCheck size={15} /> : index + 1}</span>
+                <span className="nurse-setup-step-copy"><strong>{step.label}</strong><small>{step.detail}</small></span>
+                <span className="nurse-setup-step-status">{step.complete ? 'Ready' : 'To do'}</span>
+              </button>
+            </li>)}
+          </ol>
+        </section>
         <nav className="nurse-management-tabs" role="tablist" aria-label="Nurse management sections">
           {nursingTabs.map(({ id, label, icon: Icon }) => <button
             key={id}
@@ -641,15 +689,24 @@ export default function WardManagement() {
         </nav>
         {activeNursingTab === 'overview' && <section className="nurse-overview" id="nurse-panel-overview" role="tabpanel" aria-labelledby="nurse-tab-overview">
           <div className="nurse-overview-intro">
-            <div><span>WARD OPERATIONS</span><h2>Good care starts with clear assignments.</h2>
+            <div id="nurse-go-live"><span>WARD OPERATIONS</span><h2>Good care starts with clear assignments.</h2>
               <p>Monitor ward capacity, nurse coverage, and patients who need an assignment.</p></div>
             <button className="workflow-button primary" type="button" onClick={() => setActiveNursingTab('assignments')}>
               <UserRoundCheck size={16} /> Manage patient assignments
             </button>
           </div>
+          <section className={`nurse-go-live-card ${nursingSetupReady ? 'ready' : ''}`}>
+            <div><span>{nursingSetupReady ? 'SETUP COMPLETE' : 'SETUP CHECKLIST'}</span>
+              <h3>{nursingSetupReady ? 'Your nursing workflow is ready.' : 'Finish the prerequisites before patient assignments.'}</h3>
+              <p>{wards.length} wards · {activeNurseCount} active employed nurses · {hasCurrentRoster ? 'Current shifts scheduled' : 'No current shift coverage'}</p></div>
+            <button className="workflow-button subtle" type="button"
+              onClick={() => nursingSetupReady ? setActiveNursingTab('assignments') : openSetupStep(setupSteps.find((step) => !step.complete && step.id !== 'basics') || setupSteps[5])}>
+              {nursingSetupReady ? 'Open assignments' : 'Continue setup'}
+            </button>
+          </section>
           <div className="nurse-overview-metrics">
             <article><span>Active wards</span><strong>{wards.length}</strong><small>{wards.reduce((total, ward) => total + (Number(ward.vacantBeds) || 0), 0)} vacant beds</small><BedDouble size={20} /></article>
-            <article><span>Active nurses</span><strong>{nurses.filter((nurse) => nurse.profileComplete && nurse.status === 'ACTIVE').length}</strong><small>Available staff profiles</small><Users size={20} /></article>
+            <article><span>Active nurses</span><strong>{activeNurseCount}</strong><small>Employed and scheduled staff</small><Users size={20} /></article>
             <article><span>Admitted patients</span><strong>{assignmentBoard.length}</strong><small>Across configured wards</small><UserRoundCheck size={20} /></article>
             <article className={unassignedPatients.length ? 'needs-attention' : ''}><span>Need a nurse</span><strong>{unassignedPatients.length}</strong><small>{unassignedPatients.length ? 'Review assignments' : 'All patients covered'}</small><ClipboardList size={20} /></article>
           </div>
@@ -683,12 +740,12 @@ export default function WardManagement() {
         </section>
         }
         {activeNursingTab === 'wards' && <section id="nurse-panel-wards" role="tabpanel" aria-labelledby="nurse-tab-wards">
-        <section className="workflow-panel">
+        <section className="workflow-panel" id="nurse-ward-setup">
           <div className="workflow-panel-heading"><div><h2>Ward and bed setup</h2><p>{canSetupWards
             ? 'Create units, configure patient ratios and minimum shift staffing, then add beds.'
             : 'Review wards assigned to you, manage their beds, and monitor shift staffing.'}</p></div></div>
           {canSetupWards && <>
-          <form className="workflow-form-grid" onSubmit={(event) => {
+          <form id="nurse-rules-setup" className="workflow-form-grid" onSubmit={(event) => {
             event.preventDefault();
             submit('/nursing/wards', 'POST', wardForm, 'Ward created. Add vacant beds below.');
             setWardForm({ name: '', type: 'GENERAL', maxPatientsPerNurse: 8, minimumNursesPerShift: 1 });
@@ -843,42 +900,35 @@ export default function WardManagement() {
         </section>}
 
         {activeNursingTab === 'staff' && canManageStaff && <>
-        <section className="workflow-panel">
-          <div className="workflow-panel-heading"><div><h2>Nurse profiles</h2><p>Link profiles to active staff accounts with the NURSE or HEAD_NURSE role.</p></div></div>
+        <section className="workflow-panel" id="nurse-employment-link">
+          <div className="workflow-panel-heading"><div><h2>Link nurses from HR</h2><p>Nurse identities and employee IDs come from HR employment records. Add or update nurses in HR first; this workflow only links their account and configures nursing duties.</p></div></div>
           <form className="workflow-form-grid" onSubmit={saveNurseProfile}>
-            <label>Staff account<select required value={nurseForm.accountId} onChange={(event) => {
-              const nurse = nurses.find((entry) => entry.id === event.target.value);
-              setNurseForm({ ...nurseForm, accountId: event.target.value, ...(nurse?.profile || {}) });
-            }}><option value="">Select nurse account</option>{nurses.map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.userId || nurse.emailId} {nurse.profileComplete ? `· ${nurse.name}` : '· profile required'}</option>)}</select></label>
-            <label>Full name<input required value={nurseForm.name} onChange={(event) => setNurseForm({ ...nurseForm, name: event.target.value })} /></label>
-            <label>Employee ID (generated)<input readOnly value={nurseForm.employeeId} placeholder="Assigned automatically (NS-…)" /></label>
-            <label>Phone<input value={nurseForm.phone} onChange={(event) => setNurseForm({ ...nurseForm, phone: event.target.value })} /></label>
-            <label>Qualification<input value={nurseForm.qualification} onChange={(event) => setNurseForm({ ...nurseForm, qualification: event.target.value })} /></label>
-            <label>License number<input required value={nurseForm.licenseNumber} onChange={(event) => setNurseForm({ ...nurseForm, licenseNumber: event.target.value })} /></label>
-            <label>Designation<select value={nurseForm.designation} onChange={(event) => setNurseForm({ ...nurseForm, designation: event.target.value })}>
-              <option value="STAFF_NURSE">Staff Nurse</option><option value="SENIOR_NURSE">Senior Nurse</option><option value="HEAD_NURSE">Head Nurse</option>
-            </select></label>
-            <label>Specialization<input required value={nurseForm.specialization} onChange={(event) => setNurseForm({ ...nurseForm, specialization: event.target.value })} /></label>
-            <label>Photo URL<input type="url" value={nurseForm.photoUrl} onChange={(event) => setNurseForm({ ...nurseForm, photoUrl: event.target.value })} /></label>
+            <label>Active nurse employee<select required value={nurseForm.accountId} onChange={(event) => {
+              const selected = nurses.find((nurse) => nurse.id === event.target.value);
+              setNurseForm({ accountId: event.target.value, status: selected?.profile?.status || 'ACTIVE' });
+            }}>
+              <option value="">Select an active HR nurse</option>{nurses.filter((nurse) => nurse.employmentActive).map((nurse) => <option key={nurse.id} value={nurse.id}>
+                {nurse.name} · {nurse.employeeCode} · {nurse.emailId}
+              </option>)}</select></label>
             <label>Status<select value={nurseForm.status} onChange={(event) => setNurseForm({ ...nurseForm, status: event.target.value })}>
               <option value="ACTIVE">Active</option><option value="ON_LEAVE">On leave</option><option value="INACTIVE">Inactive</option>
             </select></label>
-            <button className="workflow-button primary" type="submit" disabled={busy || !nurseForm.accountId}>Save nurse profile</button>
+            <button className="workflow-button primary" type="submit" disabled={busy || !nurseForm.accountId}>Link nurse employment</button>
           </form>
-          <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Nurse</th><th>Employee ID</th><th>License</th><th>Designation</th><th>Specialization</th><th>Status</th><th>Workload</th></tr></thead>
-            <tbody>{nurses.map((nurse) => <tr key={nurse.id}><td>{nurse.name || nurse.userId}</td><td>{nurse.profile?.employeeId || 'Profile needed'}</td><td>{nurse.profile?.licenseNumber || '—'}</td><td>{nurse.profile?.designation || '—'}</td><td>{nurse.profile?.specialization || '—'}</td><td>{nurse.status}</td>
+          <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Nurse</th><th>Nurse ID</th><th>HR status</th><th>Nursing status</th><th>Registration</th><th>Workload</th></tr></thead>
+            <tbody>{nurses.map((nurse) => <tr key={nurse.id}><td>{nurse.name || nurse.userId}<small>{nurse.emailId}</small></td><td>{nurse.employeeCode || 'No HR record'}</td><td>{nurse.employmentStatus}</td><td>{nurse.profileComplete ? nurse.status : 'Nursing setup needed'}</td><td>{nurse.profile?.licenseNumber || '—'}</td>
               <td>{assignments.filter((assignment) => assignment.nurseId === nurse.id && assignment.status === 'ACTIVE' && assignment.role === 'PRIMARY').length} patients</td></tr>)}</tbody>
           </table></div>
         </section>
 
-        <section className="workflow-panel">
+        <section className="workflow-panel" id="nurse-shift-setup">
           <div className="workflow-panel-heading"><div><h2>Shift roster</h2><p>Weekly duty roster and shift staffing assignments.</p></div></div>
           <form className="workflow-form-grid" onSubmit={(event) => {
             event.preventDefault();
             submit('/nursing/rosters', 'POST', rosterForm, 'Nurse scheduled for the selected date range.');
           }}>
-            <label>Nurse<select required value={rosterForm.nurseId} onChange={(event) => setRosterForm({ ...rosterForm, nurseId: event.target.value })}><option value="">Select active nurse</option>
-              {nurses.filter((nurse) => nurse.profileComplete && nurse.status === 'ACTIVE').map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.name}</option>)}</select></label>
+            <label>Nurse<select required value={rosterForm.nurseId} onChange={(event) => setRosterForm({ ...rosterForm, nurseId: event.target.value })}><option value="">Select active employed nurse</option>
+              {nurses.filter((nurse) => nurse.profileComplete && nurse.employmentActive && nurse.status === 'ACTIVE').map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.name} · {nurse.employeeCode}</option>)}</select></label>
             <label>Ward<select required value={rosterForm.wardId} onChange={(event) => setRosterForm({ ...rosterForm, wardId: event.target.value })}><option value="">Select ward</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}</select></label>
             <label>Shift<select value={rosterForm.shift} onChange={(event) => setRosterForm({ ...rosterForm, shift: event.target.value })}><option value="MORNING">Morning</option><option value="EVENING">Evening</option><option value="NIGHT">Night</option></select></label>
             <label>Start date<input required type="date" value={rosterForm.startDate} onChange={(event) => setRosterForm({ ...rosterForm, startDate: event.target.value })} /></label>
@@ -887,7 +937,12 @@ export default function WardManagement() {
           </form>
           {!rosterWeek.length ? <div className="workflow-empty">No shifts scheduled this week.</div> : <div className="workflow-table-wrap"><table className="workflow-table">
             <thead><tr><th>Nurse</th><th>Ward</th><th>Shift</th><th>Date range</th><th>Status</th></tr></thead>
-            <tbody>{rosterWeek.map((roster) => <tr key={roster.id}><td>{nurses.find((nurse) => nurse.id === roster.nurseId)?.name || roster.nurseId}</td><td>{wards.find((ward) => ward.id === roster.wardId)?.name || roster.wardId}</td><td>{roster.shift}</td><td>{roster.startDate} – {roster.endDate}</td><td>{roster.status}</td></tr>)}</tbody>
+            <tbody>{rosterWeek.map((roster) => {
+              const nurse = nurses.find((entry) => entry.id === roster.nurseId);
+              return <tr key={roster.id}><td>{nurse?.name || roster.nurseId}<small>{nurse?.employeeCode || 'Employment ID unavailable'}</small></td>
+                <td>{wards.find((ward) => ward.id === roster.wardId)?.name || roster.wardId}</td><td>{roster.shift}</td>
+                <td>{roster.startDate} – {roster.endDate}</td><td>{roster.status}</td></tr>;
+            })}</tbody>
           </table></div>}
         </section>
 
@@ -909,7 +964,7 @@ export default function WardManagement() {
           <div className="workflow-panel-heading"><div><h2>Patient assignment</h2><p>Assign ward coverage, and maintain primary and backup nurse assignments per admitted patient.</p></div></div>
           <form className="workflow-form-grid" onSubmit={submitBulkAssignment}>
             <label>Ward<select required value={bulkForm.wardId} onChange={(event) => setBulkForm({ ...bulkForm, wardId: event.target.value })}><option value="">Select ward</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}</select></label>
-            <label>Nurse<select required value={bulkForm.nurseId} onChange={(event) => setBulkForm({ ...bulkForm, nurseId: event.target.value })}><option value="">Select nurse</option>{nurses.filter((nurse) => nurse.profileComplete && nurse.status === 'ACTIVE').map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.name}</option>)}</select></label>
+            <label>Nurse<select required value={bulkForm.nurseId} onChange={(event) => setBulkForm({ ...bulkForm, nurseId: event.target.value })}><option value="">Select nurse</option>{nurses.filter((nurse) => nurse.profileComplete && nurse.employmentActive && nurse.status === 'ACTIVE').map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.name} · {nurse.employeeCode}</option>)}</select></label>
             <label>Shift<select value={bulkForm.shift} onChange={(event) => setBulkForm({ ...bulkForm, shift: event.target.value })}><option value="MORNING">Morning</option><option value="EVENING">Evening</option><option value="NIGHT">Night</option></select></label>
             <label>Bed from<input value={bulkForm.bedFrom} onChange={(event) => setBulkForm({ ...bulkForm, bedFrom: event.target.value })} placeholder="Optional" /></label>
             <label>Bed to<input value={bulkForm.bedTo} onChange={(event) => setBulkForm({ ...bulkForm, bedTo: event.target.value })} placeholder="Optional" /></label>
@@ -930,11 +985,13 @@ export default function WardManagement() {
                   const currentBed = wards.find((ward) => ward.id === patient.patientWardId)?.beds?.find((bed) => bed.id === patient.patientBedId);
                   return [currentBed?.room?.roomNumber && `Room ${currentBed.room.roomNumber}`, currentBed?.bedNumber || patient.patientBedId].filter(Boolean).join(' · ');
                 })()}</small></td>
-                <td>{primaryNurse?.name || (entry.primary ? entry.primary.nurseId : 'Unassigned')}</td>
-                <td>{backupNurse?.name || (entry.backup ? entry.backup.nurseId : 'Not assigned')}</td>
+                <td>{primaryNurse?.name || (entry.primary ? entry.primary.nurseId : 'Unassigned')}
+                  {primaryNurse?.employeeCode && <small>{primaryNurse.employeeCode}</small>}</td>
+                <td>{backupNurse?.name || (entry.backup ? entry.backup.nurseId : 'Not assigned')}
+                  {backupNurse?.employeeCode && <small>{backupNurse.employeeCode}</small>}</td>
                 <td><form className="nursing-inline-form" onSubmit={(event) => assignUnassigned(event, patient)}>
                   <select required name="role" defaultValue="PRIMARY"><option value="PRIMARY">Primary</option><option value="BACKUP">Backup</option></select>
-                  <select required name="nurseId" defaultValue=""><option value="">Select nurse</option>{nurses.filter((nurse) => nurse.profileComplete && nurse.status === 'ACTIVE').map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.name}</option>)}</select>
+                  <select required name="nurseId" defaultValue=""><option value="">Select nurse</option>{nurses.filter((nurse) => nurse.profileComplete && nurse.employmentActive && nurse.status === 'ACTIVE').map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.name} · {nurse.employeeCode}</option>)}</select>
                   <button className="workflow-button primary" disabled={busy}>Assign</button>
                 </form></td>
                 <td><form className="nursing-inline-form" onSubmit={(event) => transferPatient(event, patient)}>

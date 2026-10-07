@@ -1,13 +1,13 @@
 import React from "react";
-import { FaHospital } from "react-icons/fa";
+import BrandLogo from "../components/BrandLogo";
 import './Header.css';
 
 const Header = () => {
   return (
     <header className="header">
       <div className="top-nav">
-        <div className="logo" aria-label="Hospital logo">
-          <span className="logo-icon"><FaHospital /></span>
+        <div className="logo">
+          <BrandLogo />
         </div>
 
         <div className="icons">

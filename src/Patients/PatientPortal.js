@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '../API/api';
 import { doctorDepartment, doctorOptionLabel } from '../utils/doctorDisplay';
 import { downloadAppointmentConfirmation } from './appointmentConfirmation';
+import BrandLogo from '../components/BrandLogo';
 import '../Operations/Operations.css';
 
 const emptyAppointment = { doctorId: '', doctor: '', date: '', time: '', reason: '' };
@@ -119,7 +120,10 @@ export default function PatientPortal() {
   return (
     <section className="workflow-page" aria-labelledby="patient-portal-title" aria-busy={loading}>
       <header className="workflow-header">
-        <div><p className="workflow-eyebrow">Patient self-service</p><h1 id="patient-portal-title">Patient portal</h1><p>Manage appointments linked to your existing medical record.</p></div>
+        <div className="patient-portal-brand">
+          <BrandLogo />
+          <div><p className="workflow-eyebrow">Patient self-service</p><h1 id="patient-portal-title">Patient portal</h1><p>Manage appointments linked to your existing medical record.</p></div>
+        </div>
         <button className="workflow-button subtle" type="button" onClick={refresh} disabled={loading}>Refresh</button>
       </header>
       {error && <div className="workflow-alert error" role="alert">{error}</div>}

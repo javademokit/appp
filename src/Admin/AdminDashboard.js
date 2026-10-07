@@ -5,6 +5,7 @@ import HospitalOperationsBoard from "../components/HospitalOperationsBoard";
 import UserAccessPage from "./UserAccessPage";
 import PayrollRun from "../pages/payroll/PayrollRun";
 import { Activity, Banknote, ShieldCheck, UsersRound } from "lucide-react";
+import BrandLogo from "../components/BrandLogo";
 import "./AdminDashboard.css";
 
 const AdminDashboard = () => {
@@ -17,7 +18,7 @@ const AdminDashboard = () => {
           <h1 id="admin-dashboard-title">Hospital control center</h1>
           <p>Monitor hospital operations and manage the people and resources behind your care teams.</p>
         </div>
-        <div className="admin-hero-mark" aria-hidden="true"><Activity size={28} /></div>
+        <div className="admin-hero-mark"><BrandLogo className="brand-logo-panel" /></div>
       </header>
 
       <nav className="admin-navigation" aria-label="Administration pages">

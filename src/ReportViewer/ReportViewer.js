@@ -117,6 +117,8 @@ const ReportViewer = () => {
           <style>
             body { font-family: Arial; padding: 30px; }
             h1, h2 { text-align: center; margin: 0; }
+            .print-brand { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 16px; }
+            .print-brand img { width: 120px; height: auto; }
             .timestamp { text-align: right; margin: 20px 0; font-size: 14px; color: #555; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
             th, td { border: 1px solid #333; padding: 10px; text-align: left; font-size: 14px; }
@@ -126,7 +128,7 @@ const ReportViewer = () => {
           </style>
         </head>
         <body>
-          <h1>🏥 MyCare Hospital</h1>
+          <header class="print-brand"><img src="/medora_ai_logo.svg" alt="Medora AI"><h1>MyCare Hospital</h1></header>
           <h2>${selectedReport}</h2>
           <div class="timestamp">🕒 Generated on: ${now}</div>
           ${htmlContent}

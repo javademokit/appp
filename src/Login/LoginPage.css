@@ -56,13 +56,12 @@
 
 .auth-brand-icon {
   display: inline-flex;
-  width: 2.35rem;
-  height: 2.35rem;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  width: 8.2rem;
+  height: auto;
+  padding: 0.2rem;
+  border: 1px solid rgba(255, 255, 255, 0.55);
   border-radius: 0.75rem;
-  background: rgba(255, 255, 255, 0.14);
+  background: #fff;
 }
 
 .auth-promo-content {

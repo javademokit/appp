@@ -1,0 +1,155 @@
+.nurse-assignment-page {
+  --nurse-portal-ink: #183b35;
+  --nurse-portal-muted: #71837d;
+  --nurse-portal-line: #dfeae5;
+}
+
+.nurse-assignment-page .workflow-header {
+  align-items: center;
+  border: 1px solid #dcebe4;
+  border-radius: 14px;
+  background: radial-gradient(ellipse at 88% 0%, #e5f5ed 0, transparent 42%), linear-gradient(110deg, #fff, #f5faf7);
+}
+
+.nurse-assignment-page .workflow-header h1 {
+  color: var(--nurse-portal-ink);
+}
+
+.nurse-lookup-panel,
+.nurse-assignment-results {
+  border-color: var(--nurse-portal-line);
+  border-radius: 12px;
+}
+
+.nurse-lookup-panel .workflow-panel-heading > svg {
+  color: #137a68;
+}
+
+.nurse-lookup-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 1rem;
+  padding: 0 1.1rem 1.1rem;
+}
+
+.nurse-lookup-controls label {
+  display: grid;
+  gap: 0.4rem;
+  color: #40584f;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.nurse-lookup-controls input,
+.nurse-lookup-controls select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #d5e3dc;
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  background: #fff;
+  color: #244238;
+  font: inherit;
+}
+
+.nurse-lookup-controls input:focus,
+.nurse-lookup-controls select:focus {
+  outline: 2px solid #9acdbc;
+  outline-offset: 1px;
+}
+
+.nurse-lookup-input-wrap {
+  position: relative;
+  display: block;
+}
+
+.nurse-lookup-input-wrap > svg {
+  position: absolute;
+  top: 50%;
+  left: 0.75rem;
+  color: #758982;
+  transform: translateY(-50%);
+}
+
+.nurse-lookup-input-wrap input {
+  padding-left: 2.25rem;
+}
+
+.nurse-lookup-empty {
+  margin: 0;
+  padding: 0 1.1rem 1rem;
+  color: var(--nurse-portal-muted);
+  font-size: 0.78rem;
+}
+
+.nurse-selected-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.85rem 0;
+  border: 1px solid #cfe5d8;
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  background: #f3faf5;
+}
+
+.nurse-selected-icon {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #e1f1e8;
+  color: #247452;
+}
+
+.nurse-selected-identity > div {
+  display: grid;
+  gap: 0.16rem;
+}
+
+.nurse-selected-identity strong {
+  color: var(--nurse-portal-ink);
+  font-size: 0.86rem;
+}
+
+.nurse-selected-identity > div > span {
+  color: var(--nurse-portal-muted);
+  font-size: 0.72rem;
+}
+
+.nurse-assignment-count {
+  margin-left: auto;
+  color: #287454;
+  font-size: 0.73rem;
+  font-weight: 750;
+}
+
+.nurse-assignment-results {
+  margin-top: 0.85rem;
+}
+
+@media (max-width: 650px) {
+  .nurse-assignment-page .workflow-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .nurse-lookup-controls {
+    grid-template-columns: 1fr;
+    padding-inline: 0.8rem;
+  }
+
+  .nurse-selected-identity {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 0.75rem;
+  }
+
+  .nurse-assignment-count {
+    width: 100%;
+    margin-left: 3.1rem;
+  }
+}

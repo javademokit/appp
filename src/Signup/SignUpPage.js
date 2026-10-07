@@ -1,10 +1,11 @@
 // SignUpPage.js
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FaArrowLeft, FaHospital, FaUserPlus } from 'react-icons/fa';
+import { FaArrowLeft, FaUserPlus } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import { apiFetch } from '../API/api';
+import BrandLogo from '../components/BrandLogo';
 import 'react-toastify/dist/ReactToastify.css';
 import '../Login/LoginPage.css';
 
@@ -64,8 +65,7 @@ const SignUpPage = () => {
       <div className="auth-layout auth-layout-signup">
         <aside className="auth-promo">
           <Link className="auth-brand" to="/">
-            <span className="auth-brand-icon"><FaHospital aria-hidden="true" /></span>
-            <span>MedSuite</span>
+            <BrandLogo className="auth-brand-icon" />
           </Link>
           <div className="auth-promo-content">
             <span className="auth-promo-symbol"><FaUserPlus aria-hidden="true" /></span>
@@ -88,7 +88,7 @@ const SignUpPage = () => {
         <div className="auth-card-heading">
           <p className="auth-kicker">Patient registration</p>
           <h1>Create your account</h1>
-          <p className="signup-description">Enter your details to get started with MedSuite.</p>
+          <p className="signup-description">Enter your details to get started with Medora AI.</p>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="auth-input-group">

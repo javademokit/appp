@@ -244,7 +244,15 @@ Examples: BRCA gene test for breast cancer risk, prenatal genetic screening.
 
 Administrators can grant `NURSE` or `HEAD_NURSE` in **Admin Dashboard → User
 access & roles**. In the hospital workspace, open **Nurse Management** to
-configure wards, rooms, beds, nurse profiles, and date-ranged shift rosters.
+follow the guided setup: review the basics, configure wards and beds, link
+active nurse employees, schedule shifts, confirm staffing rules, and check
+go-live readiness. Create nurse employment records in HR first; Nurse
+Management uses the HR-generated employee ID and does not create a second
+nurse identity. New nurse records receive a `NUR-` nurse ID (doctors use
+`DT-` IDs); only accounts linked to an HR record with employee type Nurse are
+listed here. The employee email must match the nurse login account. Nurse
+accounts also have a separate **Nurse Assignments** page to look up active
+patient assignments by nurse ID, name, or mobile number.
 Rooms support building/block, floor, AC type, category, capacity, gender
 restriction, amenities, and status. Creating a room generates its beds;
 numeric room ranges can be created in bulk. Configure each ward's maximum

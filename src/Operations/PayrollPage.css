@@ -16,17 +16,9 @@
 }
 
 .hr-brand {
-  color: #176b5d;
-  font-size: 1rem;
-  font-weight: 850;
-  letter-spacing: 0.07em;
+  display: block;
+  width: 6.2rem;
   text-decoration: none;
-}
-
-.hr-brand span {
-  margin-left: 0.35rem;
-  color: #889a94;
-  font-size: 0.62rem;
 }
 
 .hr-topbar-right {
@@ -445,7 +437,7 @@
 .hr-payslip-identity > span { display: grid; gap: 0.15rem; overflow-wrap: anywhere; }
 .hr-payslip-identity > span b { color: #83948e; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em; }
 .hr-payslip-brand { display: flex; grid-column: 1 / -1; align-items: center; gap: 0.6rem; border-bottom: 1px solid #e5ece9; padding-bottom: 0.65rem; }
-.hr-payslip-logo { display: grid; width: 2.25rem; height: 2.25rem; place-items: center; border-radius: 7px; background: #e8f5ef; color: #176b5d; }
+.hr-payslip-logo { display: block; width: 6.2rem; height: auto; border-radius: 5px; background: #fff; }
 .hr-payslip-brand > span:last-child { display: grid; gap: 0.12rem; }
 .hr-payslip-brand strong { color: #176b5d; font-size: 0.95rem; letter-spacing: 0.08em; }
 .hr-payslip-brand small { color: #83948e; font-size: 0.62rem; letter-spacing: 0.1em; }

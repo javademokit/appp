@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaHospital, FaUserShield } from 'react-icons/fa';
+import { FaArrowLeft, FaUserShield } from 'react-icons/fa';
 import { apiFetch } from '../API/api';
+import BrandLogo from '../components/BrandLogo';
 import './LoginPage.css';
 import { getPortalPathForRoles, normalizeRoles, ROLES, STAFF_PORTAL_ROLES } from '../Admin/roles';
 
@@ -102,8 +103,7 @@ const UserLogin = ({ portal = 'all' }) => {
       <div className="auth-layout">
         <aside className="auth-promo">
           <Link className="auth-brand" to="/">
-            <span className="auth-brand-icon"><FaHospital aria-hidden="true" /></span>
-            <span>MedSuite</span>
+            <BrandLogo className="auth-brand-icon" />
           </Link>
           <div className="auth-promo-content">
             <span className="auth-promo-symbol"><FaUserShield aria-hidden="true" /></span>
@@ -132,7 +132,7 @@ const UserLogin = ({ portal = 'all' }) => {
               ? 'Doctor login'
               : portal === 'hospital'
                 ? 'Hospital CRM / HR login'
-                : 'MedSuite login'}
+                : 'Medora AI login'}
         </h1>
         <p className="login-description">
           {portal === 'patient'

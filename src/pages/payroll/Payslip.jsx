@@ -1,6 +1,7 @@
 import React from 'react';
-import { ArrowDownToLine, Building2 } from 'lucide-react';
+import { ArrowDownToLine } from 'lucide-react';
 import { HrPanelHeading, formatMoney, asArray } from '../hrUi';
+import BrandLogo from '../../components/BrandLogo';
 
 const amount = (item) => item.amount ?? item.value ?? 0;
 
@@ -21,8 +22,8 @@ export function PayslipDetails({ payslip, onClose }) {
         {onClose && <button className="hr-text-button" onClick={onClose}>Close</button>}
       </div>} />
     <div className="hr-payslip-identity">
-      <div className="hr-payslip-brand"><span className="hr-payslip-logo"><Building2 size={22} /></span>
-        <span><strong>MEDCARE</strong><small>MONTHLY SALARY SLIP</small></span>
+      <div className="hr-payslip-brand"><BrandLogo className="hr-payslip-logo" />
+        <span><strong>MONTHLY SALARY SLIP</strong></span>
       </div>
       <span><b>Employee</b>{payslip.employeeName || '—'}</span>
       <span><b>Employee ID</b>{payslip.employeeCode || '—'}</span>

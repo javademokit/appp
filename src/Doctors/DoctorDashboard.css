@@ -18,17 +18,13 @@
 }
 
 .doctor-brand {
-  color: #176b5d;
-  font-size: 1.05rem;
-  font-weight: 850;
-  letter-spacing: 0.06em;
+  display: block;
+  width: 6.2rem;
   text-decoration: none;
 }
 
-.doctor-brand span {
-  margin-left: 0.35rem;
-  color: #8a9a94;
-  font-size: 0.63rem;
+.print-brand .brand-logo {
+  width: 105px;
 }
 
 .doctor-account,

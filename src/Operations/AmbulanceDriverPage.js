@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { apiFetch } from '../API/api';
+import BrandLogo from '../components/BrandLogo';
 import './Operations.css';
 
 const storageKey = 'ambulance-driver-pairing';
@@ -110,6 +111,7 @@ export default function AmbulanceDriverPage() {
           <h1 id="ambulance-driver-title">Driver location sharing</h1>
           <p>Pair this phone with the ambulance, then share its location with dispatch.</p>
         </div>
+        <BrandLogo className="driver-brand-logo" />
       </header>
       {error && <div className="workflow-alert error" role="alert">{error}</div>}
       {message && <div className="workflow-alert success" role="status">{message}</div>}

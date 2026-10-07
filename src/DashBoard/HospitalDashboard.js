@@ -12,7 +12,7 @@ import {
   FaTachometerAlt,
   FaCreditCard
 } from "react-icons/fa";
-import { Ambulance as AmbulanceIcon, Building2, CalendarClock, FileBadge, FlaskConical, Pill, Siren, Wallet } from "lucide-react";
+import { Ambulance as AmbulanceIcon, Building2, CalendarClock, FileBadge, FlaskConical, Pill, Siren, UserRoundCheck, Wallet } from "lucide-react";
 
 import Header from "../company/Header";
 import Footer from "../company/Footer";
@@ -35,6 +35,7 @@ import AmbulanceBillingPage from "../Operations/AmbulanceBillingPage";
 import StaffShiftsPage from "../Operations/StaffShiftsPage";
 import DischargePage from "../Operations/DischargePage";
 import WardManagement from "../NursingWardManagement/WardManagement";
+import NurseAssignmentPortal from "../NursingWardManagement/NurseAssignmentPortal";
 import PayrollRun from "../pages/payroll/PayrollRun";
 
 const HospitalDashboard = () => {
@@ -54,7 +55,7 @@ const HospitalDashboard = () => {
         setRoles(assignedRoles);
         if (assignedRoles.some((role) => ["NURSE", "HEAD_NURSE"].includes(role))
           && !assignedRoles.some((role) => ["SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN"].includes(role))) {
-          setActivePage("ward-management");
+          setActivePage("nurse-assignments");
         } else if (new URLSearchParams(window.location.search).get("billing") === "1"
           && !assignedRoles.some((role) => [
             "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "RECEPTIONIST", "CRM_EXECUTIVE",
@@ -129,7 +130,10 @@ const HospitalDashboard = () => {
       case "staff-shifts":
         return <StaffShiftsPage />;
       case "ward-management":
-        return <WardManagement />;
+        return nursingAccess ? <WardManagement /> : <Dashboard />;
+      case "nurse-assignments":
+        return roles.some((role) => ["NURSE", "HEAD_NURSE"].includes(role))
+          ? <NurseAssignmentPortal /> : <Dashboard />;
       case "payroll":
         return <PayrollRun />;
       case "DoctorTimeSlots":
@@ -181,7 +185,10 @@ const HospitalDashboard = () => {
               <CalendarClock size={16} /> Staff &amp; Shifts
             </li>
             </>}
-            {nursingAccess && <li className={activePage === "ward-management" ? "active" : ""} aria-current={activePage === "ward-management" ? "page" : undefined} onClick={() => setActivePage("ward-management")}>
+            {roles.some((role) => ["NURSE", "HEAD_NURSE"].includes(role)) && <li className={activePage === "nurse-assignments" ? "active" : ""} aria-current={activePage === "nurse-assignments" ? "page" : undefined} onClick={() => setActivePage("nurse-assignments")}>
+              <UserRoundCheck size={16} /> Nurse Assignments
+            </li>}
+            {nursingAccess && (!nursingOnly || roles.includes("HEAD_NURSE")) && <li className={activePage === "ward-management" ? "active" : ""} aria-current={activePage === "ward-management" ? "page" : undefined} onClick={() => setActivePage("ward-management")}>
               <Building2 size={16} /> Nurse Management
             </li>}
             {payslipAccess && <li className={activePage === "payroll" ? "active" : ""} aria-current={activePage === "payroll" ? "page" : undefined} onClick={() => setActivePage("payroll")}>

@@ -18,6 +18,30 @@
   margin-bottom: 1.1rem;
 }
 
+.patient-portal-brand {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 1rem;
+}
+
+.patient-portal-brand .brand-logo {
+  width: 6.5rem;
+  flex: 0 0 auto;
+}
+
+.patient-portal-brand > div {
+  min-width: 0;
+}
+
+.ambulance-driver-page .driver-brand-logo {
+  width: 6.5rem;
+  flex: 0 0 auto;
+}
+
+.print-brand { display: flex; align-items: center; gap: 0.75rem; }
+.print-brand .brand-logo { width: 6.5rem; }
+
 .workflow-header h1 {
   margin: 0;
   color: var(--clinic-ink);
@@ -540,7 +564,6 @@
 .workflow-inline-form .workflow-button { align-self: end; }
 .workflow-row-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .workflow-toolbar-actions { flex-wrap: wrap; }
-
 .critical-alert {
   display: flex;
   align-items: flex-start;
@@ -597,6 +620,9 @@
   .workflow-kpis article { min-height: 72px; padding: 0.65rem; }
   .workflow-kpis article > svg { top: 0.65rem; right: 0.65rem; width: 16px; }
   .workflow-toolbar-actions { width: 100%; justify-content: space-between; }
+  .patient-portal-brand { gap: 0.6rem; }
+  .patient-portal-brand .brand-logo { width: 4.7rem; }
+  .ambulance-driver-page .driver-brand-logo { width: 4.7rem; }
 }
 .patient-portal-profile {
   display: grid;

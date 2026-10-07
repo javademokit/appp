@@ -10,7 +10,7 @@
     width: 100%;
     border-top: 1px solid var(--clinic-line);
   }
-  
+
   .footer-content {
     display: flex;
     flex-direction: column;
@@ -39,4 +39,17 @@
     color: var(--clinic-ink);
     text-decoration: underline;
   }
-  
+
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.footer-brand .brand-logo {
+  width: 5.5rem;
+}
+
+.footer-brand p {
+  margin: 0;
+}

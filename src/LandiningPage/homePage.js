@@ -1,23 +1,28 @@
 import { useState } from 'react';
-import { FaAmbulance, FaArrowRight, FaBed, FaHospital, FaPaperPlane, FaRobot, FaUserMd } from 'react-icons/fa';
+import { FaArrowRight, FaHospital, FaPaperPlane, FaRobot, FaUserInjured, FaUserMd, FaClock } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import './App.css';
 
 const careServices = [
   {
-    icon: FaAmbulance,
-    title: 'Emergency care',
-    description: 'Emergency support is available around the clock.',
+    icon: FaUserInjured,
+    title: 'Patient CRM',
+    description: 'Keep patient profiles and care information together.',
   },
   {
-    icon: FaBed,
-    title: 'Hospital care',
-    description: 'Inpatient and critical care services for your needs.',
+    icon: FaHospital,
+    title: 'Appointments',
+    description: 'Organize doctor schedules and patient bookings.',
   },
   {
     icon: FaUserMd,
-    title: 'Doctor consultations',
-    description: 'Find a doctor and request an appointment online.',
+    title: 'Patient monitoring',
+    description: 'Keep patient checks and care-team follow-ups in view.',
+  },
+  {
+    icon: FaClock,
+    title: 'Medicine timetable',
+    description: 'Track medicine schedules and due checks for patients.',
   },
 ];
 
@@ -34,7 +39,11 @@ export default function HomePage() {
 
     const question = text.toLowerCase();
     let reply = 'I can help with appointments, doctors, emergency care, or hospital services.';
-    if (question.includes('appointment') || question.includes('book') || question.includes('slot')) {
+    if (question.includes('trial')) {
+      reply = 'Thanks for your interest in a Medora AI free trial. Please contact your hospital administrator to discuss trial access.';
+    } else if (question.includes('demo')) {
+      reply = 'Thanks for your interest in Medora AI. Please contact your hospital administrator to arrange a product demo.';
+    } else if (question.includes('appointment') || question.includes('book') || question.includes('slot')) {
       reply = 'To request an appointment, choose “Book an appointment” and sign in to the patient portal.';
     } else if (question.includes('doctor') || question.includes('specialist')) {
       reply = 'Sign in through Doctor login to open the clinical workspace. Patients can browse doctors from the appointment form.';
@@ -55,77 +64,79 @@ export default function HomePage() {
     askQuestion(draft);
   };
 
+  const requestTrial = () => {
+    setChatOpen(true);
+    askQuestion('I would like to start a free trial');
+  };
+
   return (
     <div className="med-home">
-      <header className="med-home-header">
-        <Link className="med-home-brand" to="/" aria-label="MedSuite home">
-          <span className="med-home-brand-icon"><FaHospital aria-hidden="true" /></span>
-          <span>MedSuite</span>
-        </Link>
-        <nav className="med-home-nav" aria-label="Portal navigation">
-          <Link to="/PatientLogin">Patient login</Link>
-          <Link to="/DoctorLogin">Doctor login</Link>
-          <Link to="/HospitalLogin">Hospital portal</Link>
-          <Link className="med-home-signup" to="/SignUpPage">Create account</Link>
-        </nav>
-      </header>
+      <div className="med-home-frame">
+        <header className="med-home-header">
+          <Link className="med-home-brand" to="/" aria-label="Medora AI home">
+            <img src="/medora-app-icon.svg" alt="" />
+            <span>Medora <strong>AI</strong></span>
+          </Link>
+          <button className="med-home-signup med-home-trial" type="button" onClick={requestTrial}>Start free trial</button>
+          <nav className="med-home-nav" aria-label="Main navigation">
+            <a href="#care-services">Features</a>
+            <a href="#modules">Modules</a>
+            <Link to="/HospitalLogin">Login</Link>
+          </nav>
+        </header>
 
-      <div className="med-home-main">
+        <main className="med-home-main">
         <section className="med-home-hero" aria-labelledby="med-home-title">
           <div className="med-home-copy">
             <div className="med-home-eyebrow">
               <span className="med-home-live-dot" aria-hidden="true" />
-              Care and coordination, in one place
+              AI medical CRM for hospitals
             </div>
-            <h1 id="med-home-title">Ayurved Hospital <span>Patna</span></h1>
+            <h1 id="med-home-title">Run your hospital <span>smarter</span> with AI</h1>
             <p className="med-home-intro">
-              A simpler way to connect with your care team, request appointments,
-              and access hospital services.
+              Medora AI brings patients, doctors, nurses, and appointments into one CRM,
+              with an AI assistant that helps keep care on track.
             </p>
             <div className="med-home-actions">
-              <Link className="med-home-primary-action" to="/PatientLogin">
-                Book an appointment <FaArrowRight aria-hidden="true" />
-              </Link>
-              <a className="med-home-secondary-action" href="#care-services">Explore services</a>
+              <button className="med-home-primary-action" type="button" onClick={() => {
+                setChatOpen(true);
+                askQuestion('I would like to book a demo');
+              }}>Book a demo <FaArrowRight aria-hidden="true" /></button>
+              <a className="med-home-secondary-action" href="#care-services">See features</a>
             </div>
-            <p className="med-home-emergency"><FaAmbulance aria-hidden="true" /> Emergency support available 24/7</p>
+            <p className="med-home-emergency"><FaHospital aria-hidden="true" /> Secure patient data, built for hospitals</p>
           </div>
 
-          <div className="med-home-image med-home-video-scene" aria-label="A preview of hospital care services">
-            <img
-              src="https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=1400&q=85"
-              alt="Hospital entrance"
-            />
-            <div className="med-home-scene-tint" aria-hidden="true" />
-            <div className="med-home-scene-live"><span /> Care that stays connected</div>
-            <div className="med-home-scene-card med-home-appointment-card">
-              <div className="med-home-scene-card-heading">
-                <span className="med-home-check"><FaArrowRight aria-hidden="true" /></span>
-                <span><small>YOUR NEXT STEP</small><strong>Book an appointment</strong></span>
-                <span className="med-home-scene-status">ONLINE</span>
+          <section className="med-home-dashboard-preview" id="modules" aria-label="Preview of the Medora AI hospital workspace">
+            <div className="med-home-preview-heading">
+              <span className="med-home-preview-mark"><FaHospital aria-hidden="true" /></span>
+              <span><small>SAMPLE DASHBOARD</small><strong>Hospital overview</strong></span>
+            </div>
+            <div className="med-home-preview-cards">
+              <article>
+                <span><small>Patients today</small><strong>128</strong></span>
+              </article>
+              <article>
+                <span><small>Medicines due</small><strong>34</strong></span>
+              </article>
+            </div>
+            <div className="med-home-preview-workflow">
+              <div className="med-home-preview-workflow-copy">
+                <div><span className="med-home-preview-kicker"><FaRobot aria-hidden="true" /> AI ASSISTANT</span><span className="med-home-preview-online">ONLINE</span></div>
+                <strong>3 patients need a medicine check</strong>
+                <small>Nurse alerts sent to Ward B.</small>
               </div>
-              <div className="med-home-scene-divider" />
-              <p>Choose a doctor and a time that works for you.</p>
-              <div className="med-home-scene-progress"><span /></div>
             </div>
-            <div className="med-home-scene-stat">
-              <span className="med-home-stat-pulse" />
-              <span><strong>24/7</strong><small>Emergency support</small></span>
-            </div>
-            <div className="med-home-image-note">
-              <span className="med-home-image-note-icon"><FaHospital aria-hidden="true" /></span>
-              <span><strong>Here for your health</strong><small>Patient and care-team portals</small></span>
-            </div>
-          </div>
+          </section>
         </section>
 
         <section className="med-home-services" id="care-services" aria-labelledby="med-home-services-title">
           <div className="med-home-section-heading">
             <div>
-              <p>Care when you need it</p>
-              <h2 id="med-home-services-title">Hospital services</h2>
+              <p>Built for connected care</p>
+              <h2 id="med-home-services-title">Core modules</h2>
             </div>
-            <Link to="/PatientLogin">Continue to patient portal <FaArrowRight aria-hidden="true" /></Link>
+            <Link to="/HospitalLogin">Explore the hospital portal <FaArrowRight aria-hidden="true" /></Link>
           </div>
           <div className="med-home-service-grid">
             {careServices.map(({ icon: Icon, title, description }) => (
@@ -136,13 +147,14 @@ export default function HomePage() {
             ))}
           </div>
         </section>
+        </main>
       </div>
       <div className="med-home-chat">
         {chatOpen && (
-          <section className="med-home-chat-panel" aria-label="MedSuite assistance">
+          <section className="med-home-chat-panel" aria-label="Medora AI assistance">
             <header className="med-home-chat-header">
               <span className="med-home-chat-avatar"><FaRobot aria-hidden="true" /></span>
-              <span><strong>MedSuite assistant</strong><small>Here to help you find your way</small></span>
+              <span><strong>Medora AI assistant</strong><small>Here to help you find your way</small></span>
               <button type="button" aria-label="Close assistant" onClick={() => setChatOpen(false)}>×</button>
             </header>
             <div className="med-home-chat-messages" aria-live="polite">
@@ -175,11 +187,11 @@ export default function HomePage() {
         <button
           className="med-home-chat-toggle"
           type="button"
-          aria-label={chatOpen ? 'Close assistant' : 'Open assistant for help'}
+          aria-label={chatOpen ? 'Close assistant' : 'Open Ask Medora chat'}
           aria-expanded={chatOpen}
           onClick={() => setChatOpen((open) => !open)}
         >
-          {chatOpen ? <span aria-hidden="true">×</span> : <><FaRobot aria-hidden="true" /><span>Need help?</span></>}
+          {chatOpen ? <span aria-hidden="true">×</span> : <><FaRobot aria-hidden="true" /><span>Ask Medora</span></>}
         </button>
       </div>
     </div>

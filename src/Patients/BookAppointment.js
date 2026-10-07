@@ -336,6 +336,8 @@ const BookAppointment = () => {
           <title>Appointment Report</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
+            .print-brand { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 12px; }
+            .print-brand img { width: 112px; height: auto; }
             h2, h4 { text-align: center; margin: 5px 0; }
             p { text-align: center; margin: 2px 0; }
             table { width: 100%; border-collapse: collapse; margin: 20px 0; }
@@ -355,7 +357,7 @@ const BookAppointment = () => {
           </style>
         </head>
         <body>
-          <h2>Wellness Hospital</h2>
+          <header class="print-brand"><img src="/medora_ai_logo.svg" alt="Medora AI"><h2>Wellness Hospital</h2></header>
           <h4>Appointment Receipt</h4>
           <table>
             <tbody>

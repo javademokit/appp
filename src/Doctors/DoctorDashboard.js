@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, CalendarDays, ClipboardList, Clock3, FileText, LogOut, RefreshCw, Stethoscope, UserRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../API/api';
+import BrandLogo from '../components/BrandLogo';
 import './DoctorDashboard.css';
 
 const localDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -245,6 +246,8 @@ export default function DoctorDashboard() {
             header { display: flex; justify-content: space-between; align-items: end; border-bottom: 2px solid #222; padding-bottom: 12px; }
             header strong { font-size: 21px; }
             header span { font-size: 16px; }
+            .print-brand { display: flex; align-items: center; gap: 12px; }
+            .print-brand img { width: 105px; height: auto; }
             .details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 24px; margin: 20px 0; }
             .details div { display: grid; gap: 3px; }
             .details b { color: #555; font-size: 10px; text-transform: uppercase; }
@@ -257,7 +260,7 @@ export default function DoctorDashboard() {
           </style>
         </head>
         <body>
-          <header><strong>MEDCARE HOSPITAL</strong><span>Medication prescription</span></header>
+          <header><div class="print-brand"><img src="/medora_ai_logo.svg" alt="Medora AI"><strong>MEDCARE HOSPITAL</strong></div><span>Medication prescription</span></header>
           <section class="details">
             <div><b>Patient</b><span>${escapePrintValue(prescription.patientName)}</span></div>
             <div><b>Patient ID</b><span>${escapePrintValue(prescription.patientId)}</span></div>
@@ -282,7 +285,9 @@ export default function DoctorDashboard() {
   return (
     <main className="doctor-workspace">
       <header className="doctor-topbar">
-        <a className="doctor-brand" href="/DoctorDashboard">MEDCARE <span>CLINICAL</span></a>
+        <a className="doctor-brand" href="/DoctorDashboard" aria-label="Medora AI doctor dashboard">
+          <BrandLogo />
+        </a>
         <div className="doctor-account">
           <span>{doctor?.doctorName || 'Doctor workspace'}</span>
           <button type="button" onClick={logout} aria-label="Sign out"><LogOut size={17} /> Sign out</button>
@@ -495,7 +500,7 @@ export default function DoctorDashboard() {
             </form>
           </section>}
           {printablePrescription && <section className="printable-prescription" aria-label="Printable medication prescription">
-            <header><strong>MEDCARE HOSPITAL</strong><span>Medication prescription</span></header>
+            <header><div className="print-brand"><BrandLogo alt="Medora AI" /><strong>MEDCARE HOSPITAL</strong></div><span>Medication prescription</span></header>
             <div className="print-prescription-details">
               <div><b>Patient</b><span>{printablePrescription.patientName}</span></div>
               <div><b>Patient ID</b><span>{printablePrescription.patientId}</span></div>

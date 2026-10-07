@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, Boxes, ClipboardList, Pill, Plus, Printer, RefreshCw } from 'lucide-react';
 import { apiFetch } from '../API/api';
 import { startPharmacyCheckout } from '../PaymentPage/paymentGatewayCheckout';
+import BrandLogo from '../components/BrandLogo';
 import './Operations.css';
 
 const medicineDepartments = [
@@ -206,10 +207,11 @@ export default function PharmacyPage() {
     printWindow.document.open();
     printWindow.document.write(`<!doctype html><html lang="en"><head><meta charset="utf-8">
       <title>Pharmacy bill ${escapeHtml(invoice.invoiceNumber)}</title>
-      <style>body{font:14px Arial,sans-serif;color:#172a24;padding:28px}header{display:flex;justify-content:space-between;border-bottom:2px solid #176b5d;padding-bottom:12px}
+      <style>body{font:14px Arial,sans-serif;color:#172a24;padding:28px}header{display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #176b5d;padding-bottom:12px}
+      .print-brand{display:flex;align-items:center;gap:14px}.print-brand img{width:110px;height:auto}
       table{width:100%;border-collapse:collapse;margin-top:24px}th,td{border:1px solid #cbd7d2;padding:9px;text-align:left}
       .total{text-align:right;margin-top:22px}</style></head><body>
-      <header><strong>MEDCARE HOSPITAL · PHARMACY</strong><span>${escapeHtml(invoice.invoiceNumber)}</span></header>
+      <header><div class="print-brand"><img src="/medora_ai_logo.svg" alt="Medora AI"><strong>MEDCARE HOSPITAL · PHARMACY</strong></div><span>${escapeHtml(invoice.invoiceNumber)}</span></header>
       <p>Patient: <strong>${escapeHtml(invoice.patientName)}</strong> · ID: ${escapeHtml(invoice.patientId)}</p>
       <p>Bill date: ${escapeHtml(invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : '')}</p>
       <table><thead><tr><th>Medicine</th><th>Qty</th><th>Unit price</th><th>Amount</th></tr></thead><tbody>${rows}</tbody></table>
@@ -340,7 +342,7 @@ export default function PharmacyPage() {
         </>}
       </section>
       {printablePrescription && <section className="printable-prescription" aria-label="Printable medication prescription">
-        <header><strong>MEDCARE HOSPITAL</strong><span>Medication prescription</span></header>
+        <header><div className="print-brand"><BrandLogo alt="Medora AI" /><strong>MEDCARE HOSPITAL</strong></div><span>Medication prescription</span></header>
         <div className="print-prescription-details">
           <div><b>Patient</b><span>{printablePrescription.patientName}</span></div>
           <div><b>Patient ID</b><span>{printablePrescription.patientId}</span></div>

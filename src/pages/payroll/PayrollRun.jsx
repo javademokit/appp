@@ -4,6 +4,7 @@ import {
   CalendarDays, Check, CheckCircle2, Clock3, FileText, HeartPulse, LayoutDashboard,
   Plus, Search, Users, Wallet, X,
 } from 'lucide-react';
+import BrandLogo from '../../components/BrandLogo';
 import * as employeeService from '../../services/employeeService';
 import * as attendanceService from '../../services/attendanceService';
 import * as leaveService from '../../services/leaveService';
@@ -416,7 +417,9 @@ export default function PayrollPage() {
   return (
     <main className="hr-workspace">
       <header className="hr-topbar">
-        <a className="hr-brand" href="/HospitalDashboard">MEDCARE <span>PEOPLE</span></a>
+        <a className="hr-brand" href="/HospitalDashboard" aria-label="Medora AI people and payroll">
+          <BrandLogo />
+        </a>
         <div className="hr-topbar-right">
           <span className="hr-live-dot" aria-hidden="true" />
           <span>{account?.username || 'HR workspace'}</span>

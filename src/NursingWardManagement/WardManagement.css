@@ -38,6 +38,149 @@
   letter-spacing: 0.12em;
 }
 
+.nurse-setup-flow {
+  margin-bottom: 1rem;
+  overflow: hidden;
+  border: 1px solid var(--nurse-line);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 5px 18px rgb(27 67 55 / 4%);
+}
+
+.nurse-setup-flow-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem 0.9rem;
+}
+
+.nurse-setup-flow-heading > div > span,
+.nurse-go-live-card > div > span {
+  color: var(--nurse-green);
+  font-size: 0.63rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.nurse-setup-flow-heading h2 {
+  margin: 0.25rem 0;
+  color: var(--nurse-ink);
+  font-size: 1.05rem;
+}
+
+.nurse-setup-flow-heading p {
+  margin: 0;
+  color: var(--nurse-muted);
+  font-size: 0.75rem;
+}
+
+.nurse-setup-readiness {
+  flex: 0 0 auto;
+  border: 1px solid #f0d8b9;
+  border-radius: 999px;
+  padding: 0.4rem 0.7rem;
+  background: #fff8ee;
+  color: #98611e;
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.nurse-setup-readiness.ready {
+  border-color: #c8e6d5;
+  background: #eff9f2;
+  color: #23734f;
+}
+
+.nurse-setup-steps {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.3rem 1.25rem 1.1rem;
+  list-style: none;
+}
+
+.nurse-setup-steps li {
+  min-width: 0;
+}
+
+.nurse-setup-steps button {
+  display: grid;
+  width: 100%;
+  min-height: 78px;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: start;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  border: 1px solid #e8efeb;
+  border-radius: 9px;
+  padding: 0.55rem;
+  background: #fbfdfc;
+  color: var(--nurse-ink);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms ease, background 140ms ease, box-shadow 140ms ease;
+}
+
+.nurse-setup-steps button:hover,
+.nurse-setup-steps button.active {
+  border-color: #92cbb2;
+  background: #f3faf6;
+}
+
+.nurse-setup-steps button.active {
+  box-shadow: inset 0 0 0 1px #92cbb2;
+}
+
+.nurse-setup-step-number {
+  display: grid;
+  width: 25px;
+  height: 25px;
+  place-items: center;
+  border: 1px solid #d8e5de;
+  border-radius: 50%;
+  background: #fff;
+  color: #657a73;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.nurse-setup-steps button.complete .nurse-setup-step-number {
+  border-color: #c8e6d5;
+  background: #e9f6ee;
+  color: #23734f;
+}
+
+.nurse-setup-step-copy {
+  display: grid;
+  min-width: 0;
+  gap: 0.12rem;
+}
+
+.nurse-setup-step-copy strong {
+  font-size: 0.73rem;
+}
+
+.nurse-setup-step-copy small {
+  overflow: hidden;
+  color: var(--nurse-muted);
+  font-size: 0.59rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nurse-setup-step-status {
+  grid-column: 2;
+  color: #71837b;
+  font-size: 0.58rem;
+  font-weight: 700;
+}
+
+.nurse-setup-steps button.complete .nurse-setup-step-status {
+  color: #23734f;
+}
+
 .nurse-management-tabs {
   display: flex;
   gap: 0.25rem;
@@ -105,6 +248,47 @@
   margin: 0;
   color: var(--nurse-muted);
   font-size: 0.8rem;
+}
+
+.nurse-go-live-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid #e8e4d9;
+  border-radius: 11px;
+  padding: 1rem 1.2rem;
+  background: linear-gradient(110deg, #fffdf8, #fff 80%);
+}
+
+.nurse-go-live-card.ready {
+  border-color: #c8e6d5;
+  background: linear-gradient(110deg, #f0faf3, #fff 80%);
+}
+
+.nurse-go-live-card h3 {
+  margin: 0.25rem 0;
+  color: var(--nurse-ink);
+  font-size: 0.95rem;
+}
+
+.nurse-go-live-card p {
+  margin: 0;
+  color: var(--nurse-muted);
+  font-size: 0.72rem;
+}
+
+.nurse-go-live-card > .workflow-button {
+  flex: 0 0 auto;
+}
+
+#nurse-go-live,
+#nurse-ward-setup,
+#nurse-rules-setup,
+#nurse-employment-link,
+#nurse-shift-setup {
+  scroll-margin-top: 1rem;
 }
 
 .nurse-overview-metrics {
@@ -611,6 +795,10 @@
 }
 
 @media (max-width: 900px) {
+  .nurse-setup-steps {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .nurse-overview-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -625,6 +813,27 @@
 }
 
 @media (max-width: 600px) {
+  .nurse-setup-flow-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .nurse-setup-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 0 1rem 1rem;
+  }
+
+  .nurse-go-live-card {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .nurse-go-live-card > .workflow-button {
+    width: 100%;
+  }
+
   .nurse-management-layout .workflow-header {
     align-items: flex-start;
     padding: 1rem;

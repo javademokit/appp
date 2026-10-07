@@ -16,15 +16,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
-  background: var(--clinic-primary);
-  color: #fff;
-}
-
-.logo-icon {
-  font-size: 1.1rem;
+  width: 6.2rem;
+  flex: 0 0 auto;
 }
 
 .icons {
