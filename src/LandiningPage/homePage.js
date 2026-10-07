@@ -39,12 +39,14 @@ export default function HomePage() {
 
     const question = text.toLowerCase();
     let reply = 'I can help with appointments, doctors, emergency care, or hospital services.';
+    let replyLink = null;
     if (question.includes('trial')) {
       reply = 'Thanks for your interest in a Medora AI free trial. Please contact your hospital administrator to discuss trial access.';
     } else if (question.includes('demo')) {
       reply = 'Thanks for your interest in Medora AI. Please contact your hospital administrator to arrange a product demo.';
-    } else if (question.includes('appointment') || question.includes('book') || question.includes('slot')) {
-      reply = 'To request an appointment, choose “Book an appointment” and sign in to the patient portal.';
+    } else if (/\b(appointments?|appoint|book|booking|schedule|slot|visit)\b/.test(question)) {
+      reply = 'To request an appointment, sign in to the patient portal.';
+      replyLink = { to: '/PatientLogin', text: 'Sign in to book an appointment' };
     } else if (question.includes('doctor') || question.includes('specialist')) {
       reply = 'Sign in through Doctor login to open the clinical workspace. Patients can browse doctors from the appointment form.';
     } else if (question.includes('emergency') || question.includes('ambulance') || question.includes('urgent')) {
@@ -55,7 +57,7 @@ export default function HomePage() {
     } else if (question.includes('hello') || question.includes('hi')) {
       reply = 'Hello! How can I help you find the right portal or service?';
     }
-    setMessages((current) => [...current, { sender: 'user', text }, { sender: 'assistant', text: reply }]);
+    setMessages((current) => [...current, { sender: 'user', text }, { sender: 'assistant', text: reply, link: replyLink }]);
     setDraft('');
   };
 
@@ -161,6 +163,7 @@ export default function HomePage() {
               {messages.map((message, index) => (
                 <p className={`med-home-chat-message ${message.sender}`} key={`${index}-${message.sender}`}>
                   {message.text}
+                  {message.link && <> <Link to={message.link.to}>{message.link.text}</Link></>}
                 </p>
               ))}
             </div>

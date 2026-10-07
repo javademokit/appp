@@ -37,7 +37,18 @@ test('offers appointment help through the home-page assistant', () => {
   expect(screen.getByText(/I can help with appointments/)).toBeInTheDocument();
   expect(screen.getByRole('textbox', { name: 'Ask the assistant' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Appointments' }));
-  expect(screen.getByText(/choose “Book an appointment”/)).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Sign in to book an appointment' })).toHaveAttribute('href', '/PatientLogin');
+});
+
+test('links typed appointment scheduling questions to the patient portal', () => {
+  render(<HomePage />);
+  fireEvent.click(screen.getByRole('button', { name: 'Open Ask Medora chat' }));
+  fireEvent.change(screen.getByRole('textbox', { name: 'Ask the assistant' }), {
+    target: { value: 'Can I schedule a visit?' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+
+  expect(screen.getByRole('link', { name: 'Sign in to book an appointment' })).toHaveAttribute('href', '/PatientLogin');
 });
 
 test('opens Ask Medora from the demo action with demo scheduling guidance', () => {
