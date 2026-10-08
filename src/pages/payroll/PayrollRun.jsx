@@ -240,17 +240,21 @@ export default function PayrollPage() {
     if (account) void loadSection(activeNav);
   }, [account, activeNav, loadSection]);
 
-  const runAction = async (action, successMessage, refresh = true) => {
+  const runAction = async (action, successMessage, refresh = true, errorDisplay = 'page') => {
     setBusy(true);
     setError('');
     setNotice('');
     try {
-      await action();
-      setNotice(successMessage);
+      const result = await action();
+      setNotice(typeof successMessage === 'function' ? successMessage(result) : successMessage);
       setModal('');
       if (refresh) await loadSection(activeNav);
     } catch (actionError) {
-      setError(actionError.message);
+      if (errorDisplay === 'popup') {
+        window.alert(actionError.message);
+      } else {
+        setError(actionError.message);
+      }
     } finally {
       setBusy(false);
     }
@@ -260,7 +264,14 @@ export default function PayrollPage() {
     const updatingEmployee = kind === 'employee' && editingEmployee?.id;
     const createMethods = {
       employee: async () => {
-        const savedEmployee = await employeeService.saveEmployee(editingEmployee, payload);
+        let savedEmployee;
+        try {
+          savedEmployee = await employeeService.saveEmployee(editingEmployee, payload);
+        } catch (saveError) {
+          const isNurse = String(payload.employeeType || '').toUpperCase() === 'NURSE';
+          const recordType = isNurse ? 'Nurse employee' : 'Employee';
+          throw new Error(`${recordType} was not ${updatingEmployee ? 'updated' : 'created'}: ${saveError.message}`);
+        }
         if (documents.length) {
           setEditingEmployee(savedEmployee);
           for (const { documentType, file } of documents) {
@@ -278,8 +289,16 @@ export default function PayrollPage() {
       () => createMethods[kind]
         ? createMethods[kind]()
         : payrollService.createOrganizationRecord(kind, payload),
-      kind === 'employee' ? (updatingEmployee ? 'Employee record updated.' : 'Employee added to the master.')
+      kind === 'employee' ? (savedEmployee => {
+        const isNurse = String(savedEmployee?.employeeType || payload.employeeType || '').toUpperCase() === 'NURSE';
+        const recordType = isNurse ? 'Nurse employee' : 'Employee';
+        const action = updatingEmployee ? 'updated' : 'created';
+        const employeeCode = savedEmployee?.employeeCode;
+        return `${recordType} ${action} successfully.${employeeCode ? ` ${isNurse ? 'Nurse ID' : 'Employee ID'}: ${employeeCode}.` : ''}`;
+      })
         : `${titleCase(kind)} saved.`,
+      true,
+      kind === 'employee' ? 'popup' : 'page',
     );
   };
 

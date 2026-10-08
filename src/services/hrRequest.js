@@ -9,7 +9,20 @@ export async function request(path, options) {
       const validationErrors = Array.isArray(body.errors)
         ? body.errors.map((entry) => entry.defaultMessage || entry.message || entry).filter(Boolean).join('; ')
         : '';
-      message = body.detail || body.message || validationErrors || body.error || body.title || message;
+      const serverMessage = body.detail || body.message || validationErrors || body.error;
+      let requestBody = {};
+      try {
+        requestBody = JSON.parse(options?.body || '{}');
+      } catch {
+        requestBody = {};
+      }
+      const isNurseEmployeeRequest = path === '/employees'
+        && String(requestBody.employeeType || '').toUpperCase() === 'NURSE';
+      if (!serverMessage && response.status === 409 && isNurseEmployeeRequest) {
+        message = 'A matching nurse employee may already exist. Check the email and employee ID, then try again.';
+      } else {
+        message = serverMessage || body.title || message;
+      }
     } catch {
       // Keep the HTTP status message when the server did not return JSON.
     }
