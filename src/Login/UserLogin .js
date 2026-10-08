@@ -84,10 +84,21 @@ const UserLogin = ({ portal = 'all' }) => {
         }
         throw new Error(`Your account has no supported portal role assigned. Current roles: ${roles.join(', ')}. Ask a hospital administrator to assign a supported role.`);
       }
+      const hospitalAdministrator = roles.some((role) => [
+        ROLES.SUPER_ADMIN,
+        ROLES.HOSPITAL_ADMIN,
+        ROLES.CLINIC_ADMIN,
+      ].includes(role));
       navigate(portal === 'patient'
         ? '/PatientPortal'
+        : portal === 'hospital'
+          ? (roles.includes(ROLES.DOCTOR) && !roles.some((role) => [ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.CLINIC_ADMIN].includes(role))
+            ? '/DoctorDashboard'
+            : '/HospitalDashboard')
         : portal === 'doctor'
           ? '/DoctorDashboard'
+          : hospitalAdministrator
+            ? '/HospitalDashboard'
           : portalPath);
 
     } catch (error) {
@@ -175,7 +186,7 @@ const UserLogin = ({ portal = 'all' }) => {
         <nav className="login-options" aria-label="Other sign-in options">
           {portal === 'all' && <Link to="/PatientLogin">Patient login</Link>}
           {portal !== 'doctor' && <Link to="/DoctorLogin">Doctor login</Link>}
-          {portal !== 'hospital' && <Link to="/HospitalLogin">Hospital CRM / HR login</Link>}
+          {portal !== 'hospital' && portal !== 'patient' && <Link to="/HospitalLogin">Hospital CRM / HR login</Link>}
           {portal !== 'hospital' && <Link to="/SignUpPage">Create a patient account</Link>}
         </nav>
         </motion.div>

@@ -29,6 +29,7 @@ afterEach(() => {
 test('patient login directs patient accounts to the patient portal', async () => {
   mockSuccessfulLogin(['PATIENT']);
   renderLogin('patient');
+  expect(screen.queryByRole('link', { name: 'Hospital CRM / HR login' })).not.toBeInTheDocument();
   fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'patient@example.test' } });
   fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'test-password' } });
   fireEvent.click(screen.getByRole('button', { name: 'Log In' }));
@@ -40,6 +41,26 @@ test('hospital CRM login directs CRM staff to the appointment-capable dashboard'
   mockSuccessfulLogin(['CRM_EXECUTIVE']);
   renderLogin('hospital');
   fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'crm@example.test' } });
+  fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'test-password' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Log In' }));
+
+  await waitFor(() => expect(window.location.pathname).toBe('/HospitalDashboard'));
+});
+
+test('hospital login directs administrators to the hospital dashboard', async () => {
+  mockSuccessfulLogin(['HOSPITAL_ADMIN']);
+  renderLogin('hospital');
+  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'admin@example.test' } });
+  fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'test-password' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Log In' }));
+
+  await waitFor(() => expect(window.location.pathname).toBe('/HospitalDashboard'));
+});
+
+test('general login directs administrators to the hospital dashboard', async () => {
+  mockSuccessfulLogin(['HOSPITAL_ADMIN']);
+  renderLogin();
+  fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'admin@example.test' } });
   fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'test-password' } });
   fireEvent.click(screen.getByRole('button', { name: 'Log In' }));
 
