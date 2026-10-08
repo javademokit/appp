@@ -13,14 +13,15 @@ describe('NurseAssignmentPortal', () => {
       if (path === '/users/me') return Promise.resolve(jsonResponse({ roles: ['NURSE'] }));
       if (path === '/nursing/nurses') return Promise.resolve(jsonResponse([
         {
-          id: 'nurse-account-1',
+          id: 'NUR-12345678',
+          accountId: 'nurse-account-1',
           name: 'Anita Sharma',
           employeeCode: 'NUR-12345678',
           mobileNo: '555-0100',
           employmentActive: true,
         },
       ]));
-      if (path === '/nursing/nurses/nurse-account-1/assignments') {
+      if (path === '/nursing/nurses/NUR-12345678/assignments') {
         return Promise.resolve(jsonResponse([{
           assignment: { id: 'assignment-1', patientId: 'PT-100', shift: 'MORNING', role: 'PRIMARY' },
           patient: {
@@ -44,11 +45,11 @@ describe('NurseAssignmentPortal', () => {
 
     const search = await screen.findByRole('searchbox', { name: /search by nurse id/i });
     fireEvent.change(search, { target: { value: 'NUR-123' } });
-    fireEvent.change(screen.getByLabelText('Select nurse'), { target: { value: 'nurse-account-1' } });
+    fireEvent.change(screen.getByLabelText('Select nurse'), { target: { value: 'NUR-12345678' } });
 
     expect(await screen.findByText('Riya Shah')).toBeInTheDocument();
     expect(screen.getByText('NUR-12345678 · 555-0100')).toBeInTheDocument();
     expect(screen.getByText('ICU')).toBeInTheDocument();
-    expect(apiFetch).toHaveBeenCalledWith('/nursing/nurses/nurse-account-1/assignments');
+    expect(apiFetch).toHaveBeenCalledWith('/nursing/nurses/NUR-12345678/assignments');
   });
 });

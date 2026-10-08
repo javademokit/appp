@@ -8,7 +8,7 @@ const today = () => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 };
 
-export default function OvertimeAllowances({ month, canApprove }) {
+export default function OvertimeAllowances({ month, canApprove, title = 'Overtime allowances' }) {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -44,7 +44,7 @@ export default function OvertimeAllowances({ month, canApprove }) {
         reason: form.get('reason'),
       });
       setShowRequest(false);
-      setNotice('Overtime allowance request submitted for review.');
+      setNotice('Overtime request submitted for approval.');
       await refresh();
     } catch (requestError) {
       setError(requestError.message || 'Could not submit overtime allowance request');
@@ -103,12 +103,12 @@ export default function OvertimeAllowances({ month, canApprove }) {
   ];
 
   return <section className="hr-panel">
-    <HrPanelHeading title="Overtime allowances"
+    <HrPanelHeading title={title}
       description={canApprove
-        ? `Review requests and set the amount for the ${month} payroll.`
-        : 'Apply for an overtime allowance. Approved amounts appear in the relevant monthly payroll.'}
+        ? `Review overtime requests and set approved allowance amounts for the ${month} payroll.`
+        : 'Apply for overtime already worked. Approved allowances are included in the relevant monthly payroll.'}
       action={!canApprove && <button className="hr-button primary" onClick={() => setShowRequest((open) => !open)}>
-        <Plus size={16} /> Request allowance
+        <Plus size={16} /> Apply for overtime
       </button>} />
     {error && <div className="hr-alert error" role="alert">{error}</div>}
     {notice && <div className="hr-alert success" role="status">{notice}</div>}
@@ -123,12 +123,12 @@ export default function OvertimeAllowances({ month, canApprove }) {
         <input name="reason" maxLength="500" required />
       </label>
       <button className="hr-button primary" type="submit" disabled={submitting}>
-        <Clock3 size={16} /> Submit request
+        <Clock3 size={16} /> Submit overtime request
       </button>
     </form>}
     {loading ? <div className="hr-loading" role="status">Loading overtime requests…</div>
       : <HrDataTable rows={requests} columns={columns}
-        emptyTitle="No overtime allowance requests"
-        emptyDetail={canApprove ? `There are no requests for ${month}.` : 'Submit a request when you have worked approved overtime.'} />}
+        emptyTitle="No overtime requests"
+        emptyDetail={canApprove ? `There are no requests for ${month}.` : 'Your overtime requests will appear here for status tracking.'} />}
   </section>;
 }

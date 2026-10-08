@@ -22,6 +22,9 @@ const request = async (path, options) => {
 const isOverdue = (record) => record.status === 'PENDING'
   && record.dueAt && new Date(record.dueAt).getTime() < Date.now();
 
+const nurseByIdentity = (nurses, id) => nurses.find((nurse) =>
+  nurse.employeeCode === id || nurse.accountId === id || nurse.id === id);
+
 const hasAbnormalVitals = (record) => {
   const text = `${record.description || ''} ${record.value || ''}`.toLowerCase();
   if (/\b(abnormal|critical|dangerously high|dangerously low)\b/.test(text)) return true;
@@ -256,7 +259,7 @@ function NurseDashboard({ dashboard, handovers, nurses, rosters, shiftSwaps, ref
                 <td><form className="workflow-form-grid" onSubmit={(event) => submitHandover(event, patientId)}>
                   <label>Incoming nurse<select required value={handover.nurseId || ''} onChange={(event) => setHandoverForms((current) => ({ ...current, [patientId]: { ...current[patientId], nurseId: event.target.value } }))}>
                     <option value="">Select nurse</option>{nurses.filter((nurse) => nurse.profileComplete && nurse.employmentActive
-                      && nurse.status === 'ACTIVE' && nurse.id !== item.assignment?.nurseId).map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.name} · {nurse.employeeCode}</option>)}
+                      && nurse.status === 'ACTIVE' && nurse.employeeCode !== item.assignment?.nurseId).map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}
                   </select></label>
                   <label>Incoming shift<select required value={handover.shift || ''} onChange={(event) => setHandoverForms((current) => ({ ...current, [patientId]: { ...current[patientId], shift: event.target.value } }))}>
                     <option value="">Select shift</option><option value="MORNING">Morning</option><option value="EVENING">Evening</option><option value="NIGHT">Night</option>
@@ -284,8 +287,8 @@ function NurseDashboard({ dashboard, handovers, nurses, rosters, shiftSwaps, ref
           </select></label>
           <label>Swap with<select required value={swapForm.toNurseId} onChange={(event) => setSwapForm({ ...swapForm, toNurseId: event.target.value })}>
             <option value="">Select nurse</option>{nurses.filter((nurse) => nurse.profileComplete && nurse.employmentActive
-              && nurse.status === 'ACTIVE' && nurse.id !== rosters.find((roster) => roster.id === swapForm.rosterId)?.nurseId)
-              .map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.name} · {nurse.employeeCode}</option>)}
+              && nurse.status === 'ACTIVE' && nurse.employeeCode !== rosters.find((roster) => roster.id === swapForm.rosterId)?.nurseId)
+              .map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}
           </select></label>
           <label>Shift date<input required type="date" value={swapForm.date} onChange={(event) => setSwapForm({ ...swapForm, date: event.target.value })} /></label>
           <label>Reason<input value={swapForm.note} onChange={(event) => setSwapForm({ ...swapForm, note: event.target.value })} /></label>
@@ -330,35 +333,26 @@ export default function WardManagement() {
   const [roomForm, setRoomForm] = useState({ id: '', wardId: '', building: '', floor: '', roomNumber: '', acType: 'NON_AC', category: 'GENERAL', bedCapacity: 1, defaultBedType: 'STANDARD', genderRestriction: 'ANY', status: 'ACTIVE', amenities: '', notes: '' });
   const [bulkRoomForm, setBulkRoomForm] = useState({ ...roomForm, roomNumber: '', roomNumberEnd: '' });
   const [bedFilters, setBedFilters] = useState({ wardId: '', status: '', acType: '', floor: '' });
-  const [nurseForm, setNurseForm] = useState({ accountId: '', status: 'ACTIVE' });
-  const [rosterForm, setRosterForm] = useState({ nurseId: '', wardId: '', shift: 'MORNING', startDate: '', endDate: '' });
   const [bulkForm, setBulkForm] = useState({ wardId: '', nurseId: '', shift: 'MORNING', bedFrom: '', bedTo: '' });
   const canManage = useMemo(() => (currentUser?.roles || []).some((role) => managerRoles.includes(String(role).replace(/^ROLE_/, '').toUpperCase())), [currentUser]);
   const isNurse = useMemo(() => (currentUser?.roles || []).some((role) => ['NURSE', 'HEAD_NURSE'].includes(String(role).replace(/^ROLE_/, '').toUpperCase())), [currentUser]);
   const canSetupWards = useMemo(() => (currentUser?.roles || []).some((role) => ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'CLINIC_ADMIN'].includes(String(role).replace(/^ROLE_/, '').toUpperCase())), [currentUser]);
-  const canManageStaff = canSetupWards || (currentUser?.roles || []).some((role) => String(role).replace(/^ROLE_/, '').toUpperCase() === 'HEAD_NURSE');
+  const canManageStaff = canSetupWards || (currentUser?.roles || []).some((role) => ['HEAD_NURSE', 'CRM_EXECUTIVE'].includes(String(role).replace(/^ROLE_/, '').toUpperCase()));
   const canReviewSwaps = useMemo(() => (currentUser?.roles || []).some((role) => ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'CLINIC_ADMIN', 'HEAD_NURSE'].includes(String(role).replace(/^ROLE_/, '').toUpperCase())), [currentUser]);
   const nursingTabs = [
     { id: 'overview', label: 'Overview', icon: Activity },
     { id: 'wards', label: 'Wards & beds', icon: BedDouble },
-    ...(canManageStaff || canReviewSwaps ? [{ id: 'staff', label: 'Nurses & shifts', icon: Users }] : []),
     { id: 'assignments', label: 'Patient assignments', icon: UserRoundCheck },
     { id: 'activity', label: 'History & care', icon: History },
   ];
-  const today = new Date();
-  const todayDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const activeNurseCount = nurses.filter((nurse) => nurse.employmentActive
     && nurse.profileComplete && nurse.status === 'ACTIVE').length;
-  const hasCurrentRoster = rosters.some((roster) => roster.status === 'SCHEDULED'
-    && roster.startDate <= todayDate && roster.endDate >= todayDate);
   const rulesConfigured = wards.length > 0 && wards.every((ward) => Number(ward.maxPatientsPerNurse) > 0
     && Number(ward.minimumNursesPerShift) >= 0);
-  const nursingSetupReady = wards.length > 0 && activeNurseCount > 0 && hasCurrentRoster && rulesConfigured;
+  const nursingSetupReady = wards.length > 0 && activeNurseCount > 0 && rulesConfigured;
   const setupSteps = [
     { id: 'basics', label: 'Basics', detail: 'Review the nursing setup', complete: true, tab: 'overview', anchor: 'nurse-go-live' },
     { id: 'wards', label: 'Wards', detail: 'Create wards and beds', complete: wards.length > 0, tab: 'wards', anchor: 'nurse-ward-setup' },
-    { id: 'nurses', label: 'Nurses', detail: 'Link active HR employees', complete: activeNurseCount > 0, tab: 'staff', anchor: 'nurse-employment-link' },
-    { id: 'shifts', label: 'Shifts', detail: 'Schedule employed nurses', complete: hasCurrentRoster, tab: 'staff', anchor: 'nurse-shift-setup' },
     { id: 'rules', label: 'Rules', detail: 'Set staffing and patient ratios', complete: rulesConfigured, tab: 'wards', anchor: 'nurse-rules-setup' },
     { id: 'go-live', label: 'Go live', detail: 'Confirm readiness', complete: nursingSetupReady, tab: 'overview', anchor: 'nurse-go-live' },
   ];
@@ -446,14 +440,6 @@ export default function WardManagement() {
     } finally {
       setBusy(false);
     }
-  };
-
-  const saveNurseProfile = async (event) => {
-    event.preventDefault();
-    if (!nurseForm.accountId) return;
-    const { accountId, ...profile } = nurseForm;
-    await submit(`/nursing/nurses/${encodeURIComponent(accountId)}/profile`, 'PUT', profile,
-      'Nurse linked to the active HR employment record.');
   };
 
   const openSetupStep = (step) => {
@@ -594,20 +580,6 @@ export default function WardManagement() {
     }
   };
 
-  const decideSwap = async (swap, approve) => {
-    await submit(`/nursing/shift-swaps/${encodeURIComponent(swap.id)}/decision`, 'POST', { approve }, `Shift swap ${approve ? 'approved' : 'declined'}.`);
-  };
-
-  const rosterWeek = useMemo(() => {
-    const monday = new Date();
-    monday.setHours(0, 0, 0, 0);
-    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
-    const sunday = new Date(monday);
-    sunday.setDate(sunday.getDate() + 6);
-    return rosters.filter((roster) => new Date(`${roster.endDate}T00:00:00`) >= monday
-      && new Date(`${roster.startDate}T00:00:00`) <= sunday);
-  }, [rosters]);
-
   const bedBoard = useMemo(() => wards.flatMap((ward) => (ward.beds || []).map((bed) => ({
     ...bed, wardId: ward.id, wardName: ward.name, room: bed.room || {},
   }))).filter((bed) => (!bedFilters.wardId || bed.wardId === bedFilters.wardId)
@@ -657,7 +629,7 @@ export default function WardManagement() {
         <section className="nurse-setup-flow" aria-label="Guided nursing setup">
           <div className="nurse-setup-flow-heading">
             <div><span>GETTING STARTED</span><h2>Set up your nursing workflow</h2>
-              <p>Complete the prerequisites in order: wards, employed nurses, shifts, then staffing rules.</p></div>
+              <p>Complete the prerequisites in order: wards, active nurse profiles, and staffing rules. Schedule shifts from Staff &amp; Shifts.</p></div>
             <span className={`nurse-setup-readiness ${nursingSetupReady ? 'ready' : ''}`}>
               {nursingSetupReady ? 'Ready to go live' : 'Setup in progress'}
             </span>
@@ -698,9 +670,9 @@ export default function WardManagement() {
           <section className={`nurse-go-live-card ${nursingSetupReady ? 'ready' : ''}`}>
             <div><span>{nursingSetupReady ? 'SETUP COMPLETE' : 'SETUP CHECKLIST'}</span>
               <h3>{nursingSetupReady ? 'Your nursing workflow is ready.' : 'Finish the prerequisites before patient assignments.'}</h3>
-              <p>{wards.length} wards · {activeNurseCount} active employed nurses · {hasCurrentRoster ? 'Current shifts scheduled' : 'No current shift coverage'}</p></div>
+              <p>{wards.length} wards · {activeNurseCount} active nurses. Manage nurse shifts from Staff &amp; Shifts.</p></div>
             <button className="workflow-button subtle" type="button"
-              onClick={() => nursingSetupReady ? setActiveNursingTab('assignments') : openSetupStep(setupSteps.find((step) => !step.complete && step.id !== 'basics') || setupSteps[5])}>
+              onClick={() => nursingSetupReady ? setActiveNursingTab('assignments') : openSetupStep(setupSteps.find((step) => !step.complete && step.id !== 'basics') || setupSteps[setupSteps.length - 1])}>
               {nursingSetupReady ? 'Open assignments' : 'Continue setup'}
             </button>
           </section>
@@ -899,72 +871,11 @@ export default function WardManagement() {
         </section>
         </section>}
 
-        {activeNursingTab === 'staff' && canManageStaff && <>
-        <section className="workflow-panel" id="nurse-employment-link">
-          <div className="workflow-panel-heading"><div><h2>Link nurses from HR</h2><p>Nurse identities and employee IDs come from HR employment records. Add or update nurses in HR first; this workflow only links their account and configures nursing duties.</p></div></div>
-          <form className="workflow-form-grid" onSubmit={saveNurseProfile}>
-            <label>Active nurse employee<select required value={nurseForm.accountId} onChange={(event) => {
-              const selected = nurses.find((nurse) => nurse.id === event.target.value);
-              setNurseForm({ accountId: event.target.value, status: selected?.profile?.status || 'ACTIVE' });
-            }}>
-              <option value="">Select an active HR nurse</option>{nurses.filter((nurse) => nurse.employmentActive).map((nurse) => <option key={nurse.id} value={nurse.id}>
-                {nurse.name} · {nurse.employeeCode} · {nurse.emailId}
-              </option>)}</select></label>
-            <label>Status<select value={nurseForm.status} onChange={(event) => setNurseForm({ ...nurseForm, status: event.target.value })}>
-              <option value="ACTIVE">Active</option><option value="ON_LEAVE">On leave</option><option value="INACTIVE">Inactive</option>
-            </select></label>
-            <button className="workflow-button primary" type="submit" disabled={busy || !nurseForm.accountId}>Link nurse employment</button>
-          </form>
-          <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Nurse</th><th>Nurse ID</th><th>HR status</th><th>Nursing status</th><th>Registration</th><th>Workload</th></tr></thead>
-            <tbody>{nurses.map((nurse) => <tr key={nurse.id}><td>{nurse.name || nurse.userId}<small>{nurse.emailId}</small></td><td>{nurse.employeeCode || 'No HR record'}</td><td>{nurse.employmentStatus}</td><td>{nurse.profileComplete ? nurse.status : 'Nursing setup needed'}</td><td>{nurse.profile?.licenseNumber || '—'}</td>
-              <td>{assignments.filter((assignment) => assignment.nurseId === nurse.id && assignment.status === 'ACTIVE' && assignment.role === 'PRIMARY').length} patients</td></tr>)}</tbody>
-          </table></div>
-        </section>
-
-        <section className="workflow-panel" id="nurse-shift-setup">
-          <div className="workflow-panel-heading"><div><h2>Shift roster</h2><p>Weekly duty roster and shift staffing assignments.</p></div></div>
-          <form className="workflow-form-grid" onSubmit={(event) => {
-            event.preventDefault();
-            submit('/nursing/rosters', 'POST', rosterForm, 'Nurse scheduled for the selected date range.');
-          }}>
-            <label>Nurse<select required value={rosterForm.nurseId} onChange={(event) => setRosterForm({ ...rosterForm, nurseId: event.target.value })}><option value="">Select active employed nurse</option>
-              {nurses.filter((nurse) => nurse.profileComplete && nurse.employmentActive && nurse.status === 'ACTIVE').map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.name} · {nurse.employeeCode}</option>)}</select></label>
-            <label>Ward<select required value={rosterForm.wardId} onChange={(event) => setRosterForm({ ...rosterForm, wardId: event.target.value })}><option value="">Select ward</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}</select></label>
-            <label>Shift<select value={rosterForm.shift} onChange={(event) => setRosterForm({ ...rosterForm, shift: event.target.value })}><option value="MORNING">Morning</option><option value="EVENING">Evening</option><option value="NIGHT">Night</option></select></label>
-            <label>Start date<input required type="date" value={rosterForm.startDate} onChange={(event) => setRosterForm({ ...rosterForm, startDate: event.target.value })} /></label>
-            <label>End date<input required type="date" min={rosterForm.startDate || undefined} value={rosterForm.endDate} onChange={(event) => setRosterForm({ ...rosterForm, endDate: event.target.value })} /></label>
-            <button className="workflow-button primary" type="submit" disabled={busy}>Add roster entry</button>
-          </form>
-          {!rosterWeek.length ? <div className="workflow-empty">No shifts scheduled this week.</div> : <div className="workflow-table-wrap"><table className="workflow-table">
-            <thead><tr><th>Nurse</th><th>Ward</th><th>Shift</th><th>Date range</th><th>Status</th></tr></thead>
-            <tbody>{rosterWeek.map((roster) => {
-              const nurse = nurses.find((entry) => entry.id === roster.nurseId);
-              return <tr key={roster.id}><td>{nurse?.name || roster.nurseId}<small>{nurse?.employeeCode || 'Employment ID unavailable'}</small></td>
-                <td>{wards.find((ward) => ward.id === roster.wardId)?.name || roster.wardId}</td><td>{roster.shift}</td>
-                <td>{roster.startDate} – {roster.endDate}</td><td>{roster.status}</td></tr>;
-            })}</tbody>
-          </table></div>}
-        </section>
-
-        {!isNurse && <section className="workflow-panel">
-          <div className="workflow-panel-heading"><div><h2>Shift swap approvals</h2><p>Head Nurses and administrators approve or decline requests.</p></div></div>
-          {!shiftSwaps.length ? <div className="workflow-empty">No shift swap requests.</div> : <div className="workflow-table-wrap"><table className="workflow-table">
-            <thead><tr><th>Date</th><th>Ward / shift</th><th>From</th><th>To</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody>{shiftSwaps.map((swap) => <tr key={swap.id}><td>{swap.date}</td><td>{wards.find((ward) => ward.id === swap.wardId)?.name || swap.wardId}<small>{swap.shift}</small></td>
-              <td>{nurses.find((nurse) => nurse.id === swap.fromNurseId)?.name || swap.fromNurseId}</td><td>{nurses.find((nurse) => nurse.id === swap.toNurseId)?.name || swap.toNurseId}</td>
-              <td>{swap.note || '—'}</td><td>{swap.status}</td><td>{canReviewSwaps && swap.status === 'PENDING' && <div className="workflow-toolbar-actions">
-                <button className="workflow-button primary" type="button" disabled={busy} onClick={() => decideSwap(swap, true)}>Approve</button>
-                <button className="workflow-button subtle" type="button" disabled={busy} onClick={() => decideSwap(swap, false)}>Decline</button>
-              </div>}</td></tr>)}</tbody>
-          </table></div>}
-        </section>}
-        </>}
-
         {activeNursingTab === 'assignments' && <section id="nurse-panel-assignments" role="tabpanel" aria-labelledby="nurse-tab-assignments"><section className="workflow-panel">
           <div className="workflow-panel-heading"><div><h2>Patient assignment</h2><p>Assign ward coverage, and maintain primary and backup nurse assignments per admitted patient.</p></div></div>
           <form className="workflow-form-grid" onSubmit={submitBulkAssignment}>
             <label>Ward<select required value={bulkForm.wardId} onChange={(event) => setBulkForm({ ...bulkForm, wardId: event.target.value })}><option value="">Select ward</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}</select></label>
-            <label>Nurse<select required value={bulkForm.nurseId} onChange={(event) => setBulkForm({ ...bulkForm, nurseId: event.target.value })}><option value="">Select nurse</option>{nurses.filter((nurse) => nurse.profileComplete && nurse.employmentActive && nurse.status === 'ACTIVE').map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.name} · {nurse.employeeCode}</option>)}</select></label>
+            <label>Nurse<select required value={bulkForm.nurseId} onChange={(event) => setBulkForm({ ...bulkForm, nurseId: event.target.value })}><option value="">Select nurse</option>{nurses.filter((nurse) => nurse.employmentActive && nurse.profileComplete && nurse.status === 'ACTIVE').map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}</select></label>
             <label>Shift<select value={bulkForm.shift} onChange={(event) => setBulkForm({ ...bulkForm, shift: event.target.value })}><option value="MORNING">Morning</option><option value="EVENING">Evening</option><option value="NIGHT">Night</option></select></label>
             <label>Bed from<input value={bulkForm.bedFrom} onChange={(event) => setBulkForm({ ...bulkForm, bedFrom: event.target.value })} placeholder="Optional" /></label>
             <label>Bed to<input value={bulkForm.bedTo} onChange={(event) => setBulkForm({ ...bulkForm, bedTo: event.target.value })} placeholder="Optional" /></label>
@@ -974,8 +885,8 @@ export default function WardManagement() {
             <thead><tr><th>Patient</th><th>Ward / bed</th><th>Primary nurse</th><th>Backup nurse</th><th>Assign / reassign</th><th>Transfer</th></tr></thead>
             <tbody>{assignmentBoard.map((entry) => {
               const patient = entry.patient;
-              const primaryNurse = nurses.find((nurse) => nurse.id === entry.primary?.nurseId);
-              const backupNurse = nurses.find((nurse) => nurse.id === entry.backup?.nurseId);
+              const primaryNurse = nurseByIdentity(nurses, entry.primary?.nurseId);
+              const backupNurse = nurseByIdentity(nurses, entry.backup?.nurseId);
               const availableBeds = wards.flatMap((ward) => (ward.beds || [])
                 .filter((bed) => bed.status === 'VACANT' && bed.id !== patient.patientBedId
                   && (!bed.room?.status || bed.room.status === 'ACTIVE'))
@@ -991,7 +902,7 @@ export default function WardManagement() {
                   {backupNurse?.employeeCode && <small>{backupNurse.employeeCode}</small>}</td>
                 <td><form className="nursing-inline-form" onSubmit={(event) => assignUnassigned(event, patient)}>
                   <select required name="role" defaultValue="PRIMARY"><option value="PRIMARY">Primary</option><option value="BACKUP">Backup</option></select>
-                  <select required name="nurseId" defaultValue=""><option value="">Select nurse</option>{nurses.filter((nurse) => nurse.profileComplete && nurse.employmentActive && nurse.status === 'ACTIVE').map((nurse) => <option key={nurse.id} value={nurse.id}>{nurse.name} · {nurse.employeeCode}</option>)}</select>
+                  <select required name="nurseId" defaultValue=""><option value="">Select nurse</option>{nurses.filter((nurse) => nurse.employmentActive && nurse.profileComplete && nurse.status === 'ACTIVE').map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}</select>
                   <button className="workflow-button primary" disabled={busy}>Assign</button>
                 </form></td>
                 <td><form className="nursing-inline-form" onSubmit={(event) => transferPatient(event, patient)}>
@@ -1008,10 +919,10 @@ export default function WardManagement() {
         {activeNursingTab === 'activity' && <section id="nurse-panel-activity" role="tabpanel" aria-labelledby="nurse-tab-activity"><section className="workflow-panel">
           <div className="workflow-panel-heading"><div><h2>Assignment history &amp; outstanding care</h2><p>Audit of primary/backup assignments, handovers, and missed or overdue tasks.</p></div></div>
           <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Patient</th><th>Nurse</th><th>Role</th><th>Ward / shift</th><th>Assigned by</th><th>From / to</th><th>Status</th></tr></thead>
-            <tbody>{assignments.map((assignment) => <tr key={assignment.id}><td>{assignment.patientId}</td><td>{nurses.find((nurse) => nurse.id === assignment.nurseId)?.name || assignment.nurseId}</td><td>{assignment.role}</td><td>{wards.find((ward) => ward.id === assignment.wardId)?.name || assignment.wardId}<small>{assignment.shift}</small></td><td>{assignment.assignedBy}</td><td>{assignment.fromTime}<small>{assignment.toTime || 'Current'}</small></td><td>{assignment.status}</td></tr>)}</tbody>
+            <tbody>{assignments.map((assignment) => <tr key={assignment.id}><td>{assignment.patientId}</td><td>{nurseByIdentity(nurses, assignment.nurseId)?.name || assignment.nurseId}</td><td>{assignment.role}</td><td>{wards.find((ward) => ward.id === assignment.wardId)?.name || assignment.wardId}<small>{assignment.shift}</small></td><td>{assignment.assignedBy}</td><td>{assignment.fromTime}<small>{assignment.toTime || 'Current'}</small></td><td>{assignment.status}</td></tr>)}</tbody>
           </table></div>
           <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Patient</th><th>Nurse</th><th>Task</th><th>Due</th><th>Status</th></tr></thead>
-            <tbody>{careRecords.filter((record) => record.status === 'PENDING').map((record) => <tr key={record.id}><td>{record.patientId}</td><td>{nurses.find((nurse) => nurse.id === record.nurseId)?.name || record.nurseId}</td><td>{record.description || record.type}</td><td>{record.dueAt || 'Not specified'}</td><td>{isOverdue(record) ? 'OVERDUE' : 'PENDING'}</td></tr>)}</tbody>
+            <tbody>{careRecords.filter((record) => record.status === 'PENDING').map((record) => <tr key={record.id}><td>{record.patientId}</td><td>{nurseByIdentity(nurses, record.nurseId)?.name || record.nurseId}</td><td>{record.description || record.type}</td><td>{record.dueAt || 'Not specified'}</td><td>{isOverdue(record) ? 'OVERDUE' : 'PENDING'}</td></tr>)}</tbody>
           </table></div>
         </section></section>}
       </>}

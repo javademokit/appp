@@ -68,7 +68,7 @@ export default function NurseAssignmentPortal() {
         throw new Error('This page is available to nurse accounts only.');
       }
       const nurseList = await loadJson('/nursing/nurses');
-      setNurses(nurseList.filter((nurse) => nurse.employmentActive));
+      setNurses(nurseList.filter((nurse) => nurse.employmentActive && nurse.profileComplete));
     } catch (requestError) {
       setError(requestError.message || 'Could not load the nurse directory.');
     } finally {
@@ -78,7 +78,7 @@ export default function NurseAssignmentPortal() {
 
   useEffect(() => { refreshNurses(); }, []);
 
-  const selectedNurse = nurses.find((nurse) => nurse.id === selectedNurseId);
+  const selectedNurse = nurses.find((nurse) => nurse.employeeCode === selectedNurseId || nurse.id === selectedNurseId);
 
   return (
     <section className="workflow-page nurse-assignment-page" aria-labelledby="nurse-assignment-title">
@@ -125,14 +125,14 @@ export default function NurseAssignmentPortal() {
               disabled={loading || !visibleNurses.length}
             >
               <option value="">{loading ? 'Loading nurses…' : 'Choose a nurse'}</option>
-              {visibleNurses.map((nurse) => <option key={nurse.id} value={nurse.id}>
+              {visibleNurses.map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>
                 {[nurse.employeeCode, nurse.name, nurse.mobileNo].filter(Boolean).join(' · ')}
               </option>)}
             </select>
           </label>
         </div>
         {!loading && !visibleNurses.length && <p className="nurse-lookup-empty">
-          {nurses.length ? 'No nurse matches that ID, name, or mobile number.' : 'No active nurse employment records were found.'}
+          {nurses.length ? 'No nurse matches that ID, name, or mobile number.' : 'No active nurses with completed profiles were found.'}
         </p>}
       </section>
 

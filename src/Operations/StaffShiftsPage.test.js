@@ -35,3 +35,30 @@ test('records doctor check-in and check-out against the scheduled shift', async 
   await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('/staff/shifts/shift-1/check-out', { method: 'POST' }));
   expect(await screen.findByText('COMPLETED')).toBeInTheDocument();
 });
+
+test('schedules an internal or walk-in nurse using the shared nurse employee ID', async () => {
+  apiFetch.mockImplementation(async (path, options = {}) => {
+    if (path === '/nursing/nurses') {
+      return { ok: true, json: async () => [
+        { employeeCode: 'NUR-100', name: 'Existing Nurse', employmentActive: true, profileComplete: true, status: 'ACTIVE' },
+        { employeeCode: 'NR-WK-100', name: 'Walk-in Nurse', employmentActive: true, profileComplete: true, status: 'ACTIVE' },
+      ] };
+    }
+    if (path === '/staff/shifts' && options.method === 'POST') {
+      return { ok: true, json: async () => ({}) };
+    }
+    return { ok: true, json: async () => [] };
+  });
+
+  render(<StaffShiftsPage />);
+  fireEvent.click(await screen.findByRole('button', { name: /schedule shift/i }));
+  fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'Nurse' } });
+  fireEvent.change(await screen.findByLabelText('Nurse'), { target: { value: 'NR-WK-100' } });
+  fireEvent.change(screen.getByLabelText('Department'), { target: { value: 'Ward A' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save shift' }));
+
+  await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('/staff/shifts', expect.objectContaining({
+    method: 'POST',
+    body: expect.stringContaining('"staffId":"NR-WK-100"'),
+  })));
+});

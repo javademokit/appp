@@ -12,7 +12,7 @@ import {
   FaTachometerAlt,
   FaCreditCard
 } from "react-icons/fa";
-import { Ambulance as AmbulanceIcon, Building2, CalendarClock, FileBadge, FlaskConical, Pill, Siren, UserRoundCheck, Wallet } from "lucide-react";
+import { Ambulance as AmbulanceIcon, Building2, CalendarClock, Clock3, FileBadge, FlaskConical, Pill, Siren, UserRoundCheck, Wallet } from "lucide-react";
 
 import Header from "../company/Header";
 import Footer from "../company/Footer";
@@ -37,6 +37,7 @@ import DischargePage from "../Operations/DischargePage";
 import WardManagement from "../NursingWardManagement/WardManagement";
 import NurseAssignmentPortal from "../NursingWardManagement/NurseAssignmentPortal";
 import PayrollRun from "../pages/payroll/PayrollRun";
+import NurseOvertimePage from "../Operations/NurseOvertimePage";
 
 const HospitalDashboard = () => {
   const [activePage, setActivePage] = useState(() => (
@@ -78,6 +79,12 @@ const HospitalDashboard = () => {
   const payslipAccess = !payrollAccess && roles.some((role) => [
     "NURSE", "HEAD_NURSE", "RECEPTIONIST", "CRM_EXECUTIVE", "BILLING_EXECUTIVE",
     "PHARMACIST", "LAB_TECHNICIAN",
+  ].includes(role));
+  const overtimeAccess = roles.some((role) => [
+    "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "HR", "CRM_EXECUTIVE", "NURSE", "HEAD_NURSE",
+  ].includes(role));
+  const overtimeApprovalAccess = roles.some((role) => [
+    "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "HR", "CRM_EXECUTIVE",
   ].includes(role));
   const appointmentAccess = roles.some((role) => [
     "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "RECEPTIONIST", "CRM_EXECUTIVE",
@@ -136,6 +143,8 @@ const HospitalDashboard = () => {
           ? <NurseAssignmentPortal /> : <Dashboard />;
       case "payroll":
         return <PayrollRun />;
+      case "nurse-overtime":
+        return overtimeAccess ? <NurseOvertimePage canApprove={overtimeApprovalAccess} /> : <Dashboard />;
       case "DoctorTimeSlots":
         return <Doctors />;
       case "settings":
@@ -187,6 +196,9 @@ const HospitalDashboard = () => {
             </>}
             {roles.some((role) => ["NURSE", "HEAD_NURSE"].includes(role)) && <li className={activePage === "nurse-assignments" ? "active" : ""} aria-current={activePage === "nurse-assignments" ? "page" : undefined} onClick={() => setActivePage("nurse-assignments")}>
               <UserRoundCheck size={16} /> Nurse Assignments
+            </li>}
+            {overtimeAccess && <li className={activePage === "nurse-overtime" ? "active" : ""} aria-current={activePage === "nurse-overtime" ? "page" : undefined} onClick={() => setActivePage("nurse-overtime")}>
+              <Clock3 size={16} /> Overtime Requests
             </li>}
             {nursingAccess && (!nursingOnly || roles.includes("HEAD_NURSE")) && <li className={activePage === "ward-management" ? "active" : ""} aria-current={activePage === "ward-management" ? "page" : undefined} onClick={() => setActivePage("ward-management")}>
               <Building2 size={16} /> Nurse Management
