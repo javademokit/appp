@@ -1,0 +1,437 @@
+.ops-board {
+  --ops-ink: #18332f;
+  --ops-muted: #71827d;
+  --ops-line: #e2ebe7;
+  --ops-teal: #0d766b;
+  width: 100%;
+  margin: 0;
+  border: 1px solid #e1ebe6;
+  border-radius: 22px;
+  padding: clamp(1rem, 2.4vw, 1.8rem);
+  background:
+    radial-gradient(ellipse at 100% 0%, rgba(208, 235, 225, 0.4), transparent 36rem),
+    #f6f9f7;
+  box-shadow: 0 18px 54px rgba(31, 71, 60, 0.09);
+}
+
+.ops-board .ops-board-header {
+  position: relative;
+  align-items: center;
+  overflow: hidden;
+  margin: 0 0 1.25rem;
+  border: 0;
+  border-radius: 17px;
+  padding: clamp(1.25rem, 3vw, 2rem);
+  background: linear-gradient(118deg, #123d38 0%, #176b60 61%, #278779 100%);
+  box-shadow: 0 12px 26px rgba(24, 76, 66, 0.18);
+}
+
+.ops-board .ops-board-header::after {
+  position: absolute;
+  right: 13rem;
+  bottom: -8rem;
+  width: 17rem;
+  height: 17rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2rem rgba(255, 255, 255, 0.035), 0 0 0 4rem rgba(255, 255, 255, 0.025);
+  content: "";
+  pointer-events: none;
+}
+
+.ops-board .ops-board-header > div:first-child,
+.ops-board .ops-header-controls {
+  position: relative;
+  z-index: 1;
+}
+
+.ops-board .ops-eyebrow {
+  gap: 0.5rem;
+  color: #c3e7dc;
+  letter-spacing: 0.1em;
+}
+
+.ops-board .ops-board-header h2 {
+  margin-top: 0.55rem;
+  color: #fff;
+  font-size: clamp(1.7rem, 3vw, 2.3rem);
+  letter-spacing: -0.045em;
+}
+
+.ops-board .ops-subtitle {
+  max-width: 600px;
+  color: rgba(239, 250, 246, 0.78);
+}
+
+.ops-board .ops-header-controls {
+  align-items: flex-end;
+  gap: 0.65rem;
+}
+
+.ops-board .demo-badge {
+  border-radius: 999px;
+  padding: 0.4rem 0.72rem;
+  background: rgba(229, 255, 239, 0.12);
+  border-color: rgba(210, 244, 227, 0.35);
+  color: #e3f7ec;
+  letter-spacing: 0.04em;
+}
+
+.ops-board .demo-badge.live-badge {
+  background: rgba(225, 255, 238, 0.14);
+  border-color: rgba(208, 245, 225, 0.38);
+  color: #e3f7ec;
+}
+
+.ops-board .demo-badge.live-badge-error {
+  background: rgba(255, 235, 230, 0.15);
+  border-color: rgba(255, 214, 204, 0.44);
+  color: #ffe5de;
+}
+
+.ops-board .range-control {
+  gap: 0.18rem;
+  border: 1px solid rgba(218, 245, 233, 0.25);
+  border-radius: 10px;
+  padding: 0.22rem;
+  background: rgba(3, 45, 40, 0.24);
+}
+
+.ops-board .range-button {
+  min-height: 36px;
+  border-radius: 7px;
+  padding-inline: 0.72rem;
+  color: #e3f3ee;
+}
+
+.ops-board .range-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ops-board .range-button.active {
+  background: #fff;
+  color: #145a50;
+  box-shadow: 0 2px 7px rgba(3, 36, 32, 0.17);
+}
+
+.ops-board .ops-header-controls > .range-button {
+  border: 1px solid rgba(218, 245, 233, 0.35);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.ops-board .ops-header-controls > .range-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.19);
+}
+
+.ops-board .ops-kpi-grid {
+  gap: 0.85rem;
+  margin: 0 0 1.15rem;
+}
+
+.ops-board .ops-kpi {
+  position: relative;
+  min-height: 8.2rem;
+  justify-content: flex-start;
+  gap: 0.42rem;
+  overflow: hidden;
+  border: 1px solid var(--ops-line);
+  border-radius: 14px;
+  border-left: 1px solid var(--ops-line);
+  padding: 1rem;
+  background: #fff;
+  box-shadow: 0 5px 16px rgba(32, 67, 57, 0.035);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.ops-board .ops-kpi:hover {
+  transform: translateY(-2px);
+  border-color: #cbded6;
+  box-shadow: 0 10px 24px rgba(32, 67, 57, 0.09);
+}
+
+.ops-board .ops-kpi::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--ops-accent, #168477);
+  content: "";
+}
+
+.ops-board .ops-kpi-icon {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ops-accent, #168477) 11%, white);
+  color: var(--ops-accent, #168477);
+}
+
+.ops-board .ops-kpi-label {
+  max-width: calc(100% - 2.55rem);
+  min-height: 2rem;
+  color: #70817c;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+}
+
+.ops-board .ops-kpi strong {
+  color: var(--ops-ink);
+  font-size: clamp(1.65rem, 2.2vw, 2rem);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.055em;
+}
+
+.ops-board .ops-kpi-note {
+  color: #80908b;
+  font-size: 0.69rem;
+  line-height: 1.35;
+}
+
+.ops-kpi-appointments { --ops-accent: #167d8a; }
+.ops-kpi-admissions { --ops-accent: #287c67; }
+.ops-kpi-emergency { --ops-accent: #d16b4e; }
+.ops-kpi-review { --ops-accent: #7964b0; }
+.ops-kpi-beds { --ops-accent: #3974aa; }
+.ops-kpi-available { --ops-accent: #258a67; }
+.ops-kpi-occupied { --ops-accent: #d08a3a; }
+.ops-kpi-nurses { --ops-accent: #bd5f83; }
+
+.ops-board .ops-chart-grid {
+  gap: 0.9rem;
+}
+
+.ops-board .ops-chart-card {
+  overflow: hidden;
+  border: 1px solid var(--ops-line);
+  border-radius: 15px;
+  padding: 1.15rem;
+  box-shadow: 0 5px 18px rgba(32, 67, 57, 0.035);
+}
+
+.ops-board .ops-chart-heading {
+  align-items: center;
+  margin-bottom: 0.85rem;
+}
+
+.ops-board .ops-chart-heading h3 {
+  color: #203a35;
+  font-size: 1rem;
+  letter-spacing: -0.015em;
+}
+
+.ops-board .ops-chart-heading p {
+  color: #7b8b86;
+  line-height: 1.45;
+}
+
+.ops-board .chart-unit {
+  border: 1px solid #e5eeea;
+  border-radius: 999px;
+  padding: 0.3rem 0.56rem;
+  background: #f7faf8;
+  color: #71837d;
+}
+
+.ops-board .ops-chart-area {
+  height: 238px;
+}
+
+.ops-board .occupancy-chart-card {
+  align-self: stretch;
+  background: linear-gradient(145deg, #fff 60%, #f4faf7);
+}
+
+.ward-bed-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  margin: 0.15rem 0 0.55rem 7.4rem;
+  color: #687c75;
+  font-size: 0.68rem;
+}
+
+.ward-bed-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ward-bed-dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+}
+
+.ward-bed-dot.available { background: #35a77c; }
+.ward-bed-dot.occupied { background: #e29a4a; }
+.ward-bed-dot.unavailable { background: #aab8b2; }
+
+.ward-chart-scroll {
+  max-height: 510px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #edf2ef;
+  border-radius: 10px;
+  background:
+    linear-gradient(90deg, #fff 30%, rgba(255, 255, 255, 0)),
+    #fff;
+  scrollbar-color: #b7cbc2 #f1f6f3;
+  scrollbar-width: thin;
+}
+
+.ward-chart-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.ward-chart-scroll::-webkit-scrollbar-thumb {
+  border: 2px solid #f1f6f3;
+  border-radius: 999px;
+  background: #b7cbc2;
+}
+
+.ward-chart-canvas {
+  min-width: 420px;
+  padding: 0.35rem 0.4rem 0.35rem 0;
+}
+
+.ward-chart-tooltip {
+  display: grid;
+  min-width: 160px;
+  gap: 0.42rem;
+  border: 1px solid #e1ebe6;
+  border-radius: 10px;
+  padding: 0.75rem 0.85rem;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 8px 24px rgba(22, 54, 46, 0.14);
+  color: #647872;
+  font-size: 0.72rem;
+}
+
+.ward-chart-tooltip > strong {
+  margin-bottom: 0.12rem;
+  color: #1d3a34;
+  font-size: 0.8rem;
+}
+
+.ward-chart-tooltip > span {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.ward-chart-tooltip b {
+  margin-left: auto;
+  color: #26433c;
+  font-variant-numeric: tabular-nums;
+}
+
+.ward-chart-tooltip .ward-tooltip-total {
+  margin-top: 0.2rem;
+  border-top: 1px solid #edf2ef;
+  padding-top: 0.4rem;
+  color: #405c54;
+}
+
+.ops-board .mix-chart-layout {
+  min-height: 238px;
+}
+
+.ops-board .service-status-list li {
+  border-bottom-color: #edf2ef;
+}
+
+.ops-board .board-updated {
+  margin-top: 0.85rem;
+  border-top: 1px solid #edf2ef;
+  padding-top: 0.8rem;
+  color: #85938e;
+}
+
+.ops-board .ops-data-state {
+  border-radius: 10px;
+  background: #f7faf8;
+  color: #788983;
+}
+
+@media (max-width: 900px) {
+  .ops-board .ops-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .ops-board .ops-board-header {
+    align-items: stretch;
+  }
+
+  .ops-board .ops-header-controls {
+    align-items: flex-start;
+  }
+
+  .ops-board .ops-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ops-board .ops-chart-card {
+    padding: 0.95rem;
+  }
+
+  .ward-bed-legend {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 440px) {
+  .ops-board {
+    border-radius: 16px;
+    padding: 0.7rem;
+  }
+
+  .ops-board .ops-board-header {
+    border-radius: 13px;
+    padding: 1rem;
+  }
+
+  .ops-board .ops-header-controls {
+    align-items: stretch;
+  }
+
+  .ops-board .ops-header-controls > .range-button {
+    justify-content: center;
+  }
+
+  .ops-board .ops-kpi {
+    min-height: 7.3rem;
+    padding: 0.8rem;
+  }
+
+  .ops-board .ops-kpi-label {
+    font-size: 0.62rem;
+  }
+
+  .ops-board .ops-kpi-icon {
+    top: 0.65rem;
+    right: 0.65rem;
+    width: 1.9rem;
+    height: 1.9rem;
+  }
+
+  .ward-chart-canvas {
+    min-width: 350px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ops-board .ops-kpi {
+    transition: none;
+  }
+}

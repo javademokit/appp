@@ -13,10 +13,20 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { RefreshCw } from 'lucide-react';
+import {
+  Activity as ActivityIcon,
+  BedDouble,
+  CalendarDays,
+  ClipboardCheck,
+  HeartPulse,
+  RefreshCw,
+  Siren,
+  UsersRound,
+} from 'lucide-react';
 import { apiFetch } from '../API/api';
 import '../LandiningPage/App.css';
 import '../Operations/Operations.css';
+import './HospitalOperationsBoard.css';
 
 const ranges = [
   { id: 'today', label: 'Today' },
@@ -24,6 +34,21 @@ const ranges = [
   { id: 'month', label: '30 days' },
 ];
 const mixColors = ['#087f8c', '#e17b43', '#6a9b6e', '#bb5872'];
+
+function WardBedTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  const ward = payload[0].payload;
+  return (
+    <div className="ward-chart-tooltip">
+      <strong>{label}</strong>
+      <span><i className="ward-bed-dot available" />Available <b>{ward.availableBeds}</b></span>
+      <span><i className="ward-bed-dot occupied" />Occupied <b>{ward.occupiedBeds}</b></span>
+      <span><i className="ward-bed-dot unavailable" />Unavailable <b>{ward.unavailableBeds}</b></span>
+      <span className="ward-tooltip-total">Total beds <b>{ward.totalBeds}</b></span>
+      <span>Admissions <b>{ward.patients}</b></span>
+    </div>
+  );
+}
 
 async function readSummary() {
   const path = '/dashboard/summary';
@@ -107,6 +132,17 @@ export default function HospitalOperationsBoard() {
   }, [refresh]);
 
   const timeline = useMemo(() => data ? buildTimeline(range, data) : [], [data, range]);
+  const wardChartData = useMemo(() => (data?.wardData || []).map((ward) => ({
+    ...ward,
+    totalBeds: Number(ward.totalBeds) || 0,
+    availableBeds: Number(ward.availableBeds) || 0,
+    occupiedBeds: Number(ward.occupiedBeds) || 0,
+    patients: Number(ward.patients) || 0,
+    unavailableBeds: Math.max(
+      0,
+      (Number(ward.totalBeds) || 0) - (Number(ward.availableBeds) || 0) - (Number(ward.occupiedBeds) || 0),
+    ),
+  })), [data]);
   const metrics = useMemo(() => {
     if (!data) return null;
     const periodPoints = data.dailyActivity.filter((point) => isInRange(point.key, range));
@@ -125,7 +161,11 @@ export default function HospitalOperationsBoard() {
     const totalServiceEvents = serviceValues.reduce((sum, item) => sum + item.value, 0);
     return {
       rangeAppointments: totals.visits,
-      wardData: data.wardData,
+      wardData: wardChartData,
+      totalBeds: data.totalBeds || 0,
+      availableBeds: data.availableBeds || 0,
+      occupiedBeds: data.occupiedBeds || 0,
+      totalNurses: data.totalNurses || 0,
       openEmergencies: data.openEmergencies,
       awaitingReview: data.resultsAwaitingReview,
       testsOrdered: data.testsOrdered,
@@ -136,13 +176,13 @@ export default function HospitalOperationsBoard() {
         share: totalServiceEvents ? Math.round((item.value / totalServiceEvents) * 100) : 0,
       })),
     };
-  }, [data, range]);
+  }, [data, range, wardChartData]);
 
   return (
     <section className="hospital-live-panel ops-board" aria-labelledby="operations-board-title" aria-busy={loading}>
       <div className="ops-board-header">
         <div>
-          <div className="ops-eyebrow"><span className="live-dot" /> Hospital operations</div>
+          <div className="ops-eyebrow"><ActivityIcon size={15} /> Hospital operations</div>
           <h2 id="operations-board-title">Operations dashboard</h2>
           <p className="ops-subtitle">Live counts from appointments, patient records, diagnostics, and emergency cases.</p>
         </div>
@@ -165,10 +205,54 @@ export default function HospitalOperationsBoard() {
       {error && <div className="workflow-alert error" role="alert">{error}</div>}
       {!data ? <div className="ops-data-state">{loading ? 'Loading live hospital data…' : 'Dashboard data is unavailable. Refresh after the API is reachable.'}</div> : <>
         <div className="ops-kpi-grid">
-          <article className="ops-kpi"><span className="ops-kpi-label">Appointments · {ranges.find((item) => item.id === range).label}</span><strong>{metrics.rangeAppointments.toLocaleString()}</strong><span className="ops-kpi-note">Non-cancelled bookings</span></article>
-          <article className="ops-kpi"><span className="ops-kpi-label">Current admissions</span><strong>{data.activeAdmissions.toLocaleString()}</strong><span className="ops-kpi-note">Patients not yet discharged</span></article>
-          <article className="ops-kpi"><span className="ops-kpi-label">Open emergency cases</span><strong>{metrics.openEmergencies.toLocaleString()}</strong><span className="ops-kpi-note">Cases not closed</span></article>
-          <article className="ops-kpi"><span className="ops-kpi-label">Results awaiting review</span><strong>{metrics.awaitingReview.toLocaleString()}</strong><span className="ops-kpi-note">Diagnostic results requiring clinician review</span></article>
+          <article className="ops-kpi ops-kpi-appointments">
+            <span className="ops-kpi-icon"><CalendarDays size={18} /></span>
+            <span className="ops-kpi-label">Appointments · {ranges.find((item) => item.id === range).label}</span>
+            <strong>{metrics.rangeAppointments.toLocaleString()}</strong>
+            <span className="ops-kpi-note">Non-cancelled bookings</span>
+          </article>
+          <article className="ops-kpi ops-kpi-admissions">
+            <span className="ops-kpi-icon"><HeartPulse size={18} /></span>
+            <span className="ops-kpi-label">Current admissions</span>
+            <strong>{data.activeAdmissions.toLocaleString()}</strong>
+            <span className="ops-kpi-note">Patients not yet discharged</span>
+          </article>
+          <article className="ops-kpi ops-kpi-emergency">
+            <span className="ops-kpi-icon"><Siren size={18} /></span>
+            <span className="ops-kpi-label">Open emergency cases</span>
+            <strong>{metrics.openEmergencies.toLocaleString()}</strong>
+            <span className="ops-kpi-note">Cases not closed</span>
+          </article>
+          <article className="ops-kpi ops-kpi-review">
+            <span className="ops-kpi-icon"><ClipboardCheck size={18} /></span>
+            <span className="ops-kpi-label">Results awaiting review</span>
+            <strong>{metrics.awaitingReview.toLocaleString()}</strong>
+            <span className="ops-kpi-note">Diagnostic results requiring clinician review</span>
+          </article>
+          <article className="ops-kpi ops-kpi-beds">
+            <span className="ops-kpi-icon"><BedDouble size={18} /></span>
+            <span className="ops-kpi-label">Total beds</span>
+            <strong>{metrics.totalBeds.toLocaleString()}</strong>
+            <span className="ops-kpi-note">Registered across all wards</span>
+          </article>
+          <article className="ops-kpi ops-kpi-available">
+            <span className="ops-kpi-icon"><BedDouble size={18} /></span>
+            <span className="ops-kpi-label">Available beds</span>
+            <strong>{metrics.availableBeds.toLocaleString()}</strong>
+            <span className="ops-kpi-note">Currently marked vacant</span>
+          </article>
+          <article className="ops-kpi ops-kpi-occupied">
+            <span className="ops-kpi-icon"><BedDouble size={18} /></span>
+            <span className="ops-kpi-label">Occupied beds</span>
+            <strong>{metrics.occupiedBeds.toLocaleString()}</strong>
+            <span className="ops-kpi-note">Currently marked occupied</span>
+          </article>
+          <article className="ops-kpi ops-kpi-nurses">
+            <span className="ops-kpi-icon"><UsersRound size={18} /></span>
+            <span className="ops-kpi-label">Active nurses</span>
+            <strong>{metrics.totalNurses.toLocaleString()}</strong>
+            <span className="ops-kpi-note">Active nurse employees</span>
+          </article>
         </div>
 
         <div className="ops-chart-grid">
@@ -194,18 +278,35 @@ export default function HospitalOperationsBoard() {
           </article>
 
           <article className="ops-chart-card occupancy-chart-card">
-            <div className="ops-chart-heading"><div><h3>Current admissions by ward</h3><p>Counts from admitted patient records</p></div><span className="chart-unit">patients</span></div>
-            <div className="ops-chart-area">
-              {metrics.wardData.length ? <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={metrics.wardData} layout="vertical" margin={{ top: 2, right: 12, left: 12, bottom: 0 }}>
-                  <CartesianGrid horizontal={false} stroke="#e5ecea" />
-                  <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: '#6d7d7a', fontSize: 11 }} />
-                  <YAxis dataKey="unit" type="category" width={100} tickLine={false} axisLine={false} tick={{ fill: '#435451', fontSize: 11 }} />
-                  <Tooltip contentStyle={{ borderRadius: 8, borderColor: '#dce5e2', fontSize: 12 }} />
-                  <Bar dataKey="patients" name="Patients" fill="#087f8c" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer> : <div className="ops-data-state">No currently admitted patients.</div>}
+            <div className="ops-chart-heading">
+              <div><h3>Beds by ward</h3><p>Compare availability and occupancy across each ward</p></div>
+              <span className="chart-unit">{metrics.wardData.length} {metrics.wardData.length === 1 ? 'ward' : 'wards'}</span>
             </div>
+            <div className="ward-bed-legend" aria-label="Bed status chart legend">
+              <span><i className="ward-bed-dot available" />Available</span>
+              <span><i className="ward-bed-dot occupied" />Occupied</span>
+              <span><i className="ward-bed-dot unavailable" />Unavailable</span>
+            </div>
+            {metrics.wardData.length ? (
+              <div className="ward-chart-scroll" role="group"
+                aria-label={`Stacked horizontal bar chart showing available, occupied, and unavailable beds across ${metrics.wardData.length} ${metrics.wardData.length === 1 ? 'ward' : 'wards'}`}>
+                <div className="ward-chart-canvas" style={{ height: `${Math.max(260, metrics.wardData.length * 42)}px` }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={metrics.wardData} layout="vertical" margin={{ top: 4, right: 20, left: 4, bottom: 4 }} barCategoryGap="28%">
+                      <CartesianGrid horizontal={false} stroke="#edf2ef" />
+                      <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false}
+                        tick={{ fill: '#82918c', fontSize: 11 }} />
+                      <YAxis dataKey="unit" type="category" width={112} tickLine={false} axisLine={false}
+                        tick={{ fill: '#50645e', fontSize: 11 }} />
+                      <Tooltip content={<WardBedTooltip />} cursor={{ fill: '#f3f8f5' }} />
+                      <Bar dataKey="availableBeds" name="Available" stackId="beds" fill="#35a77c" />
+                      <Bar dataKey="occupiedBeds" name="Occupied" stackId="beds" fill="#e29a4a" />
+                      <Bar dataKey="unavailableBeds" name="Unavailable" stackId="beds" fill="#aab8b2" radius={[0, 5, 5, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            ) : <div className="ops-data-state">No ward or bed inventory has been recorded.</div>}
           </article>
 
           <article className="ops-chart-card mix-chart-card">
