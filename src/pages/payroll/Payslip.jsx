@@ -7,6 +7,7 @@ const amount = (item) => item.amount ?? item.value ?? 0;
 
 export function PayslipDetails({ payslip, onClose }) {
   if (!payslip) return null;
+  const isDemoPayslip = String(payslip.payrollId || '').startsWith('TEST-DEMO-');
   const components = asArray(payslip.components || payslip.salaryComponents || payslip.items);
   const earnings = asArray(payslip.earnings || payslip.earningItems).length
     ? asArray(payslip.earnings || payslip.earningItems)
@@ -15,12 +16,15 @@ export function PayslipDetails({ payslip, onClose }) {
     ? asArray(payslip.deductions || payslip.deductionItems)
     : components.filter((item) => String(item.type || item.componentType).toUpperCase() === 'DEDUCTION');
   return <section className="hr-panel hr-payslip">
-    <HrPanelHeading title="Payslip" description={`${payslip.payslipNumber || 'Monthly payslip'} · ${payslip.month || ''}`}
+    <HrPanelHeading title="Payslip" description={`${payslip.payslipNumber || payslip.id || 'Monthly payslip'} · ${payslip.month || ''}`}
       action={<div className="hr-row-actions">
         {payslip.onDownload && <button className="hr-button secondary" onClick={() => payslip.onDownload(payslip)}>
           <ArrowDownToLine size={16} /> Download PDF</button>}
         {onClose && <button className="hr-text-button" onClick={onClose}>Close</button>}
       </div>} />
+    {isDemoPayslip && <p className="hr-payslip-demo-notice" role="note">
+      DEMO ONLY — not generated from an approved payroll run and not payable.
+    </p>}
     <div className="hr-payslip-identity">
       <div className="hr-payslip-brand"><BrandLogo className="hr-payslip-logo" />
         <span><strong>MONTHLY SALARY SLIP</strong></span>
@@ -59,7 +63,7 @@ export default function Payslip({ payslips = [], canManagePayroll, onDownload, o
       <table className="hr-table"><thead><tr>{['Payslip', 'Employee', 'Employee ID', 'Payroll month', 'Net salary', 'Generated', 'Actions'].map((label) =>
         <th key={label}>{label}</th>)}</tr></thead><tbody>
         {payslips.map((row) => <tr key={row.id || row.payslipNumber}>
-          <td>{row.payslipNumber}</td><td>{row.employeeName || '—'}</td><td>{row.employeeCode || '—'}</td><td>{row.month || '—'}</td>
+          <td>{row.payslipNumber || row.id || '—'}</td><td>{row.employeeName || '—'}</td><td>{row.employeeCode || '—'}</td><td>{row.month || '—'}</td>
           <td>{formatMoney(row.netSalary ?? row.netPay)}</td><td>{row.generatedDate || '—'}</td>
           <td><div className="hr-row-actions"><button className="hr-text-button" onClick={() => onView(row)}>View</button>
             <button className="hr-icon-button" aria-label={`Download ${row.payslipNumber || 'payslip'}`}

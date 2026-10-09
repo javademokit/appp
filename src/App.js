@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import HomePage from "./LandiningPage/homePage.js";
 import UserLogin from "./Login/UserLogin .js";
@@ -16,12 +16,30 @@ import DoctorDashboard from "./Doctors/DoctorDashboard";
 import PayrollRun from "./pages/payroll/PayrollRun";
 import AmbulanceDriverPage from "./Operations/AmbulanceDriverPage";
 
+const adminPayrollRedirect = (roles, location) => {
+  const isAdmin = roles.some((role) => [
+    ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.CLINIC_ADMIN,
+  ].includes(role));
+  if (isAdmin && new URLSearchParams(location.search).get("section") === "overtime-allowances") {
+    return "/AdminDashboard?section=payroll&payrollView=overtime";
+  }
+  return null;
+};
+
 const PageWithLayout = ({ children }) => (
   <>
     <main className="flex-1 min-h-[calc(100vh-120px)] bg-gray-50">{children}</main>
     <Footer />
   </>
 );
+
+const PayrollPortalRoute = () => {
+  const location = useLocation();
+  if (new URLSearchParams(location.search).get("section") === "payslips") {
+    return <Navigate to="/AdminDashboard" replace />;
+  }
+  return <PayrollRun />;
+};
 
 function App() {
   return (
@@ -79,8 +97,9 @@ function App() {
         <Route
           path="/PayrollPortal"
           element={
-            <ProtectedRoute allowedRoles={[...HOSPITAL_WORKSPACE_ROLES, ROLES.DOCTOR]}>
-              <PayrollRun />
+            <ProtectedRoute allowedRoles={[...HOSPITAL_WORKSPACE_ROLES, ROLES.DOCTOR]}
+              redirectFor={adminPayrollRedirect}>
+              <PayrollPortalRoute />
             </ProtectedRoute>
           }
         />

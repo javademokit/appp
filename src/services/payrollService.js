@@ -1,7 +1,9 @@
 import { request, jsonOptions, apiResponse } from './hrRequest';
 
 export const getDashboard = (month) => request(`/hr/dashboard?month=${encodeURIComponent(month)}`);
-export const getPayrollRuns = (month) => request(`/payroll?month=${encodeURIComponent(month)}`);
+export const getPayrollRuns = (month) => request(month
+  ? `/payroll?month=${encodeURIComponent(month)}`
+  : '/payroll');
 export const getPayrollHistory = (month) => getPayrollRuns(month);
 export const createPayrollRun = (month) => request('/payroll/run', jsonOptions('POST', { month }));
 export const performPayrollStep = (payroll, step) => request(

@@ -1,12 +1,13 @@
 // ProtectedRoute.js
 import React, { useEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { apiFetch } from "../API/api";
 import { normalizeRoles } from "../Admin/roles";
 
-const ProtectedRoute = ({ children, allowedRoles = [] }) => {
+const ProtectedRoute = ({ children, allowedRoles = [], redirectFor }) => {
   const [authState, setAuthState] = useState({ status: "checking", roles: [] });
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     let active = true;
@@ -45,6 +46,8 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
       <button type="button" onClick={logout}>Sign out</button>
     </main>;
   }
+  const redirectTo = redirectFor?.(authState.roles, location);
+  if (redirectTo) return <Navigate to={redirectTo} replace />;
   return children;
 };
 

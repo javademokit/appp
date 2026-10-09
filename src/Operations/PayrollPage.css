@@ -26,8 +26,6 @@
   align-items: center;
   gap: 0.65rem;
   color: #526660;
-  font-size: 0.78rem;
-  font-weight: 650;
 }
 
 .hr-live-dot,
@@ -83,8 +81,11 @@
 .hr-subnav { display: grid; gap: 0.1rem; margin: 0.15rem 0 0.35rem 1.15rem; padding-left: 0.5rem; border-left: 1px solid #e5ece9; }
 .hr-sidebar nav .hr-subnav button { min-height: 30px; padding-left: 0.55rem; color: #7c8c86; font-size: 0.68rem; font-weight: 600; }
 .hr-sidebar nav .hr-subnav button:hover { background: #f4f8f6; color: #176b5d; }
+.hr-sidebar nav .hr-subnav a { min-height: 30px; display: flex; align-items: center; border-radius: 6px; padding-left: 0.55rem; color: #7c8c86; font-size: 0.68rem; font-weight: 600; text-decoration: none; }
+.hr-sidebar nav .hr-subnav a:hover { background: #f4f8f6; color: #176b5d; }
 
-.hr-sidebar nav button {
+.hr-sidebar nav button,
+.hr-sidebar nav .hr-nav-link {
   display: flex;
   min-height: 42px;
   align-items: center;
@@ -99,10 +100,12 @@
   font-size: 0.78rem;
   font-weight: 650;
   text-align: left;
+  text-decoration: none;
 }
 
 .hr-sidebar nav button:hover,
-.hr-sidebar nav button.active {
+.hr-sidebar nav button.active,
+.hr-sidebar nav .hr-nav-link:hover {
   background: #eaf4f0;
   color: #176b5d;
 }
@@ -402,6 +405,8 @@
 .hr-alert button { display: grid; margin-left: auto; border: 0; padding: 0; background: transparent; color: inherit; cursor: pointer; }
 .hr-alert.error { border-color: #f0c8c4; background: #fff4f3; color: #a3433c; }
 .hr-alert.success { border-color: #cce7d8; background: #f0faf4; color: #277451; }
+.hr-approval-blocked { color: #805c14; font-size: 0.68rem; font-weight: 650; }
+.hr-approval-blocked-message { margin: 0.75rem 0 0; border: 1px solid #f0d28a; border-radius: 6px; padding: 0.65rem 0.75rem; background: #fff8e8; color: #805c14; font-size: 0.75rem; font-weight: 650; }
 .hr-overtime-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end; gap: 0.7rem; margin-bottom: 1rem; border: 1px solid #e5ece9; border-radius: 7px; padding: 0.9rem; background: #f8fbfa; }
 .hr-overtime-decision { display: flex; min-width: 250px; align-items: center; gap: 0.45rem; }
 .hr-overtime-decision input { width: 105px; min-width: 0; border: 1px solid #dce6e2; border-radius: 5px; padding: 0.4rem; font: inherit; font-size: 0.7rem; }
@@ -444,6 +449,7 @@
 .hr-payslip-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.85rem; margin-top: 0.85rem; }
 .hr-payslip-columns > section { border: 1px solid #e5ece9; border-radius: 7px; padding: 0.8rem; }
 .hr-payslip-columns h3 { margin: 0 0 0.55rem; color: #476058; font-size: 0.78rem; }
+.hr-payslip-demo-notice { margin: 0 0 0.8rem; border: 1px solid #f0d28a; border-radius: 6px; padding: 0.65rem 0.75rem; background: #fff8e8; color: #805c14; font-size: 0.75rem; font-weight: 700; }
 .hr-payslip-line { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #edf1ef; padding: 0.45rem 0; color: #687a73; font-size: 0.73rem; }
 .hr-payslip-line strong { color: #304b43; }
 .hr-payslip-line.total { border-bottom: 0; border-top: 1px solid #dce6e2; margin-top: 0.3rem; padding-top: 0.65rem; font-weight: 750; }
@@ -469,8 +475,10 @@
   .hr-sidebar nav { display: flex; width: max-content; }
   .hr-menu-group { display: flex; align-items: center; }
   .hr-subnav { display: flex; margin: 0 0.25rem; padding: 0; border-left: 0; }
-  .hr-sidebar nav .hr-subnav button { min-height: 34px; padding: 0 0.4rem; font-size: 0.62rem; }
-  .hr-sidebar nav button { min-height: 38px; padding: 0 0.6rem; font-size: 0.7rem; }
+  .hr-sidebar nav .hr-subnav button,
+  .hr-sidebar nav .hr-subnav a { min-height: 34px; padding: 0 0.4rem; font-size: 0.62rem; }
+  .hr-sidebar nav button,
+  .hr-sidebar nav .hr-nav-link { min-height: 38px; padding: 0 0.6rem; font-size: 0.7rem; }
   .hr-sidebar nav button span:not(.hr-nav-count) { white-space: nowrap; }
   .hr-main { padding: 1rem 0.7rem 1.5rem; }
   .hr-page-header { align-items: flex-start; flex-direction: column; }

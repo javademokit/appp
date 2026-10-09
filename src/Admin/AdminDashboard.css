@@ -96,78 +96,91 @@
 
 .admin-navigation {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.65rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.75rem;
   box-sizing: border-box;
   width: min(1440px, 100%);
   margin: 0 auto 1.25rem;
-  padding: 0.4rem;
-  border: 1px solid var(--admin-line);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.86);
-  box-shadow: 0 4px 16px rgba(29, 59, 51, 0.055);
+  padding: 0;
 }
 
 .admin-navigation-item {
   position: relative;
   display: flex;
   min-width: 0;
-  min-height: 68px;
+  min-height: 82px;
   align-items: center;
-  gap: 0.75rem;
-  border: 1px solid transparent;
-  border-radius: 9px;
-  padding: 0.7rem 1rem;
-  background: transparent;
+  gap: 0.85rem;
+  border: 1px solid #e2ebe7;
+  border-radius: 13px;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.92);
   color: #71827e;
   font: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
+  box-shadow: 0 5px 16px rgba(29, 59, 51, 0.045);
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
 
 .admin-navigation-item:hover {
-  transform: translateY(-1px);
-  border-color: #e4eeea;
-  background: #f6faf8;
+  transform: translateY(-2px);
+  border-color: #c8ddd5;
+  background: #fff;
   color: var(--admin-ink);
+  box-shadow: 0 10px 22px rgba(29, 59, 51, 0.085);
 }
 
 .admin-navigation-item.active {
-  border-color: #d0e6de;
-  background: #eaf5f0;
+  border-color: #a9d4c5;
+  background: linear-gradient(145deg, #f2faf6 0%, #e5f3ed 100%);
   color: var(--admin-primary-dark);
+  box-shadow: 0 8px 20px rgba(23, 107, 96, 0.1);
 }
 
 .admin-navigation-item.active::before {
   position: absolute;
-  top: 12px;
-  bottom: 12px;
-  left: -1px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
+  right: 14px;
+  bottom: 0;
+  left: 14px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
   background: var(--admin-primary);
   content: "";
 }
 
 .admin-navigation-item > svg {
+  box-sizing: content-box;
+  width: 20px;
+  height: 20px;
   flex: 0 0 auto;
+  border-radius: 10px;
+  background: #edf5f1;
+  padding: 0.65rem;
+  color: #327b6c;
+}
+
+.admin-navigation-item.active > svg {
+  background: #d5ebe1;
+  color: var(--admin-primary-dark);
 }
 
 .admin-navigation-item > span {
   display: grid;
-  gap: 0.18rem;
+  min-width: 0;
+  gap: 0.25rem;
 }
 
 .admin-navigation-item strong {
   color: inherit;
-  font-size: 0.84rem;
+  font-size: 0.88rem;
   font-weight: 750;
 }
 
 .admin-navigation-item small {
   color: var(--admin-muted);
   font-size: 0.7rem;
+  line-height: 1.4;
 }
 
 .admin-content {
@@ -176,6 +189,29 @@
   min-width: 0;
   margin: 0 auto;
   animation: admin-content-enter 180ms ease-out;
+}
+
+.admin-content > .hr-workspace {
+  min-height: 0;
+  border: 1px solid var(--admin-line);
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(29, 59, 51, 0.07);
+}
+
+.admin-content > .hr-workspace .hr-layout {
+  min-height: 620px;
+  border-radius: inherit;
+}
+
+.admin-content > .hr-workspace .hr-sidebar {
+  border-radius: 15px 0 0 15px;
+  background: linear-gradient(180deg, #fff 0%, #f9fcfa 100%);
+}
+
+.admin-content > .hr-workspace .hr-main {
+  width: 100%;
+  max-width: none;
 }
 
 .admin-content > .hospital-live-panel {
@@ -212,27 +248,37 @@
   }
 
   .admin-navigation {
-    gap: 0.25rem;
-    padding: 0.3rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
   }
 
   .admin-navigation-item {
-    min-height: 62px;
-    justify-content: center;
-    gap: 0.38rem;
-    padding: 0.5rem 0.3rem;
+    min-height: 68px;
+    gap: 0.6rem;
+    border-radius: 10px;
+    padding: 0.6rem 0.7rem;
   }
 
   .admin-navigation-item > svg {
     width: 17px;
     height: 17px;
+    padding: 0.5rem;
   }
 
   .admin-navigation-item strong {
-    font-size: 0.69rem;
+    font-size: 0.75rem;
   }
 
   .admin-navigation-item small {
+    font-size: 0.63rem;
+  }
+
+  .admin-content > .hr-workspace .hr-layout {
+    min-height: 540px;
+  }
+
+  .admin-content > .hr-workspace .hr-sidebar {
+    border-radius: 10px 10px 0 0;
     font-size: 0.59rem;
     line-height: 1.2;
   }

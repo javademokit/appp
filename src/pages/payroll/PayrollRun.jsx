@@ -65,6 +65,11 @@ const money = (value) => new Intl.NumberFormat('en-IN', {
 }).format(Number(value) || 0);
 const titleCase = (value) => String(value || '').replaceAll('_', ' ').toLowerCase()
   .replace(/\b\w/g, (letter) => letter.toUpperCase());
+const isPayrollMaker = (payroll, user) => {
+  const maker = String(payroll?.createdBy || '').trim().toLowerCase();
+  return Boolean(maker && [user?.email, user?.emailId, user?.username]
+    .some((identity) => String(identity || '').trim().toLowerCase() === maker));
+};
 
 function Field({ label, children, required = false, className = '' }) {
   return (
@@ -131,9 +136,18 @@ function Modal({ title, onClose, children, wide = false }) {
   );
 }
 
-export default function PayrollPage() {
+export default function PayrollPage({
+  hideHeader = false,
+  payrollOnly = false,
+  employeesOnly = false,
+  salaryOnly = false,
+  initialSalaryView = 'components',
+  initialPayrollView = 'payroll',
+}) {
   const [account, setAccount] = useState(null);
-  const [section, setSection] = useState('overview');
+  const [section, setSection] = useState(payrollOnly ? 'payroll' : employeesOnly ? 'employees' : salaryOnly ? 'salary' : 'overview');
+  const [salaryView, setSalaryView] = useState(initialSalaryView);
+  const [payrollView, setPayrollView] = useState(initialPayrollView);
   const [month, setMonth] = useState(currentMonth);
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
@@ -149,7 +163,18 @@ export default function PayrollPage() {
   const [notice, setNotice] = useState('');
 
   const roles = useMemo(() => normalizeRoles(account?.roles), [account]);
-  const visibleItems = useMemo(() => NAV_ITEMS.filter((item) => item.roles.some((role) => roles.includes(role))), [roles]);
+  const canAccessAdminDashboard = roles.some((role) => ADMIN_ROLES.includes(role));
+  const approvalOnlyAccount = roles.includes('CRM_EXECUTIVE')
+    && !roles.some((role) => PAYROLL_ROLES.includes(role));
+  const visibleItems = useMemo(() => NAV_ITEMS.filter((item) => (
+    (!payrollOnly || ['payroll', 'payslips'].includes(item.id))
+    && (!employeesOnly || item.id === 'employees')
+    && (!salaryOnly || item.id === 'salary')
+    && (!approvalOnlyAccount || item.id === 'payroll')
+    && !(item.id === 'payslips' && canAccessAdminDashboard && !payrollOnly)
+    && !(item.id === 'overtime-allowances' && canAccessAdminDashboard)
+    && item.roles.some((role) => roles.includes(role))
+  )), [approvalOnlyAccount, canAccessAdminDashboard, employeesOnly, payrollOnly, roles, salaryOnly]);
   const canManageHr = roles.some((role) => HR_ROLES.includes(role));
   const canManagePayroll = roles.some((role) => PAYROLL_ROLES.includes(role));
   const canApprovePayroll = roles.some((role) => PAYROLL_APPROVAL_ROLES.includes(role));
@@ -165,12 +190,23 @@ export default function PayrollPage() {
         const hrManager = assignedRoles.some((role) => HR_ROLES.includes(role));
         const payrollManager = assignedRoles.some((role) => PAYROLL_ROLES.includes(role));
         const requestedSection = new URLSearchParams(window.location.search).get('section');
+        const canAccessAdminDashboard = assignedRoles.some((role) => ADMIN_ROLES.includes(role));
+        const approvalOnlyAccount = assignedRoles.includes('CRM_EXECUTIVE')
+          && !assignedRoles.some((role) => PAYROLL_ROLES.includes(role));
         const availableSections = NAV_ITEMS
-          .filter((item) => item.roles.some((role) => assignedRoles.includes(role)))
+          .filter((item) => (!payrollOnly || ['payroll', 'payslips'].includes(item.id))
+            && (!employeesOnly || item.id === 'employees')
+            && (!salaryOnly || item.id === 'salary')
+            && (!approvalOnlyAccount || item.id === 'payroll')
+            && !(item.id === 'payslips' && canAccessAdminDashboard && !payrollOnly)
+            && !(item.id === 'overtime-allowances' && canAccessAdminDashboard)
+            && item.roles.some((role) => assignedRoles.includes(role)))
           .map((item) => item.id);
         setSection(availableSections.includes(requestedSection)
           ? requestedSection
-          : hrManager ? 'overview' : payrollManager || assignedRoles.includes('CRM_EXECUTIVE') ? 'payroll' : 'payslips');
+          : payrollOnly ? 'payroll' : employeesOnly ? 'employees' : salaryOnly ? 'salary'
+            : hrManager ? 'overview' : payrollManager || assignedRoles.includes('CRM_EXECUTIVE') ? 'payroll'
+              : availableSections[0] || 'overview');
       })
       .catch((requestError) => {
         if (active) setError(requestError.message);
@@ -179,7 +215,7 @@ export default function PayrollPage() {
         if (active) setLoading(false);
       });
     return () => { active = false; };
-  }, []);
+  }, [employeesOnly, payrollOnly, salaryOnly]);
 
   const loadSection = useCallback(async (selectedSection = activeNav) => {
     if (!account) return;
@@ -221,7 +257,9 @@ export default function PayrollPage() {
         ]);
         next = { components: asArray(components), structures: asArray(structures), employees: asArray(employees) };
       } else if (selectedSection === 'payroll') {
-        next.payrolls = asArray(await payrollService.getPayrollHistory(month));
+        next.payrolls = asArray(await payrollService.getPayrollHistory(
+          payrollView === 'history' ? undefined : month,
+        ));
       } else if (selectedSection === 'overtime-allowances') {
         next = {};
       } else if (selectedSection === 'payslips') {
@@ -238,7 +276,7 @@ export default function PayrollPage() {
     } finally {
       setLoading(false);
     }
-  }, [account, activeNav, canManageHr, canManagePayroll, month]);
+  }, [account, activeNav, canManageHr, canManagePayroll, month, payrollView]);
 
   useEffect(() => {
     if (account) void loadSection(activeNav);
@@ -376,6 +414,7 @@ export default function PayrollPage() {
   };
 
   const runPayroll = () => runAction(async () => {
+    setPayrollView('payroll');
     try {
       return await payrollService.createPayrollRun(month);
     } catch (createError) {
@@ -386,6 +425,16 @@ export default function PayrollPage() {
       throw new Error(`${createError.message} The existing run has been reloaded in Payroll History below.`);
     }
   }, 'Payroll run created.');
+
+  const continuePayroll = () => {
+    setPayrollView('payroll');
+    if (!selectedPayroll) return runPayroll();
+    setSection('payroll');
+    setNotice(
+      `A payroll run for ${month} already exists (${titleCase(selectedPayroll.status)}). `
+      + 'Use the available action in the Payroll runs table to continue it.',
+    );
+  };
 
   const performPayrollStep = (payroll, step) => runAction(
     () => payrollService.performPayrollStep(payroll, step),
@@ -437,23 +486,53 @@ export default function PayrollPage() {
       ['Other Staff', () => { setEmployeeTypeFilter('OTHER'); setSection('employees'); }],
     ],
     organization: ['Departments', 'Designations', 'Shifts'].map((label) => [label, () => setSection('organization')]),
-    salary: ['Salary Components', 'Salary Structures'].map((label) => [label, () => setSection('salary')]),
-    payroll: canManagePayroll ? [
-      ['Create Payroll', () => { setSection('payroll'); if (!selectedPayroll) runPayroll(); }],
-      ['Payroll Preview', () => { setSection('payroll'); if (selectedPayroll) setData((current) => ({ ...current, preview: selectedPayroll })); }],
-      ['Payroll Approval', () => setSection('payroll')],
-      ['Payroll History', () => setSection('payroll')],
-      ['Payslips', () => setSection('payslips')],
+    salary: salaryOnly ? [
+      ['Salary Components', () => { setSection('salary'); setSalaryView('components'); }],
+      ['Salary Structures', () => { setSection('salary'); setSalaryView('structures'); }],
+    ] : canAccessAdminDashboard ? [
+      ['Salary Components', '/AdminDashboard?section=salary'],
+      ['Salary Structures', '/AdminDashboard?section=salary&salaryView=structures'],
     ] : [
-      ['Payroll Approval', () => setSection('payroll')],
-      ['Payroll History', () => setSection('payroll')],
+      ['Salary Components', () => { setSection('salary'); setSalaryView('components'); }],
+      ['Salary Structures', () => { setSection('salary'); setSalaryView('structures'); }],
+    ],
+    payroll: canManagePayroll ? [
+      [selectedPayroll ? 'Continue current run' : 'Create Payroll', continuePayroll],
+      ['Payroll Preview', () => { setPayrollView('payroll'); setSection('payroll'); if (selectedPayroll) setData((current) => ({ ...current, preview: selectedPayroll })); }],
+      ['Payroll Approval', () => {
+        setData((current) => ({ ...current, preview: null }));
+        setPayrollView('payroll');
+        setSection('payroll');
+      }],
+      ['Payroll History', () => {
+        setData((current) => ({ ...current, preview: null }));
+        setPayrollView('history');
+        setSection('payroll');
+      }],
+      ...(payrollOnly
+        ? [['Overtime allowances', () => { setSection('payroll'); setPayrollView('overtime'); }]]
+        : canAccessAdminDashboard
+          ? [['Overtime allowances', '/AdminDashboard?section=payroll&payrollView=overtime']]
+          : []),
+      ...(!canAccessAdminDashboard ? [['Payslips', () => setSection('payslips')]] : []),
+    ] : [
+      ['Payroll Approval', () => {
+        setData((current) => ({ ...current, preview: null }));
+        setPayrollView('payroll');
+        setSection('payroll');
+      }],
+      ['Payroll History', () => {
+        setData((current) => ({ ...current, preview: null }));
+        setPayrollView('history');
+        setSection('payroll');
+      }],
     ],
     reports: ['Employee Report', 'Attendance Report', 'Salary Report'].map((label) => [label, () => setSection('reports')]),
   };
 
   return (
-    <main className="hr-workspace">
-      <header className="hr-topbar">
+    <main className={`hr-workspace${activeNav === 'payroll' ? ' hr-payroll-redesign' : ''}`}>
+      {!hideHeader && <header className="hr-topbar">
         <a className="hr-brand" href="/HospitalDashboard" aria-label="Medora AI people and payroll">
           <BrandLogo />
         </a>
@@ -462,25 +541,37 @@ export default function PayrollPage() {
           <span>{account?.username || 'HR workspace'}</span>
           <span className="hr-avatar">{(account?.username || 'H').slice(0, 1).toUpperCase()}</span>
         </div>
-      </header>
+      </header>}
       <div className="hr-layout">
         <aside className="hr-sidebar">
+          {activeNav === 'payroll' && <div className="hr-payroll-brand">HR &amp; Payroll 360</div>}
           <div className="hr-side-label">WORKSPACE</div>
           <nav aria-label="HR workspace">
             {visibleItems.map(({ id, label, icon: Icon }) => (
               <div className="hr-menu-group" key={id}>
-                <button type="button" className={activeNav === id ? 'active' : ''}
-                  aria-current={activeNav === id ? 'page' : undefined} onClick={() => {
-                    setSection(id);
-                    setSearch('');
-                    if (id === 'employees') setEmployeeTypeFilter('');
-                  }}>
-                  <Icon size={17} strokeWidth={1.8} /><span>{id === 'overview' ? 'Dashboard' : id === 'salary' ? 'Salary' : id === 'payroll' ? 'Payroll' : label}</span>
-                  {id === 'leaves' && <span className="hr-nav-count">{asArray(data.leaves).filter((item) => item.status === 'PENDING').length || ''}</span>}
-                </button>
+                {id === 'salary' && !salaryOnly && canAccessAdminDashboard
+                  ? <a className="hr-nav-link" href="/AdminDashboard?section=salary">
+                    <Icon size={17} strokeWidth={1.8} /><span>Salary</span>
+                  </a>
+                  : <button type="button" className={activeNav === id ? 'active' : ''}
+                    aria-current={activeNav === id ? 'page' : undefined} onClick={() => {
+                      setSection(id);
+                      setSearch('');
+                      if (id === 'employees') setEmployeeTypeFilter('');
+                      if (id === 'salary') setSalaryView('components');
+                      if (id === 'payroll') setPayrollView('payroll');
+                    }}>
+                    <Icon size={17} strokeWidth={1.8} /><span>{id === 'overview' ? 'Dashboard' : id === 'salary' ? 'Salary' : id === 'payroll' ? 'Payroll' : label}</span>
+                    {id === 'leaves' && <span className="hr-nav-count">{asArray(data.leaves).filter((item) => item.status === 'PENDING').length || ''}</span>}
+                  </button>}
                 {menuChildren[id] && <div className="hr-subnav">
-                  {menuChildren[id].map(([child, action]) => <button key={child} type="button"
-                    onClick={() => { setSearch(''); action(); }}>{child}</button>)}
+                  {menuChildren[id].map(([child, action]) => (
+                    ((id === 'salary' && !salaryOnly && canAccessAdminDashboard)
+                      || (id === 'payroll' && !payrollOnly && canAccessAdminDashboard))
+                    && typeof action === 'string'
+                    ? <a key={child} href={action}>{child}</a>
+                    : <button key={child} type="button"
+                      onClick={() => { setSearch(''); action(); }}>{child}</button>))}
                 </div>}
               </div>
             ))}
@@ -488,27 +579,34 @@ export default function PayrollPage() {
           <div className="hr-sidebar-footer"><HeartPulse size={17} /><span>Care starts with our people</span></div>
         </aside>
 
-        <section className="hr-main">
+        <section className={`hr-main${activeNav === 'payroll' ? ' hr-payroll-main' : ''}`}>
           <div className="hr-page-header">
             <div>
-              <p className="hr-eyebrow">PEOPLE OPERATIONS</p>
-              <h1>{NAV_ITEMS.find((item) => item.id === activeNav)?.label || 'Payslips'}</h1>
+              <p className="hr-eyebrow">{activeNav === 'payroll' ? 'PEOPLE OPERATIONS · PAYROLL REVIEW' : 'PEOPLE OPERATIONS'}</p>
+              <h1>{activeNav === 'payroll'
+                ? payrollView === 'history' ? 'Payroll History'
+                  : `Run Payroll — ${new Date(`${month}-01T12:00:00`).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`
+                : NAV_ITEMS.find((item) => item.id === activeNav)?.label || 'Payslips'}</h1>
               <p className="hr-page-subtitle">
-                {activeNav === 'overview' ? 'A clear view of your workforce, attendance and payroll.' :
+                {activeNav === 'payroll' ? payrollView === 'history'
+                  ? 'View payroll runs across all pay periods and review their status.'
+                  : `${account?.hospitalName || account?.organizationName || 'Hospital'} · ${selectedPayroll?.employeeCount ?? asArray(selectedPayroll?.items).length} employees in this payroll run.` :
+                  activeNav === 'overview' ? 'A clear view of your workforce, attendance and payroll.' :
                   activeNav === 'employees' ? 'Manage employee records and onboarding in one place.' :
                     'One configurable workflow for every employee type.'}
               </p>
             </div>
             <div className="hr-page-actions">
-              <label className="hr-month-picker"><CalendarDays size={16} />
+              {!(activeNav === 'payroll' && payrollView === 'history') && <label className="hr-month-picker"><CalendarDays size={16} />
                 <input aria-label="Payroll month" type="month" value={month}
                   onChange={(event) => setMonth(event.target.value)} />
-              </label>
+              </label>}
               {activeNav === 'employees' && canManageHr && <button className="hr-button primary" onClick={() => { setEditingEmployee(null); setModal('employee'); }}>
                 <Plus size={16} /> Add employee
               </button>}
-              {activeNav === 'payroll' && canManagePayroll && !selectedPayroll && <button className="hr-button primary" onClick={runPayroll} disabled={busy}>
-                <Plus size={16} /> Create payroll
+              {activeNav === 'payroll' && payrollView !== 'history' && canManagePayroll && <button className="hr-button primary"
+                onClick={selectedPayroll ? continuePayroll : runPayroll} disabled={busy}>
+                <Plus size={16} /> {selectedPayroll ? 'Continue current run' : 'Create payroll'}
               </button>}
             </div>
           </div>
@@ -535,24 +633,36 @@ export default function PayrollPage() {
           {!loading && activeNav === 'leaves' && <LeaveApproval requests={data.leaves} canApprove={canManageHr}
             onRequest={() => setModal('leave')} onDecision={changeLeaveStatus} />}
           {!loading && activeNav === 'salary' && (
-            <div className="hr-two-panels">
-              <SalaryComponent components={data.components} onAdd={() => setModal('component')} />
-              <SalaryStructure structures={data.structures} onAssign={() => setModal('structure')} />
-            </div>
+            salaryView === 'components'
+              ? <SalaryComponent components={data.components} onAdd={() => setModal('component')} />
+              : <SalaryStructure structures={data.structures} components={data.components}
+                onAssign={() => setModal('structure')} />
           )}
           {!loading && activeNav === 'payroll' && (
             <>
-              {selectedPayroll && <div className="hr-run-summary">
+              {payrollView === 'overtime'
+                ? <OvertimeAllowances month={month} canApprove={canManageHr} />
+                : data.preview ? <PayrollPreview payroll={data.preview}
+                canManagePayroll={canManagePayroll}
+                canApprovePayroll={canApprovePayroll && !isPayrollMaker(data.preview, account)}
+                makerCannotApprove={isPayrollMaker(data.preview, account)}
+                makerCanRequestApproval={canManagePayroll && isPayrollMaker(data.preview, account)}
+                awaitingApprovalRequest={String(data.preview.status).toUpperCase() === 'CALCULATED'
+                  && canApprovePayroll && !isPayrollMaker(data.preview, account)}
+                busy={busy}
+                onAction={performPayrollStep}
+                onClose={() => setData((current) => ({ ...current, preview: null }))} /> : <>
+              {payrollView !== 'history' && selectedPayroll && <div className="hr-run-summary">
                 <div><span>Employees</span><strong>{selectedPayroll.employeeCount ?? asArray(selectedPayroll.items).length}</strong></div>
                 <div><span>Gross payroll</span><strong>{money(selectedPayroll.totalGross)}</strong></div>
                 <div><span>Deductions</span><strong>{money(selectedPayroll.totalDeduction)}</strong></div>
                 <div><span>Net payroll</span><strong>{money(selectedPayroll.totalNet)}</strong></div>
               </div>}
               <PayrollHistory runs={data.payrolls} busy={busy} canManagePayroll={canManagePayroll}
-                canApprovePayroll={canApprovePayroll} onAction={performPayrollStep}
+                canApprovePayroll={canApprovePayroll} currentUser={account} onAction={performPayrollStep}
+                historyMode={payrollView === 'history'}
                 onPreview={(row) => setData((current) => ({ ...current, preview: row }))} />
-              {data.preview && <PayrollPreview payroll={data.preview}
-                onClose={() => setData((current) => ({ ...current, preview: null }))} />}
+              </>}
             </>
           )}
           {!loading && activeNav === 'payslips' && (
