@@ -375,10 +375,17 @@ export default function PayrollPage() {
     void createRecord(kind, payload, documents);
   };
 
-  const runPayroll = () => runAction(
-    () => payrollService.createPayrollRun(month),
-    'Payroll run created.',
-  );
+  const runPayroll = () => runAction(async () => {
+    try {
+      return await payrollService.createPayrollRun(month);
+    } catch (createError) {
+      if (!/payroll run.*already exists/i.test(createError.message)) throw createError;
+      const payrolls = asArray(await payrollService.getPayrollHistory(month));
+      setData((current) => ({ ...current, payrolls }));
+      setSection('payroll');
+      throw new Error(`${createError.message} The existing run has been reloaded in Payroll History below.`);
+    }
+  }, 'Payroll run created.');
 
   const performPayrollStep = (payroll, step) => runAction(
     () => payrollService.performPayrollStep(payroll, step),

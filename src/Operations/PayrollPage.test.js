@@ -400,6 +400,43 @@ describe('PayrollPage', () => {
     expect(screen.getByRole('alert')).not.toHaveTextContent('Unprocessable Entity');
   });
 
+  it('reloads the saved payroll run after a duplicate-run conflict', async () => {
+    const month = new Date().toISOString().slice(0, 7);
+    let payrollHistoryReads = 0;
+    apiFetch.mockImplementation(async (path, options = {}) => {
+      if (path === '/users/me') return jsonResponse({ username: 'hr-user', roles: ['HR'] });
+      if (path.startsWith('/payroll?month=')) {
+        payrollHistoryReads += 1;
+        return jsonResponse(payrollHistoryReads === 1 ? [] : [{
+          id: 'saved-run', month, status: 'DRAFT', employeeCount: 0,
+          totalGross: 0, totalDeduction: 0, totalNet: 0,
+        }]);
+      }
+      if (path === '/payroll/run' && options.method === 'POST') {
+        return {
+          ok: false,
+          status: 409,
+          headers: { get: () => 'application/problem+json' },
+          json: async () => ({
+            status: 409,
+            message: `A payroll run for ${month} already exists (run ID: saved-run, status: DRAFT). The run is still saved. Open Payroll History to continue it; no new run was created.`,
+          }),
+        };
+      }
+      return jsonResponse({});
+    });
+
+    render(<PayrollPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Payroll', exact: true }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Create payroll' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'The existing run has been reloaded in Payroll History below.',
+    );
+    expect(await screen.findByRole('button', { name: 'Calculate' })).toBeInTheDocument();
+    expect(payrollHistoryReads).toBe(2);
+  });
+
   it('allows CRM staff to review and approve calculated payroll without calculation or payroll-management actions', async () => {
     apiFetch.mockImplementation(async (path, options = {}) => {
       if (path === '/users/me') {
