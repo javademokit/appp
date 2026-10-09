@@ -27,11 +27,13 @@ import PayrollHistory from './PayrollHistory';
 import PayrollPreview from './PayrollPreview';
 import Payslip, { PayslipDetails } from './Payslip';
 import OvertimeAllowances from './OvertimeAllowances';
+import { omitBlankOptionalEmployeeFields } from './employeePayload';
 
 const ATTENDANCE_STATUSES = ['PRESENT', 'ABSENT', 'HALF_DAY', 'LEAVE', 'HOLIDAY', 'WEEK_OFF'];
 const ADMIN_ROLES = ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'CLINIC_ADMIN'];
 const HR_ROLES = [...ADMIN_ROLES, 'HR'];
 const PAYROLL_ROLES = [...HR_ROLES, 'FINANCE'];
+const PAYROLL_APPROVAL_ROLES = [...PAYROLL_ROLES, 'CRM_EXECUTIVE'];
 const STAFF_ROLES = [...PAYROLL_ROLES, 'DOCTOR', 'NURSE', 'HEAD_NURSE', 'RECEPTIONIST', 'CRM_EXECUTIVE',
   'BILLING_EXECUTIVE', 'PHARMACIST', 'LAB_TECHNICIAN'];
 const LEAVE_ROLES = [...HR_ROLES, 'DOCTOR', 'NURSE', 'HEAD_NURSE', 'RECEPTIONIST', 'CRM_EXECUTIVE',
@@ -43,7 +45,7 @@ const NAV_ITEMS = [
   { id: 'attendance', label: 'Attendance', icon: Clock3, roles: HR_ROLES },
   { id: 'leaves', label: 'Leave', icon: CalendarDays, roles: LEAVE_ROLES },
   { id: 'salary', label: 'Salary', icon: BadgeIndianRupee, roles: PAYROLL_ROLES },
-  { id: 'payroll', label: 'Payroll', icon: Wallet, roles: PAYROLL_ROLES },
+  { id: 'payroll', label: 'Payroll', icon: Wallet, roles: PAYROLL_APPROVAL_ROLES },
   { id: 'overtime-allowances', label: 'Overtime allowances', icon: Clock3, roles: STAFF_ROLES },
   { id: 'payslips', label: 'Payslips', icon: FileText, roles: STAFF_ROLES },
   { id: 'reports', label: 'Reports', icon: Activity, roles: PAYROLL_ROLES },
@@ -143,12 +145,14 @@ export default function PayrollPage() {
   const [selectedPayslip, setSelectedPayslip] = useState(null);
   const [employeeTypeFilter, setEmployeeTypeFilter] = useState('');
   const [error, setError] = useState('');
+  const [formError, setFormError] = useState('');
   const [notice, setNotice] = useState('');
 
   const roles = useMemo(() => normalizeRoles(account?.roles), [account]);
   const visibleItems = useMemo(() => NAV_ITEMS.filter((item) => item.roles.some((role) => roles.includes(role))), [roles]);
   const canManageHr = roles.some((role) => HR_ROLES.includes(role));
   const canManagePayroll = roles.some((role) => PAYROLL_ROLES.includes(role));
+  const canApprovePayroll = roles.some((role) => PAYROLL_APPROVAL_ROLES.includes(role));
   const activeNav = visibleItems.some((item) => item.id === section) ? section : visibleItems[0]?.id || 'payslips';
 
   useEffect(() => {
@@ -166,7 +170,7 @@ export default function PayrollPage() {
           .map((item) => item.id);
         setSection(availableSections.includes(requestedSection)
           ? requestedSection
-          : hrManager ? 'overview' : payrollManager ? 'payroll' : 'payslips');
+          : hrManager ? 'overview' : payrollManager || assignedRoles.includes('CRM_EXECUTIVE') ? 'payroll' : 'payslips');
       })
       .catch((requestError) => {
         if (active) setError(requestError.message);
@@ -243,6 +247,7 @@ export default function PayrollPage() {
   const runAction = async (action, successMessage, refresh = true, errorDisplay = 'page') => {
     setBusy(true);
     setError('');
+    setFormError('');
     setNotice('');
     try {
       const result = await action();
@@ -252,6 +257,8 @@ export default function PayrollPage() {
     } catch (actionError) {
       if (errorDisplay === 'popup') {
         window.alert(actionError.message);
+      } else if (errorDisplay === 'form') {
+        setFormError(actionError.message);
       } else {
         setError(actionError.message);
       }
@@ -298,7 +305,7 @@ export default function PayrollPage() {
       })
         : `${titleCase(kind)} saved.`,
       true,
-      kind === 'employee' ? 'popup' : 'page',
+      kind === 'employee' ? 'form' : 'page',
     );
   };
 
@@ -319,7 +326,7 @@ export default function PayrollPage() {
           .split(',')
           .map((time) => time.trim())
           .filter(Boolean);
-        values.doctorConsultationFee = values.doctorConsultationFee
+        values.doctorConsultationFee = values.doctorConsultationFee.trim()
           ? Number(values.doctorConsultationFee)
           : null;
       } else {
@@ -364,7 +371,8 @@ export default function PayrollPage() {
       delete values.amount;
       delete values.units;
     }
-    void createRecord(kind, values, documents);
+    const payload = kind === 'employee' ? omitBlankOptionalEmployeeFields(values) : values;
+    void createRecord(kind, payload, documents);
   };
 
   const runPayroll = () => runAction(
@@ -423,12 +431,15 @@ export default function PayrollPage() {
     ],
     organization: ['Departments', 'Designations', 'Shifts'].map((label) => [label, () => setSection('organization')]),
     salary: ['Salary Components', 'Salary Structures'].map((label) => [label, () => setSection('salary')]),
-    payroll: [
+    payroll: canManagePayroll ? [
       ['Create Payroll', () => { setSection('payroll'); if (!selectedPayroll) runPayroll(); }],
       ['Payroll Preview', () => { setSection('payroll'); if (selectedPayroll) setData((current) => ({ ...current, preview: selectedPayroll })); }],
       ['Payroll Approval', () => setSection('payroll')],
       ['Payroll History', () => setSection('payroll')],
       ['Payslips', () => setSection('payslips')],
+    ] : [
+      ['Payroll Approval', () => setSection('payroll')],
+      ['Payroll History', () => setSection('payroll')],
     ],
     reports: ['Employee Report', 'Attendance Report', 'Salary Report'].map((label) => [label, () => setSection('reports')]),
   };
@@ -530,7 +541,8 @@ export default function PayrollPage() {
                 <div><span>Deductions</span><strong>{money(selectedPayroll.totalDeduction)}</strong></div>
                 <div><span>Net payroll</span><strong>{money(selectedPayroll.totalNet)}</strong></div>
               </div>}
-              <PayrollHistory runs={data.payrolls} busy={busy} onAction={performPayrollStep}
+              <PayrollHistory runs={data.payrolls} busy={busy} canManagePayroll={canManagePayroll}
+                canApprovePayroll={canApprovePayroll} onAction={performPayrollStep}
                 onPreview={(row) => setData((current) => ({ ...current, preview: row }))} />
               {data.preview && <PayrollPreview payroll={data.preview}
                 onClose={() => setData((current) => ({ ...current, preview: null }))} />}
@@ -566,8 +578,9 @@ export default function PayrollPage() {
       </div>
 
       {modal && <Modal title={modal === 'employee' ? `${editingEmployee ? 'Edit' : 'Add'} employee` : `Add ${titleCase(modal)}`}
-        onClose={() => { setModal(''); setEditingEmployee(null); }} wide={modal === 'employee'}>
+        onClose={() => { setModal(''); setEditingEmployee(null); setFormError(''); }} wide={modal === 'employee'}>
         <form className="hr-form" onSubmit={handleFormSubmit(modal)}>
+          {modal === 'employee' && formError && <div className="hr-alert error" role="alert">{formError}</div>}
           {modal === 'employee' && <EmployeeForm data={data} employee={editingEmployee} />}
           {modal === 'employeeType' && <EmployeeTypeForm />}
           {modal === 'department' && <DepartmentForm />}
@@ -578,7 +591,7 @@ export default function PayrollPage() {
           {modal === 'component' && <ComponentForm />}
           {modal === 'structure' && <StructureForm employees={asArray(data.employees)} components={asArray(data.components)} />}
           <div className="hr-form-footer">
-            <button type="button" className="hr-button secondary" onClick={() => { setModal(''); setEditingEmployee(null); }}>Cancel</button>
+            <button type="button" className="hr-button secondary" onClick={() => { setModal(''); setEditingEmployee(null); setFormError(''); }}>Cancel</button>
             <button type="submit" className="hr-button primary" disabled={busy}><Check size={16} /> Save</button>
           </div>
         </form>

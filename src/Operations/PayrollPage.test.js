@@ -383,7 +383,7 @@ describe('PayrollPage', () => {
           headers: { get: () => 'application/problem+json' },
           json: async () => ({
             status: 422,
-            message: 'Payroll cannot be calculated: DT-100 (Dr Example) is missing an active salary structure covering the full payroll month (2026-10). Open Salary → Salary Structures and assign each listed employee an active structure whose effective dates cover the full payroll month, then calculate again.',
+              message: 'Payroll was not calculated. These active employee(s) need an active salary structure covering the full payroll month: DT-100 (Dr Example) is missing an active salary structure covering the full payroll month (2026-10). Open Salary → Salary Structures, assign each employee an active structure whose effective dates cover the entire month, then calculate again. After calculation succeeds, the CRM team can review and approve the payroll run.',
           }),
         };
       }
@@ -395,8 +395,37 @@ describe('PayrollPage', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Calculate' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Payroll cannot be calculated: DT-100 (Dr Example) is missing an active salary structure covering the full payroll month (2026-10). Open Salary → Salary Structures and assign each listed employee an active structure whose effective dates cover the full payroll month, then calculate again.',
+      'Payroll was not calculated. These active employee(s) need an active salary structure covering the full payroll month: DT-100 (Dr Example) is missing an active salary structure covering the full payroll month (2026-10). Open Salary → Salary Structures, assign each employee an active structure whose effective dates cover the entire month, then calculate again. After calculation succeeds, the CRM team can review and approve the payroll run.',
     );
     expect(screen.getByRole('alert')).not.toHaveTextContent('Unprocessable Entity');
+  });
+
+  it('allows CRM staff to review and approve calculated payroll without calculation or payroll-management actions', async () => {
+    apiFetch.mockImplementation(async (path, options = {}) => {
+      if (path === '/users/me') {
+        return jsonResponse({ username: 'crm-user', roles: ['CRM_EXECUTIVE'] });
+      }
+      if (path.startsWith('/payroll?month=')) {
+        return jsonResponse([{
+          id: 'run-1', month: '2026-10', status: 'CALCULATED', employeeCount: 1,
+          totalGross: 1000, totalDeduction: 100, totalNet: 900, items: [],
+        }]);
+      }
+      if (path === '/payroll/run-1/approve' && options.method === 'POST') {
+        return jsonResponse({ id: 'run-1', status: 'APPROVED' });
+      }
+      return jsonResponse({});
+    });
+
+    render(<PayrollPage />);
+    expect(await screen.findByRole('button', { name: 'Payroll', exact: true })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Preview' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Approve' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Calculate' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Reject' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
+    await waitFor(() => expect(apiFetch.mock.calls.some(([path, options]) =>
+      path === '/payroll/run-1/approve' && options?.method === 'POST')).toBe(true));
   });
 });

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, BedDouble, Ban, ClipboardList, DoorOpen, Download, Filter, History, RefreshCw, Sparkles, Users, UserRoundCheck, Wrench } from 'lucide-react';
 import { apiFetch } from '../API/api';
+import { isAssignableNurse } from '../utils/nurseEligibility';
 import '../Operations/Operations.css';
 import './WardManagement.css';
 
@@ -258,8 +259,8 @@ function NurseDashboard({ dashboard, handovers, nurses, rosters, shiftSwaps, ref
                 </td>
                 <td><form className="workflow-form-grid" onSubmit={(event) => submitHandover(event, patientId)}>
                   <label>Incoming nurse<select required value={handover.nurseId || ''} onChange={(event) => setHandoverForms((current) => ({ ...current, [patientId]: { ...current[patientId], nurseId: event.target.value } }))}>
-                    <option value="">Select nurse</option>{nurses.filter((nurse) => nurse.profileComplete && nurse.employmentActive
-                      && nurse.status === 'ACTIVE' && nurse.employeeCode !== item.assignment?.nurseId).map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}
+                    <option value="">Select nurse</option>{nurses.filter((nurse) => isAssignableNurse(nurse)
+                      && nurse.employeeCode !== item.assignment?.nurseId).map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}
                   </select></label>
                   <label>Incoming shift<select required value={handover.shift || ''} onChange={(event) => setHandoverForms((current) => ({ ...current, [patientId]: { ...current[patientId], shift: event.target.value } }))}>
                     <option value="">Select shift</option><option value="MORNING">Morning</option><option value="EVENING">Evening</option><option value="NIGHT">Night</option>
@@ -286,8 +287,8 @@ function NurseDashboard({ dashboard, handovers, nurses, rosters, shiftSwaps, ref
             <option value="">Select roster entry</option>{rosters.map((roster) => <option key={roster.id} value={roster.id}>{roster.wardId} · {roster.shift} · {roster.startDate} to {roster.endDate}</option>)}
           </select></label>
           <label>Swap with<select required value={swapForm.toNurseId} onChange={(event) => setSwapForm({ ...swapForm, toNurseId: event.target.value })}>
-            <option value="">Select nurse</option>{nurses.filter((nurse) => nurse.profileComplete && nurse.employmentActive
-              && nurse.status === 'ACTIVE' && nurse.employeeCode !== rosters.find((roster) => roster.id === swapForm.rosterId)?.nurseId)
+            <option value="">Select nurse</option>{nurses.filter((nurse) => isAssignableNurse(nurse)
+              && nurse.employeeCode !== rosters.find((roster) => roster.id === swapForm.rosterId)?.nurseId)
               .map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}
           </select></label>
           <label>Shift date<input required type="date" value={swapForm.date} onChange={(event) => setSwapForm({ ...swapForm, date: event.target.value })} /></label>
@@ -345,8 +346,7 @@ export default function WardManagement() {
     { id: 'assignments', label: 'Patient assignments', icon: UserRoundCheck },
     { id: 'activity', label: 'History & care', icon: History },
   ];
-  const activeNurseCount = nurses.filter((nurse) => nurse.employmentActive
-    && nurse.profileComplete && nurse.status === 'ACTIVE').length;
+  const activeNurseCount = nurses.filter(isAssignableNurse).length;
   const rulesConfigured = wards.length > 0 && wards.every((ward) => Number(ward.maxPatientsPerNurse) > 0
     && Number(ward.minimumNursesPerShift) >= 0);
   const nursingSetupReady = wards.length > 0 && activeNurseCount > 0 && rulesConfigured;
@@ -875,7 +875,7 @@ export default function WardManagement() {
           <div className="workflow-panel-heading"><div><h2>Patient assignment</h2><p>Assign ward coverage, and maintain primary and backup nurse assignments per admitted patient.</p></div></div>
           <form className="workflow-form-grid" onSubmit={submitBulkAssignment}>
             <label>Ward<select required value={bulkForm.wardId} onChange={(event) => setBulkForm({ ...bulkForm, wardId: event.target.value })}><option value="">Select ward</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}</select></label>
-            <label>Nurse<select required value={bulkForm.nurseId} onChange={(event) => setBulkForm({ ...bulkForm, nurseId: event.target.value })}><option value="">Select nurse</option>{nurses.filter((nurse) => nurse.employmentActive && nurse.profileComplete && nurse.status === 'ACTIVE').map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}</select></label>
+            <label>Nurse<select required value={bulkForm.nurseId} onChange={(event) => setBulkForm({ ...bulkForm, nurseId: event.target.value })}><option value="">Select nurse</option>{nurses.filter(isAssignableNurse).map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}</select></label>
             <label>Shift<select value={bulkForm.shift} onChange={(event) => setBulkForm({ ...bulkForm, shift: event.target.value })}><option value="MORNING">Morning</option><option value="EVENING">Evening</option><option value="NIGHT">Night</option></select></label>
             <label>Bed from<input value={bulkForm.bedFrom} onChange={(event) => setBulkForm({ ...bulkForm, bedFrom: event.target.value })} placeholder="Optional" /></label>
             <label>Bed to<input value={bulkForm.bedTo} onChange={(event) => setBulkForm({ ...bulkForm, bedTo: event.target.value })} placeholder="Optional" /></label>
@@ -902,7 +902,7 @@ export default function WardManagement() {
                   {backupNurse?.employeeCode && <small>{backupNurse.employeeCode}</small>}</td>
                 <td><form className="nursing-inline-form" onSubmit={(event) => assignUnassigned(event, patient)}>
                   <select required name="role" defaultValue="PRIMARY"><option value="PRIMARY">Primary</option><option value="BACKUP">Backup</option></select>
-                  <select required name="nurseId" defaultValue=""><option value="">Select nurse</option>{nurses.filter((nurse) => nurse.employmentActive && nurse.profileComplete && nurse.status === 'ACTIVE').map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}</select>
+                  <select required name="nurseId" defaultValue=""><option value="">Select nurse</option>{nurses.filter(isAssignableNurse).map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}</select>
                   <button className="workflow-button primary" disabled={busy}>Assign</button>
                 </form></td>
                 <td><form className="nursing-inline-form" onSubmit={(event) => transferPatient(event, patient)}>
