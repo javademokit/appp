@@ -333,6 +333,7 @@ The React application reads `REACT_APP_API_BASE_URL` at build time. Set it to th
 When the API is hosted on a separate origin, configure the backend `app.cors.allowed-origin` property to the exact HTTPS origin serving this application. Keep session cookies secure in production and serve both application and API over HTTPS.
 
 Patient records are created when an appointment is booked. The API returns the canonical `patientId`; subsequent appointments can select that patient, and diagnostics, emergency cases, medication issues, daily updates, and discharge records must reference the same ID.
+In the hospital CRM appointment form, searching by mobile number shows every matching patient as a single-choice record. Select the intended Patient ID before booking, or choose **Register a different patient with this number** to create a separate patient record for another person sharing the phone. The consultation fee is waived for another appointment booked for the same patient within 48 hours of their last non-cancelled appointment; appointments for another patient sharing that mobile number do not affect the fee.
 
 ## Doctor shift attendance
 

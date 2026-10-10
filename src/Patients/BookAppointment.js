@@ -15,14 +15,37 @@ import {
 
 const formatLocalDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 const normalizeMobile = (mobile) => String(mobile || '').replace(/\D/g, '');
-const parseAppointmentDate = (date) => {
+const parseAppointmentDateTime = (date, time) => {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date || ''));
-  return match ? new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3])) : null;
+  if (!match) return null;
+
+  let hours = 0;
+  let minutes = 0;
+  const timeMatch = /^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i.exec(String(time || '').trim());
+  if (timeMatch) {
+    hours = Number(timeMatch[1]);
+    minutes = Number(timeMatch[2]);
+    const meridiem = timeMatch[3]?.toUpperCase();
+    if (meridiem) {
+      if (hours < 1 || hours > 12) return null;
+      hours = (hours % 12) + (meridiem === 'PM' ? 12 : 0);
+    } else if (hours > 23) return null;
+  } else if (time) {
+    return null;
+  }
+
+  return new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    hours,
+    minutes,
+  );
 };
 
 const BookAppointment = () => {
   const newPatientOption = 'NEW';
-  const followUpWindowDays = 15;
+  const followUpWindowHours = 48;
   const minimumDate = formatLocalDate(new Date());
   const [form, setForm] = useState({
     patientName: '',
@@ -45,6 +68,7 @@ const BookAppointment = () => {
   const [patients, setPatients] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [selectedPatientId, setSelectedPatientId] = useState(newPatientOption);
+  const [registerNewPatientWithMobile, setRegisterNewPatientWithMobile] = useState(false);
   const [mobileSearch, setMobileSearch] = useState('');
   const [mobileSearchResults, setMobileSearchResults] = useState(null);
   const [availableTimes, setAvailableTimes] = useState([]);
@@ -163,19 +187,29 @@ const BookAppointment = () => {
     const searchedMobile = normalizeMobile(mobileSearch);
     if (!searchedMobile) {
       setMobileSearchResults([]);
+      setSelectedPatientId(newPatientOption);
+      setRegisterNewPatientWithMobile(false);
       return;
     }
 
     const matches = patients.filter((patient) =>
       normalizeMobile(patient.patientmobileNo || patient.mobileNo) === searchedMobile
     );
-    setSelectedPatientId(matches.length === 1 ? matches[0].patientId : newPatientOption);
-    setMobileSearchResults(matches.length === 1 ? null : matches);
+    setSelectedPatientId(newPatientOption);
+    setRegisterNewPatientWithMobile(matches.length > 0);
+    setMobileSearchResults(matches);
+    setForm((current) => ({ ...current, mobileNo: mobileSearch.trim() }));
   };
 
   const selectPatient = (patient) => {
     setSelectedPatientId(patient.patientId);
-    setMobileSearchResults(null);
+    setRegisterNewPatientWithMobile(false);
+  };
+
+  const selectNewPatientWithMobile = () => {
+    setSelectedPatientId(newPatientOption);
+    setRegisterNewPatientWithMobile(true);
+    setForm((current) => ({ ...current, mobileNo: mobileSearch.trim() }));
   };
 
   const handleSubmit = async (e) => {
@@ -187,7 +221,12 @@ const BookAppointment = () => {
       const appointmentFee = selectedPatient && feeDetails.isFollowUp ? 0 : form.fee;
       const response = await apiFetch('/appointments1', {
         method: 'POST',
-        body: JSON.stringify({ ...form, fee: appointmentFee, patientId: patientId || undefined }),
+        body: JSON.stringify({
+          ...form,
+          fee: appointmentFee,
+          patientId: patientId || undefined,
+          registerNewPatient: !patientId && registerNewPatientWithMobile,
+        }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -217,7 +256,21 @@ const BookAppointment = () => {
           ? current
           : [data, ...current]
       ));
+      setPatients((current) => (
+        current.some((patient) => patient.patientId === data.patientId)
+          ? current
+          : [{
+            patientId: data.patientId,
+            patientName: data.patientName,
+            patientAge: data.patientAge,
+            gender: data.gender,
+            patientmobileNo: data.mobileNo,
+            patientEmailId: data.patientEmailId,
+            patientAddress: data.patientAddress,
+          }, ...current]
+      ));
       setSelectedPatientId(newPatientOption);
+      setRegisterNewPatientWithMobile(false);
       setMobileSearch('');
       setMobileSearchResults(null);
       setForm({
@@ -294,23 +347,22 @@ const BookAppointment = () => {
   const selectedPatient = patients.find((patient) => patient.patientId === selectedPatientId);
   const selectedDoctor = doctors.find((doctor) => doctor.id === form.doctorId);
   const patientAppointmentHistory = selectedPatient
-    ? appointments.filter((appointment) => appointment.patientId
-      ? appointment.patientId === selectedPatient.patientId
-      : (normalizeMobile(appointment.mobileNo || appointment.patientmobileNo)
-        && normalizeMobile(appointment.mobileNo || appointment.patientmobileNo)
-          === normalizeMobile(selectedPatient.patientmobileNo || selectedPatient.mobileNo)))
+    ? appointments.filter((appointment) => appointment.patientId === selectedPatient.patientId)
     : [];
   const latestPastAppointment = patientAppointmentHistory
     .filter((appointment) => appointment.appointmentStatus !== 'cancelled')
-    .map((appointment) => ({ appointment, date: parseAppointmentDate(appointment.date) }))
-    .filter(({ date }) => date && date <= new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()))
+    .map((appointment) => ({
+      appointment,
+      date: parseAppointmentDateTime(appointment.date, appointment.time),
+    }))
+    .filter(({ date }) => date && date <= new Date())
     .sort((a, b) => b.date - a.date)[0];
-  const daysSinceLastAppointment = latestPastAppointment
-    ? Math.floor((new Date(new Date().getFullYear(), new Date().getMonth(), new Date().getDate()) - latestPastAppointment.date) / 86400000)
+  const hoursSinceLastAppointment = latestPastAppointment
+    ? (Date.now() - latestPastAppointment.date.getTime()) / 3600000
     : null;
   const feeDetails = {
-    isFollowUp: daysSinceLastAppointment !== null && daysSinceLastAppointment <= followUpWindowDays,
-    daysSinceLastAppointment,
+    isFollowUp: hoursSinceLastAppointment !== null && hoursSinceLastAppointment <= followUpWindowHours,
+    hoursSinceLastAppointment,
   };
   const displayedFee = selectedPatient && feeDetails.isFollowUp ? 0 : form.fee;
 
@@ -413,6 +465,8 @@ const BookAppointment = () => {
               onChange={(event) => {
                 setMobileSearch(event.target.value);
                 setMobileSearchResults(null);
+                setSelectedPatientId(newPatientOption);
+                setRegisterNewPatientWithMobile(false);
               }}
               disabled={loadingDirectories || busy}
             />
@@ -422,11 +476,38 @@ const BookAppointment = () => {
           </div>
           {mobileSearchResults && (mobileSearchResults.length ? (
             <div className="appointment-mobile-search-results" aria-live="polite">
+              <p>Select the patient whose record this appointment belongs to:</p>
               {mobileSearchResults.map((patient) => (
-                <button key={patient.patientId} type="button" onClick={() => selectPatient(patient)}>
-                  {patient.patientName} · {patient.patientId}
-                </button>
+                <label key={patient.patientId} className="appointment-mobile-search-result">
+                  <input
+                    type="radio"
+                    name="matching-patient"
+                    value={patient.patientId}
+                    checked={selectedPatientId === patient.patientId}
+                    onChange={() => selectPatient(patient)}
+                  />
+                  <span>
+                    <strong>{patient.patientName}</strong> · {patient.patientId}
+                    <small>
+                      {patient.patientAge ? `${patient.patientAge} years` : 'Age not recorded'}
+                      {' · '}{patient.gender || 'Gender not recorded'}
+                    </small>
+                  </span>
+                </label>
               ))}
+              <label className="appointment-mobile-search-result">
+                <input
+                  type="radio"
+                  name="matching-patient"
+                  value={newPatientOption}
+                  checked={selectedPatientId === newPatientOption && registerNewPatientWithMobile}
+                  onChange={selectNewPatientWithMobile}
+                />
+                <span>
+                  <strong>Register a different patient with this number</strong>
+                  <small>Use this when the person booking is not one of the records above.</small>
+                </span>
+              </label>
             </div>
           ) : <p className="appointment-fee-note" role="status">No patient found with this mobile number. Continue as a new patient.</p>)}
         </div>
@@ -438,10 +519,10 @@ const BookAppointment = () => {
             <span>{selectedPatient.patientAge ? `${selectedPatient.patientAge} years` : 'Age not recorded'} · {selectedPatient.gender || 'Gender not recorded'}</span>
             <span>{selectedPatient.patientmobileNo || 'No phone recorded'}</span>
             {feeDetails.isFollowUp
-              ? <span className="appointment-fee-note">Follow-up within {followUpWindowDays} days of the last appointment ({feeDetails.daysSinceLastAppointment} days ago): no consultation fee.</span>
-              : <span className="appointment-fee-note">{feeDetails.daysSinceLastAppointment === null
+              ? <span className="appointment-fee-note">Follow-up within {followUpWindowHours} hours of the last appointment: no consultation fee.</span>
+              : <span className="appointment-fee-note">{feeDetails.hoursSinceLastAppointment === null
                 ? 'No previous appointment found. The consultation fee applies.'
-                : `More than ${followUpWindowDays} days since the last appointment. The consultation fee applies.`}</span>}
+                : `More than ${followUpWindowHours} hours since the last appointment. The consultation fee applies.`}</span>}
           </div>
         ) : <>
         <div className="form-group">

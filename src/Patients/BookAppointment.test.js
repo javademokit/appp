@@ -15,10 +15,13 @@ const patient = {
   patientAddress: 'Main Street',
 };
 
-const dateDaysAgo = (daysAgo) => {
-  const date = new Date();
-  date.setDate(date.getDate() - daysAgo);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+const appointmentHoursAgo = (hoursAgo) => {
+  const date = new Date(Date.now() - hoursAgo * 60 * 60 * 1000);
+  const hour = date.getHours();
+  return {
+    date: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`,
+    time: `${hour % 12 || 12}:${String(date.getMinutes()).padStart(2, '0')} ${hour < 12 ? 'AM' : 'PM'}`,
+  };
 };
 
 function mockDirectories(patients = [], appointments = []) {
@@ -150,14 +153,15 @@ test('books a returning patient using the existing canonical ID without re-enter
 });
 
 test.each([
-  [15, 0],
-  [16, '500'],
-])('applies the repeat-visit fee rule at %i days since the previous appointment', async (daysAgo, expectedFee) => {
+  [47, 0],
+  [49, '500'],
+])('applies the repeat-visit fee rule at %i hours since the previous appointment', async (hoursAgo, expectedFee) => {
+  const previousAppointment = appointmentHoursAgo(hoursAgo);
   mockDirectories([patient], [{
     id: 'previous-appointment',
     patientId: 'PT-EXISTING',
     mobileNo: '5551000',
-    date: dateDaysAgo(daysAgo),
+    ...previousAppointment,
     appointmentStatus: 'confirmed',
   }]);
   render(<BookAppointment />);
@@ -180,9 +184,62 @@ test('finds and selects an existing patient by mobile number', async () => {
 
   fireEvent.change(screen.getByLabelText('Find existing patient by mobile number'), { target: { value: '(555) 1000' } });
   fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+  fireEvent.click(screen.getByLabelText(/Existing Patient · PT-EXISTING/));
 
   expect(screen.getByText('Patient ID: PT-EXISTING')).toBeInTheDocument();
   expect(screen.queryByPlaceholderText('Patient Full Name')).not.toBeInTheDocument();
+});
+
+test('shows same-mobile patient choices and books against the selected patient ID', async () => {
+  const secondPatient = {
+    ...patient,
+    id: 'mongo-patient-2',
+    patientId: 'PT-ROHAN',
+    patientName: 'Rohan',
+  };
+  mockDirectories([patient, secondPatient]);
+  render(<BookAppointment />);
+  await screen.findByRole('option', { name: /Existing Patient/ });
+
+  fireEvent.change(screen.getByLabelText('Find existing patient by mobile number'), { target: { value: '5551000' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+  fireEvent.click(screen.getByLabelText(/Rohan · PT-ROHAN/));
+  await fillAppointmentDetails();
+  fireEvent.click(screen.getByRole('button', { name: 'Book Appointment' }));
+
+  await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('/appointments1', expect.objectContaining({
+    method: 'POST',
+    body: expect.stringContaining('"patientId":"PT-ROHAN"'),
+  })));
+  expect(screen.getByText('Patient ID: PT-ROHAN')).toBeInTheDocument();
+});
+
+test('can register a different patient who shares a mobile number with existing records', async () => {
+  mockDirectories([patient]);
+  render(<BookAppointment />);
+  await screen.findByRole('option', { name: /Existing Patient/ });
+
+  fireEvent.change(screen.getByLabelText('Find existing patient by mobile number'), { target: { value: '5551000' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+  fireEvent.click(screen.getByLabelText(/Register a different patient with this number/));
+  fireEvent.change(screen.getByPlaceholderText('Patient Full Name'), { target: { value: 'Shyam' } });
+  fireEvent.change(screen.getByPlaceholderText('Patient Age'), { target: { value: '31' } });
+  fireEvent.change(screen.getByDisplayValue('Select Gender'), { target: { value: 'Male' } });
+  await fillAppointmentDetails();
+  fireEvent.click(screen.getByRole('button', { name: 'Book Appointment' }));
+
+  await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('/appointments1', expect.objectContaining({
+    method: 'POST',
+    body: expect.stringContaining('"registerNewPatient":true'),
+  })));
+  const [, request] = apiFetch.mock.calls.find(([path, options]) => path === '/appointments1' && options?.method === 'POST');
+  expect(JSON.parse(request.body)).toMatchObject({ patientName: 'Shyam', mobileNo: '5551000' });
+  expect(JSON.parse(request.body)).not.toHaveProperty('patientId');
+
+  await screen.findByText(/Appointment booked/);
+  fireEvent.change(screen.getByLabelText('Find existing patient by mobile number'), { target: { value: '5551000' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Search' }));
+  expect(screen.getByLabelText(/Shyam · PT-GENERATED/)).toBeInTheDocument();
 });
 
 test('shows the backend reason when an appointment is rejected', async () => {

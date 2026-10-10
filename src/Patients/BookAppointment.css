@@ -504,14 +504,47 @@
   gap: 0.4rem;
 }
 
-.book-container .appointment-mobile-search-results button {
+.book-container .appointment-mobile-search-results > p {
+  margin: 0;
+  color: #536761;
+  font-size: 0.8rem;
+}
+
+.book-container .appointment-mobile-search-result {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--clinic-line);
   border-radius: 5px;
   background: #fff;
   color: var(--clinic-ink);
-  text-align: left;
   cursor: pointer;
+}
+
+.book-container .appointment-mobile-search-result:has(input:checked) {
+  border-color: var(--clinic-primary);
+  background: #f1f8f5;
+}
+
+.book-container .appointment-mobile-search-result input[type="radio"] {
+  width: 1rem;
+  min-height: 1rem;
+  flex: 0 0 auto;
+  margin: 0.15rem 0 0;
+  padding: 0;
+  accent-color: var(--clinic-primary);
+}
+
+.book-container .appointment-mobile-search-result span {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.82rem;
+}
+
+.book-container .appointment-mobile-search-result small {
+  color: #63756d;
+  font-size: 0.76rem;
 }
 
 .book-container .appointment-patient-summary .appointment-fee-note,
