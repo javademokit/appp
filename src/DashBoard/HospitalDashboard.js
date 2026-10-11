@@ -40,9 +40,12 @@ import PayrollRun from "../pages/payroll/PayrollRun";
 import NurseOvertimePage from "../Operations/NurseOvertimePage";
 
 const HospitalDashboard = () => {
-  const [activePage, setActivePage] = useState(() => (
-    new URLSearchParams(window.location.search).get("billing") === "1" ? "billing" : "dashboard"
-  ));
+  const [activePage, setActivePage] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const requestedPage = params.get("page");
+    if (["nurse-management", "ward-management"].includes(requestedPage)) return requestedPage;
+    return params.get("billing") === "1" ? "billing" : "dashboard";
+  });
   const [username, setUsername] = useState("");
   const [roles, setRoles] = useState([]);
   const navigate = useNavigate();

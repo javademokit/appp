@@ -313,6 +313,7 @@ export default function WardManagement({ mode = 'nurses', onOpenWards }) {
   const [wards, setWards] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [nurses, setNurses] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [rosters, setRosters] = useState([]);
   const [nurseRosters, setNurseRosters] = useState([]);
   const [shiftSwaps, setShiftSwaps] = useState([]);
@@ -336,6 +337,7 @@ export default function WardManagement({ mode = 'nurses', onOpenWards }) {
   const [patientSearch, setPatientSearch] = useState('');
   const [patientNotes, setPatientNotes] = useState({});
   const [nurseEmployeeIdDraft, setNurseEmployeeIdDraft] = useState({});
+  const [nurseEmployeeForms, setNurseEmployeeForms] = useState({});
   const [creatingNurseProfileId, setCreatingNurseProfileId] = useState('');
   const [wardForm, setWardForm] = useState({ name: '', type: 'GENERAL', maxPatientsPerNurse: 8, minimumNursesPerShift: 1 });
   const [roomForm, setRoomForm] = useState({ id: '', wardId: '', building: '', floor: '', roomNumber: '', acType: 'NON_AC', category: 'GENERAL', bedCapacity: 1, defaultBedType: 'STANDARD', genderRestriction: 'ANY', status: 'ACTIVE', amenities: '', notes: '' });
@@ -367,6 +369,14 @@ export default function WardManagement({ mode = 'nurses', onOpenWards }) {
       nurse.profile?.qualification, nurse.profile?.specialization,
     ].some((value) => String(value || '').toLowerCase().includes(query)));
   }, [nurses, nurseSearch]);
+  const assignableNurses = useMemo(() => nurses.filter(isAssignableNurse), [nurses]);
+  const nurseOptionLabel = (nurse) => {
+    const identity = nurse.employeeCode || nurse.accountId || nurse.id || 'No ID';
+    const unavailableReason = nurse.accountOnly ? 'HR link required'
+      : !nurse.employmentActive ? 'HR employee inactive'
+        : nurse.profileComplete && nurse.status !== 'ACTIVE' ? 'Profile inactive' : '';
+    return `${nurse.name || 'Unnamed nurse'} · ${identity}${unavailableReason ? ` · ${unavailableReason}` : ''}`;
+  };
   const selectedNurse = nurses.find((nurse) => nurse.employeeCode === selectedNurseFilter || nurse.accountId === selectedNurseFilter);
   const filteredAssignmentBoard = useMemo(() => assignmentBoard.filter((entry) => {
     const patient = entry.patient || {};
@@ -407,6 +417,11 @@ export default function WardManagement({ mode = 'nurses', onOpenWards }) {
         const results = await Promise.all(paths.map((path) => request(path)));
         [setWards, setRooms, setNurses, setRosters, setAssignments, setUnassignedPatients, setShiftSwaps, setAssignmentBoard, setBedWaitingList]
           .forEach((setter, index) => setter(results[index]));
+        if (roles.some((role) => ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'CLINIC_ADMIN', 'CRM_EXECUTIVE'].includes(role))) {
+          setDepartments(await request('/departments'));
+        } else {
+          setDepartments([]);
+        }
         if (roles.some((role) => ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'CLINIC_ADMIN', 'HEAD_NURSE'].includes(role))) {
           setCareRecords(await request('/nursing/care-records'));
         } else {
@@ -473,6 +488,37 @@ export default function WardManagement({ mode = 'nurses', onOpenWards }) {
     } finally {
       setCreatingNurseProfileId('');
     }
+  };
+
+  const createNurseEmployee = async (nurse, form) => {
+    setCreatingNurseProfileId(nurse.id || nurse.accountId);
+    setError('');
+    setSuccess('');
+    try {
+      const created = await request(`/nurse-employee-accounts/${encodeURIComponent(nurse.accountId)}`, {
+        method: 'POST',
+        body: JSON.stringify({
+          firstName: form.firstName || '',
+          lastName: form.lastName || '',
+          mobile: form.mobile || '',
+          departmentId: form.departmentId || '',
+          joiningDate: form.joiningDate || '',
+        }),
+      });
+      setSuccess(`HR nurse employee ${created.employeeCode} created and linked. You can now assign this nurse.`);
+      setNurseEmployeeForms((current) => ({ ...current, [nurse.accountId]: undefined }));
+      await refresh();
+    } catch (requestError) {
+      setError(requestError.message || 'Could not create the HR nurse employee.');
+    } finally {
+      setCreatingNurseProfileId('');
+    }
+  };
+
+  const openNurseRoster = () => {
+    const roster = document.querySelector('.nurse-manager-sidebar');
+    roster?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    roster?.querySelector('.nurse-manager-search input')?.focus({ preventScroll: true });
   };
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -761,6 +807,14 @@ export default function WardManagement({ mode = 'nurses', onOpenWards }) {
           <div className="nurse-roster-list">
             {visibleNurses.map((nurse) => {
               const identity = nurse.employeeCode || nurse.accountId || nurse.id;
+              const nurseNameParts = String(nurse.name || '').trim().split(/\s+/).filter(Boolean);
+              const employeeForm = nurseEmployeeForms[nurse.accountId] || {
+                firstName: nurseNameParts[0] || '',
+                lastName: nurseNameParts.slice(1).join(' '),
+                mobile: nurse.mobileNo || '',
+                departmentId: departments[0]?.id || '',
+                joiningDate: '',
+              };
               const isActive = isAssignableNurse(nurse);
               const patientCount = assignmentBoard.filter((entry) => [entry.primary?.nurseId, entry.backup?.nurseId]
                 .includes(nurse.employeeCode) || [entry.primary?.nurseId, entry.backup?.nurseId].includes(nurse.accountId)).length;
@@ -774,17 +828,46 @@ export default function WardManagement({ mode = 'nurses', onOpenWards }) {
                 <span className={`nurse-roster-status ${isActive ? 'active' : ''}`}>{isActive ? nurseShiftStatus(nurse)
                   : nurse.accountOnly ? 'HR employee link required' : 'Profile / employment inactive'}</span>
                 <small className="nurse-roster-patients">{patientCount} assigned patient{patientCount === 1 ? '' : 's'}</small>
-                {!nurse.profileComplete && canCreateNurseProfiles && <div className="nurse-roster-profile-action">
-                  {nurse.accountId
-                    ? <>
-                      {nurse.accountOnly && <input aria-label={`HR employee ID for ${nurse.name}`} value={nurseEmployeeIdDraft[nurse.accountId] || ''}
-                        onChange={(event) => setNurseEmployeeIdDraft((current) => ({ ...current, [nurse.accountId]: event.target.value }))}
-                        placeholder="Existing HR employee ID" />}
-                      <button type="button" disabled={creatingNurseProfileId === identity || (nurse.accountOnly && !nurseEmployeeIdDraft[nurse.accountId]?.trim())} onClick={() => createNurseProfile(nurse)}>
-                        {creatingNurseProfileId === identity ? 'Linking profile…' : nurse.accountOnly ? 'Link employee & create profile' : 'Create profile'}
-                      </button>
-                    </>
-                    : <small>Link account first</small>}
+                {canCreateNurseProfiles && (nurse.accountOnly || !nurse.employmentActive
+                  || !nurse.profileComplete || nurse.status !== 'ACTIVE') && <div className="nurse-roster-profile-action">
+                  {nurse.accountOnly && nurse.accountId ? <>
+                    <input aria-label={`HR employee ID for ${nurse.name}`} value={nurseEmployeeIdDraft[nurse.accountId] || ''}
+                      onChange={(event) => setNurseEmployeeIdDraft((current) => ({ ...current, [nurse.accountId]: event.target.value }))}
+                      placeholder="Existing HR employee ID" />
+                    <button type="button" disabled={creatingNurseProfileId === identity || !nurseEmployeeIdDraft[nurse.accountId]?.trim()} onClick={() => createNurseProfile(nurse)}>
+                      {creatingNurseProfileId === identity ? 'Linking profile…' : 'Link employee & create profile'}
+                    </button>
+                    <details className="nurse-create-hr-record">
+                      <summary>Create HR nurse employee</summary>
+                      <form onSubmit={(event) => { event.preventDefault(); void createNurseEmployee(nurse, employeeForm); }}>
+                        <label>First name<input required value={employeeForm.firstName} onChange={(event) => setNurseEmployeeForms((current) => ({
+                          ...current, [nurse.accountId]: { ...employeeForm, firstName: event.target.value },
+                        }))} /></label>
+                        <label>Last name<input required value={employeeForm.lastName} onChange={(event) => setNurseEmployeeForms((current) => ({
+                          ...current, [nurse.accountId]: { ...employeeForm, lastName: event.target.value },
+                        }))} /></label>
+                        <label>Mobile<input required type="tel" value={employeeForm.mobile} onChange={(event) => setNurseEmployeeForms((current) => ({
+                          ...current, [nurse.accountId]: { ...employeeForm, mobile: event.target.value },
+                        }))} /></label>
+                        <label>Department<select required value={employeeForm.departmentId} onChange={(event) => setNurseEmployeeForms((current) => ({
+                          ...current, [nurse.accountId]: { ...employeeForm, departmentId: event.target.value },
+                        }))}>
+                          <option value="">Select department</option>{departments.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}
+                        </select></label>
+                        <label>Joining date<input required type="date" value={employeeForm.joiningDate} onChange={(event) => setNurseEmployeeForms((current) => ({
+                          ...current, [nurse.accountId]: { ...employeeForm, joiningDate: event.target.value },
+                        }))} /></label>
+                        <button type="submit" disabled={creatingNurseProfileId === identity || !departments.length}>
+                          {creatingNurseProfileId === identity ? 'Creating HR employee…' : 'Create and link HR employee'}
+                        </button>
+                        {!departments.length && <small>HR departments could not be loaded.</small>}
+                      </form>
+                    </details>
+                  </> : !nurse.employmentActive
+                    ? <small>Activate this nurse employee in HR first.</small>
+                    : nurse.accountId && <button type="button" disabled={creatingNurseProfileId === identity} onClick={() => createNurseProfile(nurse)}>
+                      {creatingNurseProfileId === identity ? 'Updating profile…' : nurse.profileComplete ? 'Activate profile' : 'Create profile'}
+                    </button>}
                 </div>}
               </article>;
             })}
@@ -1021,7 +1104,17 @@ export default function WardManagement({ mode = 'nurses', onOpenWards }) {
               <summary>Assign patients by ward and shift</summary>
               <form className="workflow-form-grid" onSubmit={submitBulkAssignment}>
                 <label>Ward<select required value={bulkForm.wardId} onChange={(event) => setBulkForm({ ...bulkForm, wardId: event.target.value })}><option value="">Select ward</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}</select></label>
-                <label>Nurse<select required value={bulkForm.nurseId} onChange={(event) => setBulkForm({ ...bulkForm, nurseId: event.target.value })}><option value="">Select nurse</option>{nurses.filter(isAssignableNurse).map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}</select></label>
+                <label>Nurse<select required value={bulkForm.nurseId} onChange={(event) => setBulkForm({ ...bulkForm, nurseId: event.target.value })}>
+                  <option value="">{nurses.length ? 'Select an eligible nurse' : 'No nurse records returned'}</option>
+                  {nurses.map((nurse) => <option key={nurse.employeeCode || nurse.accountId || nurse.id}
+                    value={nurse.employeeCode || nurse.accountId || nurse.id} disabled={!isAssignableNurse(nurse)}>{nurseOptionLabel(nurse)}</option>)}
+                </select>
+                  {!nurses.length && <small>Nurse directory returned no records. Refresh or check nurse employee setup.</small>}
+                  {!!nurses.length && !assignableNurses.length && <>
+                    <small>These nurses need an active HR employee link before assignment.</small>
+                    <button className="nurse-assignment-link-action" type="button" onClick={openNurseRoster}>Open nurse roster to fix</button>
+                  </>}
+                </label>
                 <label>Shift<select value={bulkForm.shift} onChange={(event) => setBulkForm({ ...bulkForm, shift: event.target.value })}><option value="MORNING">Morning</option><option value="EVENING">Evening</option><option value="NIGHT">Night</option></select></label>
                 <label>Bed from<input value={bulkForm.bedFrom} onChange={(event) => setBulkForm({ ...bulkForm, bedFrom: event.target.value })} placeholder="Optional" /></label>
                 <label>Bed to<input value={bulkForm.bedTo} onChange={(event) => setBulkForm({ ...bulkForm, bedTo: event.target.value })} placeholder="Optional" /></label>
@@ -1057,11 +1150,13 @@ export default function WardManagement({ mode = 'nurses', onOpenWards }) {
                     <label>Primary nurse<select aria-label={`Primary nurse for ${patient.patientName}`} value={entry.primary?.nurseId || ''} onChange={(event) => {
                       if (!event.target.value) return;
                       void submit(`/nursing/patients/${encodeURIComponent(patientId)}/assignments`, 'POST', { nurseId: event.target.value, role: 'PRIMARY', shift: null }, `${patient.patientName} assigned as primary nurse.`);
-                    }}><option value="">Assign primary</option>{nurses.filter(isAssignableNurse).map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}</select></label>
+                    }}><option value="">Assign primary</option>{nurses.map((nurse) => <option key={nurse.employeeCode || nurse.accountId || nurse.id}
+                      value={nurse.employeeCode || nurse.accountId || nurse.id} disabled={!isAssignableNurse(nurse)}>{nurseOptionLabel(nurse)}</option>)}</select></label>
                     <label>Backup nurse<select aria-label={`Backup nurse for ${patient.patientName}`} value={entry.backup?.nurseId || ''} onChange={(event) => {
                       if (!event.target.value) return;
                       void submit(`/nursing/patients/${encodeURIComponent(patientId)}/assignments`, 'POST', { nurseId: event.target.value, role: 'BACKUP', shift: null }, `${patient.patientName} assigned as backup nurse.`);
-                    }}><option value="">Assign backup</option>{nurses.filter((nurse) => isAssignableNurse(nurse) && nurse.employeeCode !== entry.primary?.nurseId).map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}</select></label>
+                    }}><option value="">Assign backup</option>{nurses.filter((nurse) => nurse.employeeCode !== entry.primary?.nurseId).map((nurse) => <option key={nurse.employeeCode || nurse.accountId || nurse.id}
+                      value={nurse.employeeCode || nurse.accountId || nurse.id} disabled={!isAssignableNurse(nurse)}>{nurseOptionLabel(nurse)}</option>)}</select></label>
                   </div>
                   <p className="nurse-patient-clinical"><strong>Diagnosis:</strong> {patient.patientPrescription || 'Not recorded'}<br /><strong>Allergies:</strong> {patient.patientAllergies || 'None recorded'}</p>
                   <section className="nurse-patient-tasks" aria-label={`Care tasks for ${patient.patientName}`}>

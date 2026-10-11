@@ -483,6 +483,70 @@
   font-size: 0.64rem;
 }
 
+.nurse-create-hr-record {
+  margin-top: 6px;
+  border-top: 1px solid var(--nurse-line);
+  padding-top: 6px;
+}
+
+.nurse-create-hr-record > summary {
+  color: #2f6b4f;
+  cursor: pointer;
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+.nurse-create-hr-record form {
+  display: grid;
+  gap: 6px;
+  margin-top: 7px;
+}
+
+.nurse-create-hr-record label {
+  display: grid;
+  gap: 3px;
+  color: var(--nurse-muted);
+  font-size: 0.61rem;
+  font-weight: 700;
+}
+
+.nurse-create-hr-record input,
+.nurse-create-hr-record select {
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  border: 1px solid var(--nurse-line);
+  border-radius: 5px;
+  padding: 0 6px;
+  color: var(--nurse-ink);
+  font: inherit;
+  font-size: 0.63rem;
+}
+
+.nurse-create-hr-record button {
+  width: 100%;
+  min-height: 31px;
+  border: 0;
+  border-radius: 5px;
+  padding: 4px 7px;
+  background: #2f6b4f;
+  color: #fff;
+  font: inherit;
+  font-size: 0.63rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.nurse-create-hr-record button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.nurse-create-hr-record small {
+  color: #a8473a;
+  font-size: 0.6rem;
+}
+
 .nurse-roster-profile-action small,
 .nurse-roster-empty {
   color: var(--nurse-muted);
@@ -618,6 +682,19 @@
 
 .nurse-bulk-assignment .workflow-form-grid {
   padding: 11px;
+}
+
+.nurse-assignment-link-action {
+  width: fit-content;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #2f6b4f;
+  font: inherit;
+  font-size: 0.67rem;
+  font-weight: 750;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .nurse-patient-cards {
