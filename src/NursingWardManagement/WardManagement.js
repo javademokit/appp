@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, BedDouble, Ban, ClipboardList, DoorOpen, Download, Filter, History, RefreshCw, Sparkles, Users, UserRoundCheck, Wrench } from 'lucide-react';
+import { BedDouble, Ban, DoorOpen, Download, History, Plus, RefreshCw, Search, Sparkles, UserRoundCheck, Wrench } from 'lucide-react';
 import { apiFetch } from '../API/api';
 import { isAssignableNurse } from '../utils/nurseEligibility';
 import '../Operations/Operations.css';
@@ -308,7 +308,7 @@ function NurseDashboard({ dashboard, handovers, nurses, rosters, shiftSwaps, ref
   );
 }
 
-export default function WardManagement() {
+export default function WardManagement({ mode = 'nurses', onOpenWards }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [wards, setWards] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -328,8 +328,15 @@ export default function WardManagement() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [activeNursingTab, setActiveNursingTab] = useState('overview');
-  const [activeSetupStep, setActiveSetupStep] = useState('basics');
+  const [activeNursingTab, setActiveNursingTab] = useState(mode === 'wards' ? 'wards' : 'assignments');
+  const [nurseSearch, setNurseSearch] = useState('');
+  const [selectedNurseFilter, setSelectedNurseFilter] = useState('');
+  const [selectedWardFilter, setSelectedWardFilter] = useState('');
+  const [patientAssignmentFilter, setPatientAssignmentFilter] = useState('all');
+  const [patientSearch, setPatientSearch] = useState('');
+  const [patientNotes, setPatientNotes] = useState({});
+  const [nurseEmployeeIdDraft, setNurseEmployeeIdDraft] = useState({});
+  const [creatingNurseProfileId, setCreatingNurseProfileId] = useState('');
   const [wardForm, setWardForm] = useState({ name: '', type: 'GENERAL', maxPatientsPerNurse: 8, minimumNursesPerShift: 1 });
   const [roomForm, setRoomForm] = useState({ id: '', wardId: '', building: '', floor: '', roomNumber: '', acType: 'NON_AC', category: 'GENERAL', bedCapacity: 1, defaultBedType: 'STANDARD', genderRestriction: 'ANY', status: 'ACTIVE', amenities: '', notes: '' });
   const [bulkRoomForm, setBulkRoomForm] = useState({ ...roomForm, roomNumber: '', roomNumberEnd: '' });
@@ -340,23 +347,51 @@ export default function WardManagement() {
   const canSetupWards = useMemo(() => (currentUser?.roles || []).some((role) => ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'CLINIC_ADMIN'].includes(String(role).replace(/^ROLE_/, '').toUpperCase())), [currentUser]);
   const canManageStaff = canSetupWards || (currentUser?.roles || []).some((role) => ['HEAD_NURSE', 'CRM_EXECUTIVE'].includes(String(role).replace(/^ROLE_/, '').toUpperCase()));
   const canReviewSwaps = useMemo(() => (currentUser?.roles || []).some((role) => ['SUPER_ADMIN', 'HOSPITAL_ADMIN', 'CLINIC_ADMIN', 'HEAD_NURSE'].includes(String(role).replace(/^ROLE_/, '').toUpperCase())), [currentUser]);
+  const canCreateNurseProfiles = (currentUser?.roles || []).some((role) => [
+    'SUPER_ADMIN', 'HOSPITAL_ADMIN', 'CLINIC_ADMIN', 'CRM_EXECUTIVE',
+  ].includes(String(role).replace(/^ROLE_/, '').toUpperCase()));
   const nursingTabs = [
-    { id: 'overview', label: 'Overview', icon: Activity },
+    { id: 'assignments', label: 'Patients', icon: UserRoundCheck },
+    { id: 'activity', label: 'Activity log', icon: History },
     { id: 'wards', label: 'Wards & beds', icon: BedDouble },
-    { id: 'assignments', label: 'Patient assignments', icon: UserRoundCheck },
-    { id: 'activity', label: 'History & care', icon: History },
   ];
+  const visibleNursingTabs = mode === 'wards'
+    ? nursingTabs.filter((tab) => tab.id === 'wards')
+    : nursingTabs.filter((tab) => tab.id !== 'wards');
   const activeNurseCount = nurses.filter(isAssignableNurse).length;
-  const rulesConfigured = wards.length > 0 && wards.every((ward) => Number(ward.maxPatientsPerNurse) > 0
-    && Number(ward.minimumNursesPerShift) >= 0);
-  const nursingSetupReady = wards.length > 0 && activeNurseCount > 0 && rulesConfigured;
-  const setupSteps = [
-    { id: 'basics', label: 'Basics', detail: 'Review the nursing setup', complete: true, tab: 'overview', anchor: 'nurse-go-live' },
-    { id: 'wards', label: 'Wards', detail: 'Create wards and beds', complete: wards.length > 0, tab: 'wards', anchor: 'nurse-ward-setup' },
-    { id: 'rules', label: 'Rules', detail: 'Set staffing and patient ratios', complete: rulesConfigured, tab: 'wards', anchor: 'nurse-rules-setup' },
-    { id: 'go-live', label: 'Go live', detail: 'Confirm readiness', complete: nursingSetupReady, tab: 'overview', anchor: 'nurse-go-live' },
-  ];
-
+  const visibleNurses = useMemo(() => {
+    const query = nurseSearch.trim().toLowerCase();
+    if (!query) return nurses;
+    return nurses.filter((nurse) => [
+      nurse.name, nurse.employeeCode, nurse.mobileNo, nurse.emailId,
+      nurse.profile?.qualification, nurse.profile?.specialization,
+    ].some((value) => String(value || '').toLowerCase().includes(query)));
+  }, [nurses, nurseSearch]);
+  const selectedNurse = nurses.find((nurse) => nurse.employeeCode === selectedNurseFilter || nurse.accountId === selectedNurseFilter);
+  const filteredAssignmentBoard = useMemo(() => assignmentBoard.filter((entry) => {
+    const patient = entry.patient || {};
+    const normalizedPatientSearch = patientSearch.trim().toLowerCase();
+    const hasNurse = [entry.primary?.nurseId, entry.backup?.nurseId].some(Boolean);
+    const matchesSearch = !normalizedPatientSearch
+      || `${patient.patientName || ''} ${patient.patientId || ''}`.toLowerCase().includes(normalizedPatientSearch);
+    const matchesNurse = !selectedNurseFilter || [entry.primary?.nurseId, entry.backup?.nurseId]
+      .includes(selectedNurseFilter);
+    const matchesWard = !selectedWardFilter || patient.patientWardId === selectedWardFilter;
+    const matchesAssignment = patientAssignmentFilter === 'all'
+      || (patientAssignmentFilter === 'needs-attention' && !entry.primary)
+      || (patientAssignmentFilter === 'assigned' && hasNurse);
+    return matchesNurse && matchesWard && matchesAssignment && matchesSearch;
+  }), [assignmentBoard, selectedNurseFilter, selectedWardFilter, patientAssignmentFilter, patientSearch]);
+  const nurseShiftStatus = (nurse) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const nurseRoster = rosters.find((roster) => (
+      [nurse.employeeCode, nurse.accountId, nurse.id].includes(roster.nurseId)
+      && roster.status === 'SCHEDULED'
+      && roster.startDate <= today
+      && roster.endDate >= today
+    ));
+    return nurseRoster ? `${nurseRoster.shift} · ${nurseRoster.startDate} to ${nurseRoster.endDate}` : 'Not rostered today';
+  };
   const refresh = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -405,6 +440,41 @@ export default function WardManagement() {
     }
   }, []);
 
+  const createNurseProfile = async (nurse) => {
+    if (!nurse.accountId) {
+      setError('Link this nurse employee to a nurse account in Users & access before creating the profile.');
+      return;
+    }
+    const employeeId = String(nurse.employeeCode || nurseEmployeeIdDraft[nurse.accountId] || '').trim();
+    if (!employeeId) {
+      setError('Enter the existing HR nurse employee ID to link this account.');
+      return;
+    }
+    setCreatingNurseProfileId(nurse.employeeCode || nurse.id);
+    setError('');
+    setSuccess('');
+    try {
+      const response = await apiFetch(`/nursing/nurses/${encodeURIComponent(nurse.accountId)}/profile`, {
+        method: 'PUT',
+        body: JSON.stringify({ employeeId, status: 'ACTIVE' }),
+      });
+      const profile = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(profile.message || profile.detail || profile.title || 'Could not create the nurse profile.');
+      }
+      setNurses((current) => current.map((entry) => (entry.accountId === nurse.accountId
+        ? { ...entry, id: employeeId, employeeCode: employeeId, profile, profileComplete: true,
+          employmentActive: true, employmentStatus: 'ACTIVE', accountOnly: false, status: profile.status || 'ACTIVE' }
+        : entry)));
+      setNurseEmployeeIdDraft((current) => ({ ...current, [nurse.accountId]: '' }));
+      setSuccess(`Nurse profile created for ${nurse.name || nurse.employeeCode}.`);
+    } catch (requestError) {
+      setError(requestError.message || 'Could not create the nurse profile.');
+    } finally {
+      setCreatingNurseProfileId('');
+    }
+  };
+
   useEffect(() => { refresh(); }, [refresh]);
 
   useEffect(() => {
@@ -442,13 +512,12 @@ export default function WardManagement() {
     }
   };
 
-  const openSetupStep = (step) => {
-    setActiveSetupStep(step.id);
-    setActiveNursingTab(step.tab);
-    window.setTimeout(() => document.getElementById(step.anchor)?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    }), 60);
+  const openNursingTab = (tab) => {
+    if (tab === 'wards' && mode === 'nurses' && onOpenWards) {
+      onOpenWards();
+      return;
+    }
+    setActiveNursingTab(tab);
   };
 
   const createRoom = async (event) => {
@@ -478,6 +547,32 @@ export default function WardManagement() {
       notes: room.notes || '',
     });
     document.querySelector('.bed-room-setup')?.setAttribute('open', '');
+    window.setTimeout(() => document.querySelector('.bed-room-setup')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    }), 60);
+  };
+
+  const reopenRoom = (room) => submit(`/nursing/rooms/${encodeURIComponent(room.id)}`, 'PUT', {
+    ...room,
+    status: 'ACTIVE',
+  }, `Room ${room.roomNumber} is active again.`);
+
+  const openWardSetup = () => {
+    document.getElementById('nurse-rules-setup')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.setTimeout(() => document.getElementById('ward-name-input')?.focus(), 250);
+  };
+
+  const openRoomSetup = () => {
+    setRoomForm((current) => ({
+      ...current,
+      wardId: current.wardId || bedFilters.wardId || wards[0]?.id || '',
+    }));
+    document.querySelector('.bed-room-setup')?.setAttribute('open', '');
+    window.setTimeout(() => document.querySelector('.bed-room-setup')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    }), 60);
   };
 
   const createRoomRange = async (event) => {
@@ -549,13 +644,18 @@ export default function WardManagement() {
     if (ok) setBulkForm((current) => ({ ...current, bedFrom: '', bedTo: '' }));
   };
 
-  const assignUnassigned = async (event, patient) => {
+  const addPatientNote = async (event, patient) => {
     event.preventDefault();
-    const nurseId = event.currentTarget.elements.nurseId.value;
-    const role = event.currentTarget.elements.role.value;
-    await submit(`/nursing/patients/${encodeURIComponent(patient.patientId)}/assignments`, 'POST', {
-      nurseId, role, shift: null,
-    }, `${patient.patientName} assigned as ${role.toLowerCase()} nurse.`);
+    const description = patientNotes[patient.patientId]?.trim();
+    if (!description) return;
+    await submit(`/nursing/patients/${encodeURIComponent(patient.patientId)}/care-records`, 'POST', {
+      type: 'NOTE', description, value: '', dueAt: '',
+    }, `Note added for ${patient.patientName}.`);
+    setPatientNotes((current) => ({ ...current, [patient.patientId]: '' }));
+  };
+
+  const completePatientTask = async (patientId, recordId) => {
+    await submit(`/nursing/patients/${encodeURIComponent(patientId)}/care-records/${encodeURIComponent(recordId)}/complete`, 'POST', {}, 'Care task marked complete.');
   };
 
   const transferPatient = async (event, patient) => {
@@ -594,6 +694,24 @@ export default function WardManagement() {
     }));
     return counts;
   }, [wards]);
+  const wardBedSummaries = useMemo(() => wards.map((ward) => {
+    const beds = ward.beds || [];
+    return {
+      ...ward,
+      totalBeds: beds.length,
+      vacantBeds: beds.filter((bed) => bed.status === 'VACANT').length,
+    };
+  }), [wards]);
+  const bedBoardRooms = useMemo(() => {
+    const groups = new Map();
+    bedBoard.forEach((bed) => {
+      const room = bed.room || {};
+      const roomKey = `${bed.wardId}:${room.id || bed.roomId || room.roomNumber || 'unassigned'}`;
+      if (!groups.has(roomKey)) groups.set(roomKey, { id: roomKey, room, wardName: bed.wardName, beds: [] });
+      groups.get(roomKey).beds.push(bed);
+    });
+    return [...groups.values()];
+  }, [bedBoard]);
 
   const exportReport = () => {
     const rows = [
@@ -609,11 +727,17 @@ export default function WardManagement() {
   if (loading) return <section className="workflow-page" aria-busy="true"><div className="workflow-empty">Loading nursing management…</div></section>;
 
   return (
-    <section className="workflow-page nurse-management-layout" aria-labelledby="ward-management-title">
-      <header className="workflow-header"><div><h1 id="ward-management-title">{canManage ? 'Nurse Management' : 'My Nursing Dashboard'}</h1>
-        <p>{canManage ? 'Manage nurse profiles, ward beds and shifts, assign patients, and monitor workload and handovers.' : 'View assigned patients, shift tasks, care notes, and patient handovers.'}</p></div>
+    <section className={`workflow-page nurse-management-layout ${mode === 'wards' ? 'ward-management-workspace' : ''}`} aria-labelledby="ward-management-title">
+      <header className="workflow-header"><div><h1 id="ward-management-title">{mode === 'wards' ? 'Ward Management' : canManage ? 'Nurse Management' : 'My Nursing Dashboard'}</h1>
+        <p>{mode === 'wards'
+          ? 'Configure wards, rooms, beds, capacity, staffing ratios, and admission availability.'
+          : canManage ? 'Manage admitted patients, nurse assignments, care tasks, and activity.' : 'View assigned patients, shift tasks, care notes, and patient handovers.'}</p></div>
         <div className="workflow-toolbar-actions">
           {canManage && <>
+            {mode === 'wards' && canSetupWards && <>
+              <button className="workflow-button subtle" type="button" onClick={openWardSetup}><Plus size={15} /> Add ward</button>
+              <button className="workflow-button primary" type="button" onClick={openRoomSetup}><Plus size={15} /> Add room</button>
+            </>}
             <button className="workflow-button subtle" type="button" onClick={exportReport}><Download size={15} /> Export Excel-compatible CSV</button>
             <button className="workflow-button subtle" type="button" onClick={() => window.print()}>Print / Save as PDF</button>
           </>}
@@ -625,30 +749,51 @@ export default function WardManagement() {
       {isNurse && !canManage && <NurseDashboard dashboard={dashboard} handovers={handovers} nurses={nurses}
         rosters={nurseRosters} shiftSwaps={shiftSwaps} reviewSwaps={canReviewSwaps}
         refresh={refresh} setError={setError} setSuccess={setSuccess} />}
-      {canManage && <>
-        <section className="nurse-setup-flow" aria-label="Guided nursing setup">
-          <div className="nurse-setup-flow-heading">
-            <div><span>GETTING STARTED</span><h2>Set up your nursing workflow</h2>
-              <p>Complete the prerequisites in order: wards, active nurse profiles, and staffing rules. Schedule shifts from Staff &amp; Shifts.</p></div>
-            <span className={`nurse-setup-readiness ${nursingSetupReady ? 'ready' : ''}`}>
-              {nursingSetupReady ? 'Ready to go live' : 'Setup in progress'}
-            </span>
+      {canManage && <div className={mode === 'nurses' ? 'nurse-manager-workspace' : 'ward-manager-content'}>
+        {mode === 'nurses' && <aside className="nurse-manager-sidebar" aria-label="Nurse roster">
+          <div className="nurse-manager-sidebar-heading"><div><h2>Nurse roster</h2><p>{activeNurseCount} active and assignable</p></div><span>{nurses.length}</span></div>
+          <label className="nurse-manager-search"><Search size={15} aria-hidden="true" />
+            <input type="search" value={nurseSearch} onChange={(event) => setNurseSearch(event.target.value)} placeholder="Find nurse" aria-label="Find nurse" />
+          </label>
+          <button type="button" className={`nurse-roster-filter ${!selectedNurseFilter ? 'selected' : ''}`} onClick={() => setSelectedNurseFilter('')}>
+            <strong>All nurses</strong><small>{assignmentBoard.length} admitted patients</small>
+          </button>
+          <div className="nurse-roster-list">
+            {visibleNurses.map((nurse) => {
+              const identity = nurse.employeeCode || nurse.accountId || nurse.id;
+              const isActive = isAssignableNurse(nurse);
+              const patientCount = assignmentBoard.filter((entry) => [entry.primary?.nurseId, entry.backup?.nurseId]
+                .includes(nurse.employeeCode) || [entry.primary?.nurseId, entry.backup?.nurseId].includes(nurse.accountId)).length;
+              return <article key={identity} className={`nurse-roster-card ${selectedNurseFilter === identity ? 'selected' : ''}`}>
+                <button type="button" className="nurse-roster-select" aria-pressed={selectedNurseFilter === identity}
+                  onClick={() => setSelectedNurseFilter((current) => current === identity ? '' : identity)}>
+                  <span className={`nurse-roster-dot ${isActive ? 'active' : ''}`} />
+                  <span className="nurse-roster-identity"><strong>{nurse.name || 'Unnamed nurse'}</strong>
+                    <small>{[nurse.employeeCode || nurse.id || 'No employee ID', nurse.departmentName].filter(Boolean).join(' · ')}</small></span>
+                </button>
+                <span className={`nurse-roster-status ${isActive ? 'active' : ''}`}>{isActive ? nurseShiftStatus(nurse)
+                  : nurse.accountOnly ? 'HR employee link required' : 'Profile / employment inactive'}</span>
+                <small className="nurse-roster-patients">{patientCount} assigned patient{patientCount === 1 ? '' : 's'}</small>
+                {!nurse.profileComplete && canCreateNurseProfiles && <div className="nurse-roster-profile-action">
+                  {nurse.accountId
+                    ? <>
+                      {nurse.accountOnly && <input aria-label={`HR employee ID for ${nurse.name}`} value={nurseEmployeeIdDraft[nurse.accountId] || ''}
+                        onChange={(event) => setNurseEmployeeIdDraft((current) => ({ ...current, [nurse.accountId]: event.target.value }))}
+                        placeholder="Existing HR employee ID" />}
+                      <button type="button" disabled={creatingNurseProfileId === identity || (nurse.accountOnly && !nurseEmployeeIdDraft[nurse.accountId]?.trim())} onClick={() => createNurseProfile(nurse)}>
+                        {creatingNurseProfileId === identity ? 'Linking profile…' : nurse.accountOnly ? 'Link employee & create profile' : 'Create profile'}
+                      </button>
+                    </>
+                    : <small>Link account first</small>}
+                </div>}
+              </article>;
+            })}
+            {!visibleNurses.length && <div className="nurse-roster-empty">No nurse records match this search.</div>}
           </div>
-          <ol className="nurse-setup-steps">
-            {setupSteps.map((step, index) => <li key={step.id}>
-              <button type="button"
-                className={`${activeSetupStep === step.id ? 'active' : ''} ${step.complete ? 'complete' : ''}`}
-                aria-current={activeSetupStep === step.id ? 'step' : undefined}
-                onClick={() => openSetupStep(step)}>
-                <span className="nurse-setup-step-number">{step.complete ? <UserRoundCheck size={15} /> : index + 1}</span>
-                <span className="nurse-setup-step-copy"><strong>{step.label}</strong><small>{step.detail}</small></span>
-                <span className="nurse-setup-step-status">{step.complete ? 'Ready' : 'To do'}</span>
-              </button>
-            </li>)}
-          </ol>
-        </section>
-        <nav className="nurse-management-tabs" role="tablist" aria-label="Nurse management sections">
-          {nursingTabs.map(({ id, label, icon: Icon }) => <button
+        </aside>}
+        <div className={mode === 'nurses' ? 'nurse-manager-main' : ''}>
+        {visibleNursingTabs.length > 1 && <nav className="nurse-management-tabs" role="tablist" aria-label={`${mode === 'wards' ? 'Ward' : 'Nurse'} management sections`}>
+          {visibleNursingTabs.map(({ id, label, icon: Icon }) => <button
             key={id}
             id={`nurse-tab-${id}`}
             type="button"
@@ -656,61 +801,9 @@ export default function WardManagement() {
             aria-selected={activeNursingTab === id}
             aria-controls={`nurse-panel-${id}`}
             className={activeNursingTab === id ? 'active' : ''}
-            onClick={() => setActiveNursingTab(id)}
+            onClick={() => openNursingTab(id)}
           ><Icon size={16} />{label}</button>)}
-        </nav>
-        {activeNursingTab === 'overview' && <section className="nurse-overview" id="nurse-panel-overview" role="tabpanel" aria-labelledby="nurse-tab-overview">
-          <div className="nurse-overview-intro">
-            <div id="nurse-go-live"><span>WARD OPERATIONS</span><h2>Good care starts with clear assignments.</h2>
-              <p>Monitor ward capacity, nurse coverage, and patients who need an assignment.</p></div>
-            <button className="workflow-button primary" type="button" onClick={() => setActiveNursingTab('assignments')}>
-              <UserRoundCheck size={16} /> Manage patient assignments
-            </button>
-          </div>
-          <section className={`nurse-go-live-card ${nursingSetupReady ? 'ready' : ''}`}>
-            <div><span>{nursingSetupReady ? 'SETUP COMPLETE' : 'SETUP CHECKLIST'}</span>
-              <h3>{nursingSetupReady ? 'Your nursing workflow is ready.' : 'Finish the prerequisites before patient assignments.'}</h3>
-              <p>{wards.length} wards · {activeNurseCount} active nurses. Manage nurse shifts from Staff &amp; Shifts.</p></div>
-            <button className="workflow-button subtle" type="button"
-              onClick={() => nursingSetupReady ? setActiveNursingTab('assignments') : openSetupStep(setupSteps.find((step) => !step.complete && step.id !== 'basics') || setupSteps[setupSteps.length - 1])}>
-              {nursingSetupReady ? 'Open assignments' : 'Continue setup'}
-            </button>
-          </section>
-          <div className="nurse-overview-metrics">
-            <article><span>Active wards</span><strong>{wards.length}</strong><small>{wards.reduce((total, ward) => total + (Number(ward.vacantBeds) || 0), 0)} vacant beds</small><BedDouble size={20} /></article>
-            <article><span>Active nurses</span><strong>{activeNurseCount}</strong><small>Employed and scheduled staff</small><Users size={20} /></article>
-            <article><span>Admitted patients</span><strong>{assignmentBoard.length}</strong><small>Across configured wards</small><UserRoundCheck size={20} /></article>
-            <article className={unassignedPatients.length ? 'needs-attention' : ''}><span>Need a nurse</span><strong>{unassignedPatients.length}</strong><small>{unassignedPatients.length ? 'Review assignments' : 'All patients covered'}</small><ClipboardList size={20} /></article>
-          </div>
-          <div className="nurse-overview-bottom">
-            <section className="workflow-panel">
-              <div className="workflow-panel-heading"><div><h2>Ward coverage</h2><p>Current staffing against each ward’s minimum.</p></div>
-                <button className="workflow-button subtle" type="button" onClick={() => setActiveNursingTab('wards')}>View wards</button></div>
-              {!wards.length ? <div className="workflow-empty">No wards are configured yet.</div> : <div className="nurse-ward-summary">
-                {wards.slice(0, 5).map((ward) => <div key={ward.id}>
-                  <span className="nurse-ward-mark"><BedDouble size={17} /></span>
-                  <div><strong>{ward.name}</strong><small>{ward.type} · {ward.vacantBeds} vacant beds</small></div>
-                  <span className={`nurse-coverage-status ${ward.understaffed ? 'warning' : 'ready'}`}>{ward.nursesOnDuty}/{ward.minimumNursesPerShift} on duty</span>
-                </div>)}
-              </div>}
-            </section>
-            <section className="workflow-panel nurse-attention-panel">
-              <div className="workflow-panel-heading"><div><h2>Needs attention</h2><p>Items that may need an administrator’s review.</p></div></div>
-              {wards.some((ward) => ward.understaffed) && <button type="button" onClick={() => setActiveNursingTab('wards')}>
-                <span className="nurse-attention-dot" />{wards.filter((ward) => ward.understaffed).length} ward(s) below minimum staffing
-              </button>}
-              {unassignedPatients.length > 0 && <button type="button" onClick={() => setActiveNursingTab('assignments')}>
-                <span className="nurse-attention-dot" />{unassignedPatients.length} patient(s) without a primary nurse
-              </button>}
-              {bedWaitingList.filter((item) => item.matchingBedsAvailable).length > 0 && <button type="button" onClick={() => setActiveNursingTab('wards')}>
-                <span className="nurse-attention-dot" />{bedWaitingList.filter((item) => item.matchingBedsAvailable).length} waiting patient(s) have a matching bed available
-              </button>}
-              {!wards.some((ward) => ward.understaffed) && !unassignedPatients.length && !bedWaitingList.some((item) => item.matchingBedsAvailable)
-                && <div className="nurse-all-clear"><Activity size={17} />No urgent staffing or assignment issues.</div>}
-            </section>
-          </div>
-        </section>
-        }
+        </nav>}
         {activeNursingTab === 'wards' && <section id="nurse-panel-wards" role="tabpanel" aria-labelledby="nurse-tab-wards">
         <section className="workflow-panel" id="nurse-ward-setup">
           <div className="workflow-panel-heading"><div><h2>Ward and bed setup</h2><p>{canSetupWards
@@ -722,7 +815,7 @@ export default function WardManagement() {
             submit('/nursing/wards', 'POST', wardForm, 'Ward created. Add vacant beds below.');
             setWardForm({ name: '', type: 'GENERAL', maxPatientsPerNurse: 8, minimumNursesPerShift: 1 });
           }}>
-            <label>Ward name<input required value={wardForm.name} onChange={(event) => setWardForm({ ...wardForm, name: event.target.value })} /></label>
+            <label>Ward name<input id="ward-name-input" required value={wardForm.name} onChange={(event) => setWardForm({ ...wardForm, name: event.target.value })} /></label>
             <label>Ward type<select value={wardForm.type} onChange={(event) => setWardForm({ ...wardForm, type: event.target.value })}>
               {['ICU', 'GENERAL', 'PRIVATE', 'PEDIATRICS', 'EMERGENCY', 'OTHER'].map((type) => <option key={type}>{type}</option>)}
             </select></label>
@@ -793,17 +886,34 @@ export default function WardManagement() {
                   <td>{wards.find((ward) => ward.id === room.wardId)?.name || room.wardId}<small>{room.floor || 'Floor not set'}</small></td>
                   <td>{room.category}</td><td>{room.acType === 'AC' ? 'AC' : 'Non-AC'}</td>
                   <td>{(wards.find((ward) => ward.id === room.wardId)?.beds || []).filter((bed) => bed.roomId === room.id).length}/{room.bedCapacity}</td>
-                  <td>{room.genderRestriction || 'ANY'}</td><td>{room.status}</td>
-                  <td><button className="workflow-button subtle" type="button" onClick={() => editRoom(room)}>Edit room</button></td>
+                  <td>{room.genderRestriction || 'ANY'}</td><td>{String(room.status || 'ACTIVE').replaceAll('_', ' ')}</td>
+                  <td><div className="room-inventory-actions">
+                    <button className="workflow-button subtle" type="button" onClick={() => editRoom(room)}>Edit room</button>
+                    {room.status !== 'ACTIVE' && <button className="workflow-button primary" type="button" disabled={busy} onClick={() => reopenRoom(room)}>Reopen room</button>}
+                  </div></td>
                 </tr>)}</tbody>
               </table></div>
             </section>}
+            <div className="ward-bed-layout">
+              <aside className="ward-directory" aria-label="Ward list">
+                <div className="ward-directory-heading"><strong>Wards</strong><span>{wards.length}</span></div>
+                <button type="button" className={`ward-directory-item ${!bedFilters.wardId ? 'selected' : ''}`} aria-current={!bedFilters.wardId ? 'true' : undefined}
+                  onClick={() => setBedFilters({ ...bedFilters, wardId: '' })}>
+                  <strong>All wards</strong><small>{bedCounts.total} total beds</small>
+                </button>
+                {wardBedSummaries.map((ward) => <button key={ward.id} type="button"
+                  className={`ward-directory-item ${bedFilters.wardId === ward.id ? 'selected' : ''}`}
+                  aria-current={bedFilters.wardId === ward.id ? 'true' : undefined}
+                  onClick={() => setBedFilters({ ...bedFilters, wardId: ward.id })}>
+                  <strong>{ward.name}</strong><small>{ward.floor || ward.type || 'Ward'} · {ward.vacantBeds} of {ward.totalBeds} beds free</small>
+                </button>)}
+                {!wards.length && <p className="ward-directory-empty">Create a ward to start adding rooms and beds.</p>}
+              </aside>
+
+              <section className="ward-bed-main" aria-label="Live bed board">
             <div className="bed-board-heading">
-              <div><h3>Live bed board</h3><p>Bed status changes update availability for admissions and transfers.</p></div>
+              <div><h3>{wards.find((ward) => ward.id === bedFilters.wardId)?.name || 'All wards'}</h3><p>Rooms and live bed availability. Select a bed to update its status and history.</p></div>
               <div className="bed-board-filters">
-                <label><Filter size={14} /><select aria-label="Filter beds by ward" value={bedFilters.wardId} onChange={(event) => setBedFilters({ ...bedFilters, wardId: event.target.value })}>
-                  <option value="">All wards</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}
-                </select></label>
                 <select aria-label="Filter beds by status" value={bedFilters.status} onChange={(event) => setBedFilters({ ...bedFilters, status: event.target.value })}>
                   <option value="">All statuses</option>{['VACANT', 'RESERVED', 'OCCUPIED', 'CLEANING', 'MAINTENANCE', 'BLOCKED'].map((status) => <option key={status}>{status}</option>)}
                 </select>
@@ -813,8 +923,23 @@ export default function WardManagement() {
                 <input aria-label="Filter beds by floor" placeholder="Floor" value={bedFilters.floor} onChange={(event) => setBedFilters({ ...bedFilters, floor: event.target.value })} />
               </div>
             </div>
-            {!bedBoard.length ? <div className="workflow-empty">No beds match these filters.</div> : <div className="live-bed-board">
-              {bedBoard.map((bed) => <article key={bed.id} className={`live-bed-tile bed-tile-${String(bed.status).toLowerCase()}`}>
+            <div className="ward-bed-legend" aria-label="Bed status legend">
+              <span><i className="vacant" />Available</span><span><i className="occupied" />Occupied</span>
+              <span><i className="cleaning" />Cleaning</span><span><i className="maintenance" />Maintenance / blocked</span>
+            </div>
+            {!bedBoard.length ? <div className="workflow-empty">No beds match these filters.</div> : <div className="ward-room-groups">
+              {bedBoardRooms.map((roomGroup) => <section key={roomGroup.id} className="ward-room-group">
+                <header className="ward-room-heading">
+                  <div><strong>{roomGroup.room.roomNumber ? `Room ${roomGroup.room.roomNumber}` : 'Room not assigned'}</strong>
+                    {!bedFilters.wardId && <small>{roomGroup.wardName}</small>}
+                  </div>
+                  <div className="ward-room-tags">
+                    <span>{roomGroup.room.acType === 'AC' ? 'AC' : roomGroup.room.acType === 'NON_AC' ? 'Non-AC' : 'Room'}</span>
+                    <small>{roomGroup.beds.filter((bed) => bed.status === 'VACANT').length} free · {roomGroup.beds.length} beds</small>
+                  </div>
+                </header>
+                <div className="live-bed-board">
+              {roomGroup.beds.map((bed) => <article key={bed.id} className={`live-bed-tile bed-tile-${String(bed.status).toLowerCase()}`}>
                 <div className="live-bed-tile-top">
                   <span className="bed-tile-room">{bed.room.roomNumber || 'Room not assigned'}{bed.room.floor ? ` · Floor ${bed.room.floor}` : ''}</span>
                   <span className={`bed-status-pill bed-status-${String(bed.status).toLowerCase()}`}>{bed.status}</span>
@@ -852,7 +977,11 @@ export default function WardManagement() {
                 </form>}
                 {canManageStaff && bed.status === 'OCCUPIED' && <small className="bed-action-hint"><Ban size={13} /> Release through patient discharge or transfer.</small>}
               </article>)}
+                </div>
+              </section>)}
             </div>}
+              </section>
+            </div>
             {bedWaitingList.length > 0 && <section className="workflow-panel bed-waiting-list-panel">
               <div className="workflow-panel-heading"><div><h3>Admission waiting list</h3><p>Patients awaiting a matching ward bed. Matching availability is refreshed with the bed board.</p></div></div>
               <div className="workflow-table-wrap"><table className="workflow-table">
@@ -871,61 +1000,104 @@ export default function WardManagement() {
         </section>
         </section>}
 
-        {activeNursingTab === 'assignments' && <section id="nurse-panel-assignments" role="tabpanel" aria-labelledby="nurse-tab-assignments"><section className="workflow-panel">
-          <div className="workflow-panel-heading"><div><h2>Patient assignment</h2><p>Assign ward coverage, and maintain primary and backup nurse assignments per admitted patient.</p></div></div>
-          <form className="workflow-form-grid" onSubmit={submitBulkAssignment}>
-            <label>Ward<select required value={bulkForm.wardId} onChange={(event) => setBulkForm({ ...bulkForm, wardId: event.target.value })}><option value="">Select ward</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}</select></label>
-            <label>Nurse<select required value={bulkForm.nurseId} onChange={(event) => setBulkForm({ ...bulkForm, nurseId: event.target.value })}><option value="">Select nurse</option>{nurses.filter(isAssignableNurse).map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}</select></label>
-            <label>Shift<select value={bulkForm.shift} onChange={(event) => setBulkForm({ ...bulkForm, shift: event.target.value })}><option value="MORNING">Morning</option><option value="EVENING">Evening</option><option value="NIGHT">Night</option></select></label>
-            <label>Bed from<input value={bulkForm.bedFrom} onChange={(event) => setBulkForm({ ...bulkForm, bedFrom: event.target.value })} placeholder="Optional" /></label>
-            <label>Bed to<input value={bulkForm.bedTo} onChange={(event) => setBulkForm({ ...bulkForm, bedTo: event.target.value })} placeholder="Optional" /></label>
-            <button className="workflow-button primary" type="submit" disabled={busy || !bulkForm.wardId || !bulkForm.nurseId}>Assign ward patients</button>
-          </form>
-          {!assignmentBoard.length ? <div className="workflow-empty">No admitted patients are in a ward.</div> : <div className="workflow-table-wrap"><table className="workflow-table">
-            <thead><tr><th>Patient</th><th>Ward / bed</th><th>Primary nurse</th><th>Backup nurse</th><th>Assign / reassign</th><th>Transfer</th></tr></thead>
-            <tbody>{assignmentBoard.map((entry) => {
-              const patient = entry.patient;
-              const primaryNurse = nurseByIdentity(nurses, entry.primary?.nurseId);
-              const backupNurse = nurseByIdentity(nurses, entry.backup?.nurseId);
-              const availableBeds = wards.flatMap((ward) => (ward.beds || [])
-                .filter((bed) => bed.status === 'VACANT' && bed.id !== patient.patientBedId
-                  && (!bed.room?.status || bed.room.status === 'ACTIVE'))
-                .map((bed) => ({ ...bed, wardId: ward.id, wardName: ward.name })));
-              return <tr key={patient.patientId}><td>{patient.patientName}<small>{patient.patientId}</small></td>
-                <td>{patient.patientWardnum}<small>{(() => {
-                  const currentBed = wards.find((ward) => ward.id === patient.patientWardId)?.beds?.find((bed) => bed.id === patient.patientBedId);
-                  return [currentBed?.room?.roomNumber && `Room ${currentBed.room.roomNumber}`, currentBed?.bedNumber || patient.patientBedId].filter(Boolean).join(' · ');
-                })()}</small></td>
-                <td>{primaryNurse?.name || (entry.primary ? entry.primary.nurseId : 'Unassigned')}
-                  {primaryNurse?.employeeCode && <small>{primaryNurse.employeeCode}</small>}</td>
-                <td>{backupNurse?.name || (entry.backup ? entry.backup.nurseId : 'Not assigned')}
-                  {backupNurse?.employeeCode && <small>{backupNurse.employeeCode}</small>}</td>
-                <td><form className="nursing-inline-form" onSubmit={(event) => assignUnassigned(event, patient)}>
-                  <select required name="role" defaultValue="PRIMARY"><option value="PRIMARY">Primary</option><option value="BACKUP">Backup</option></select>
-                  <select required name="nurseId" defaultValue=""><option value="">Select nurse</option>{nurses.filter(isAssignableNurse).map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}</select>
-                  <button className="workflow-button primary" disabled={busy}>Assign</button>
-                </form></td>
-                <td><form className="nursing-inline-form" onSubmit={(event) => transferPatient(event, patient)}>
-                  <select required name="targetBed" defaultValue=""><option value="">Select vacant bed</option>{availableBeds.map((bed) => (
-                    <option key={bed.id} value={`${bed.wardId}::${bed.id}`}>{bed.wardName} · {bed.room?.roomNumber ? `Room ${bed.room.roomNumber} · ` : ''}{bed.bedNumber}</option>
-                  ))}</select>
-                  <button className="workflow-button subtle" type="submit" disabled={busy || !availableBeds.length}>Transfer</button>
-                </form></td></tr>;
-            })}</tbody>
-          </table></div>}
-          {unassignedPatients.length > 0 && <p className="workflow-alert error">{unassignedPatients.length} admitted patient(s) have no primary nurse.</p>}
-        </section></section>}
+        {activeNursingTab === 'assignments' && <section id="nurse-panel-assignments" role="tabpanel" aria-labelledby="nurse-tab-assignments">
+          <section className="workflow-panel nurse-patients-panel">
+            <div className="nurse-patient-toolbar">
+              <div><h2>{selectedNurse ? `${selectedNurse.name}'s patients` : 'Admitted patients'}</h2>
+                <p>{filteredAssignmentBoard.length} of {assignmentBoard.length} admitted patients</p></div>
+              <label className="nurse-patient-search"><Search size={15} aria-hidden="true" />
+                <input type="search" value={patientSearch} onChange={(event) => setPatientSearch(event.target.value)} placeholder="Find patient or ID" aria-label="Find patient by name or ID" />
+              </label>
+              <select aria-label="Filter patients by ward" value={selectedWardFilter} onChange={(event) => setSelectedWardFilter(event.target.value)}>
+                <option value="">All wards</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}
+              </select>
+              <select aria-label="Filter patient assignments" value={patientAssignmentFilter} onChange={(event) => setPatientAssignmentFilter(event.target.value)}>
+                <option value="all">All patients</option><option value="assigned">Assigned</option><option value="needs-attention">Needs a nurse</option>
+              </select>
+              {selectedNurse && <button type="button" className="workflow-button subtle" onClick={() => setSelectedNurseFilter('')}>Clear nurse</button>}
+            </div>
+
+            <details className="nurse-bulk-assignment">
+              <summary>Assign patients by ward and shift</summary>
+              <form className="workflow-form-grid" onSubmit={submitBulkAssignment}>
+                <label>Ward<select required value={bulkForm.wardId} onChange={(event) => setBulkForm({ ...bulkForm, wardId: event.target.value })}><option value="">Select ward</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name}</option>)}</select></label>
+                <label>Nurse<select required value={bulkForm.nurseId} onChange={(event) => setBulkForm({ ...bulkForm, nurseId: event.target.value })}><option value="">Select nurse</option>{nurses.filter(isAssignableNurse).map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}</select></label>
+                <label>Shift<select value={bulkForm.shift} onChange={(event) => setBulkForm({ ...bulkForm, shift: event.target.value })}><option value="MORNING">Morning</option><option value="EVENING">Evening</option><option value="NIGHT">Night</option></select></label>
+                <label>Bed from<input value={bulkForm.bedFrom} onChange={(event) => setBulkForm({ ...bulkForm, bedFrom: event.target.value })} placeholder="Optional" /></label>
+                <label>Bed to<input value={bulkForm.bedTo} onChange={(event) => setBulkForm({ ...bulkForm, bedTo: event.target.value })} placeholder="Optional" /></label>
+                <button className="workflow-button primary" type="submit" disabled={busy || !bulkForm.wardId || !bulkForm.nurseId}>Assign ward patients</button>
+              </form>
+            </details>
+
+            {!filteredAssignmentBoard.length ? <div className="workflow-empty">{assignmentBoard.length
+              ? 'No admitted patients match these filters.'
+              : 'No admitted patients are in a ward yet. Admitted patient records will appear here, including patients awaiting a nurse.'}</div>
+              : <div className="nurse-patient-cards">{filteredAssignmentBoard.map((entry) => {
+                const patient = entry.patient || {};
+                const patientId = patient.patientId || entry.primary?.patientId || entry.backup?.patientId;
+                const patientTasks = careRecords.filter((record) => record.patientId === patientId);
+                const pendingTasks = patientTasks.filter((record) => record.status === 'PENDING');
+                const completedTasks = patientTasks.filter((record) => record.status === 'COMPLETED').length;
+                const needsAttention = !entry.primary;
+                const currentWard = wards.find((ward) => ward.id === patient.patientWardId);
+                const currentBed = currentWard?.beds?.find((bed) => bed.id === patient.patientBedId);
+                const availableBeds = wards.flatMap((ward) => (ward.beds || [])
+                  .filter((bed) => bed.status === 'VACANT' && bed.id !== patient.patientBedId
+                    && (!bed.room?.status || bed.room.status === 'ACTIVE'))
+                  .map((bed) => ({ ...bed, wardId: ward.id, wardName: ward.name })));
+                return <article key={patientId} className={`nurse-patient-card ${needsAttention ? 'needs-nurse' : ''}`}>
+                  <header className="nurse-patient-card-heading">
+                    <div><h3>{patient.patientName || 'Patient'}</h3><p>{patientId} · {patient.patientAge ? `Age ${patient.patientAge}` : 'Age not recorded'}{patient.gender ? ` · ${patient.gender}` : ''}</p></div>
+                    <span className="nurse-patient-progress">{completedTasks} of {patientTasks.length} tasks done</span>
+                  </header>
+                  {needsAttention && <span className="nurse-patient-flag">No nurse assigned</span>}
+                  <p className="nurse-patient-location"><strong>{currentWard?.name || patient.patientWardnum || 'Ward not recorded'}</strong>
+                    <span>{currentBed?.room?.roomNumber ? `Room ${currentBed.room.roomNumber} · ` : ''}{currentBed?.bedNumber || patient.patientBedId || 'Bed not recorded'}</span></p>
+                  <div className="nurse-patient-assignees">
+                    <label>Primary nurse<select aria-label={`Primary nurse for ${patient.patientName}`} value={entry.primary?.nurseId || ''} onChange={(event) => {
+                      if (!event.target.value) return;
+                      void submit(`/nursing/patients/${encodeURIComponent(patientId)}/assignments`, 'POST', { nurseId: event.target.value, role: 'PRIMARY', shift: null }, `${patient.patientName} assigned as primary nurse.`);
+                    }}><option value="">Assign primary</option>{nurses.filter(isAssignableNurse).map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}</select></label>
+                    <label>Backup nurse<select aria-label={`Backup nurse for ${patient.patientName}`} value={entry.backup?.nurseId || ''} onChange={(event) => {
+                      if (!event.target.value) return;
+                      void submit(`/nursing/patients/${encodeURIComponent(patientId)}/assignments`, 'POST', { nurseId: event.target.value, role: 'BACKUP', shift: null }, `${patient.patientName} assigned as backup nurse.`);
+                    }}><option value="">Assign backup</option>{nurses.filter((nurse) => isAssignableNurse(nurse) && nurse.employeeCode !== entry.primary?.nurseId).map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>{nurse.name} · {nurse.employeeCode}</option>)}</select></label>
+                  </div>
+                  <p className="nurse-patient-clinical"><strong>Diagnosis:</strong> {patient.patientPrescription || 'Not recorded'}<br /><strong>Allergies:</strong> {patient.patientAllergies || 'None recorded'}</p>
+                  <section className="nurse-patient-tasks" aria-label={`Care tasks for ${patient.patientName}`}>
+                    <div className="nurse-patient-subheading"><strong>Care tasks</strong><span>{pendingTasks.length} pending</span></div>
+                    {patientTasks.length ? <ul>{patientTasks.map((task) => <li key={task.id} className={task.status === 'COMPLETED' ? 'completed' : ''}>
+                      <input type="checkbox" checked={task.status === 'COMPLETED'} disabled={task.status === 'COMPLETED' || busy} onChange={() => completePatientTask(patientId, task.id)} aria-label={`Complete ${task.description || task.type} for ${patient.patientName}`} />
+                      <span>{task.description || task.value || task.type}{isOverdue(task) && <em>Overdue</em>}</span>
+                    </li>)}</ul> : <p className="nurse-patient-no-tasks">No care tasks recorded.</p>}
+                  </section>
+                  <form className="nurse-patient-note" onSubmit={(event) => addPatientNote(event, patient)}>
+                    <input value={patientNotes[patientId] || ''} onChange={(event) => setPatientNotes((current) => ({ ...current, [patientId]: event.target.value }))} aria-label={`Add a note for ${patient.patientName}`} placeholder="Add a care note" />
+                    <button className="workflow-button subtle" type="submit" disabled={busy || !patientNotes[patientId]?.trim()}>Add note</button>
+                  </form>
+                  <details className="nurse-patient-transfer"><summary>Transfer patient</summary>
+                    <form className="nursing-inline-form" onSubmit={(event) => transferPatient(event, patient)}>
+                      <select required name="targetBed" defaultValue=""><option value="">Select vacant bed</option>{availableBeds.map((bed) => <option key={bed.id} value={`${bed.wardId}::${bed.id}`}>{bed.wardName} · {bed.room?.roomNumber ? `Room ${bed.room.roomNumber} · ` : ''}{bed.bedNumber}</option>)}</select>
+                      <button className="workflow-button subtle" type="submit" disabled={busy || !availableBeds.length}>Transfer</button>
+                    </form>
+                  </details>
+                </article>;
+              })}</div>}
+            {unassignedPatients.length > 0 && <p className="workflow-alert error">{unassignedPatients.length} admitted patient(s) need a primary nurse.</p>}
+          </section>
+        </section>}
 
         {activeNursingTab === 'activity' && <section id="nurse-panel-activity" role="tabpanel" aria-labelledby="nurse-tab-activity"><section className="workflow-panel">
           <div className="workflow-panel-heading"><div><h2>Assignment history &amp; outstanding care</h2><p>Audit of primary/backup assignments, handovers, and missed or overdue tasks.</p></div></div>
           <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Patient</th><th>Nurse</th><th>Role</th><th>Ward / shift</th><th>Assigned by</th><th>From / to</th><th>Status</th></tr></thead>
-            <tbody>{assignments.map((assignment) => <tr key={assignment.id}><td>{assignment.patientId}</td><td>{nurseByIdentity(nurses, assignment.nurseId)?.name || assignment.nurseId}</td><td>{assignment.role}</td><td>{wards.find((ward) => ward.id === assignment.wardId)?.name || assignment.wardId}<small>{assignment.shift}</small></td><td>{assignment.assignedBy}</td><td>{assignment.fromTime}<small>{assignment.toTime || 'Current'}</small></td><td>{assignment.status}</td></tr>)}</tbody>
+            <tbody>{assignments.filter((assignment) => !selectedNurseFilter || assignment.nurseId === selectedNurseFilter).map((assignment) => <tr key={assignment.id}><td>{assignment.patientId}</td><td>{nurseByIdentity(nurses, assignment.nurseId)?.name || assignment.nurseId}</td><td>{assignment.role}</td><td>{wards.find((ward) => ward.id === assignment.wardId)?.name || assignment.wardId}<small>{assignment.shift}</small></td><td>{assignment.assignedBy}</td><td>{assignment.fromTime}<small>{assignment.toTime || 'Current'}</small></td><td>{assignment.status}</td></tr>)}</tbody>
           </table></div>
           <div className="workflow-table-wrap"><table className="workflow-table"><thead><tr><th>Patient</th><th>Nurse</th><th>Task</th><th>Due</th><th>Status</th></tr></thead>
-            <tbody>{careRecords.filter((record) => record.status === 'PENDING').map((record) => <tr key={record.id}><td>{record.patientId}</td><td>{nurseByIdentity(nurses, record.nurseId)?.name || record.nurseId}</td><td>{record.description || record.type}</td><td>{record.dueAt || 'Not specified'}</td><td>{isOverdue(record) ? 'OVERDUE' : 'PENDING'}</td></tr>)}</tbody>
+            <tbody>{careRecords.filter((record) => record.status === 'PENDING' && (!selectedNurseFilter || record.nurseId === selectedNurseFilter)).map((record) => <tr key={record.id}><td>{record.patientId}</td><td>{nurseByIdentity(nurses, record.nurseId)?.name || record.nurseId}</td><td>{record.description || record.type}</td><td>{record.dueAt || 'Not specified'}</td><td>{isOverdue(record) ? 'OVERDUE' : 'PENDING'}</td></tr>)}</tbody>
           </table></div>
         </section></section>}
-      </>}
+        </div>
+      </div>}
     </section>
   );
 }

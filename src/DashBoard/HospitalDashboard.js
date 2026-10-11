@@ -12,7 +12,7 @@ import {
   FaTachometerAlt,
   FaCreditCard
 } from "react-icons/fa";
-import { Ambulance as AmbulanceIcon, Building2, CalendarClock, Clock3, FileBadge, FlaskConical, Pill, Siren, UserRoundCheck, Wallet } from "lucide-react";
+import { Ambulance as AmbulanceIcon, Building2, CalendarClock, Clock3, FileBadge, FlaskConical, Pill, Siren, UserRoundCheck, Users, Wallet } from "lucide-react";
 
 import Header from "../company/Header";
 import Footer from "../company/Footer";
@@ -136,8 +136,14 @@ const HospitalDashboard = () => {
         return ambulanceBillingAccess ? <AmbulanceBillingPage /> : <Dashboard />;
       case "staff-shifts":
         return <StaffShiftsPage />;
+      case "nurse-management":
+        return nursingAccess
+          ? <WardManagement key="nurses" mode="nurses" onOpenWards={() => setActivePage("ward-management")} />
+          : <Dashboard />;
       case "ward-management":
-        return nursingAccess ? <WardManagement /> : <Dashboard />;
+        return nursingAccess
+          ? <WardManagement key="wards" mode="wards" onOpenWards={() => setActivePage("ward-management")} />
+          : <Dashboard />;
       case "nurse-assignments":
         return roles.some((role) => ["NURSE", "HEAD_NURSE"].includes(role))
           ? <NurseAssignmentPortal /> : <Dashboard />;
@@ -200,9 +206,14 @@ const HospitalDashboard = () => {
             {overtimeAccess && <li className={activePage === "nurse-overtime" ? "active" : ""} aria-current={activePage === "nurse-overtime" ? "page" : undefined} onClick={() => setActivePage("nurse-overtime")}>
               <Clock3 size={16} /> Overtime Requests
             </li>}
-            {nursingAccess && (!nursingOnly || roles.includes("HEAD_NURSE")) && <li className={activePage === "ward-management" ? "active" : ""} aria-current={activePage === "ward-management" ? "page" : undefined} onClick={() => setActivePage("ward-management")}>
-              <Building2 size={16} /> Nurse Management
-            </li>}
+            {nursingAccess && (!nursingOnly || roles.includes("HEAD_NURSE")) && <>
+            <li className={activePage === "nurse-management" ? "active" : ""} aria-current={activePage === "nurse-management" ? "page" : undefined} onClick={() => setActivePage("nurse-management")}>
+              <Users size={16} /> Nurse Management
+            </li>
+            <li className={activePage === "ward-management" ? "active" : ""} aria-current={activePage === "ward-management" ? "page" : undefined} onClick={() => setActivePage("ward-management")}>
+              <Building2 size={16} /> Ward Management
+            </li>
+            </>}
             {payslipAccess && <li className={activePage === "payroll" ? "active" : ""} aria-current={activePage === "payroll" ? "page" : undefined} onClick={() => setActivePage("payroll")}>
               <Wallet size={16} /> My payslips
             </li>}

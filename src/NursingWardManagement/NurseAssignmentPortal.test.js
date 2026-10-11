@@ -19,6 +19,8 @@ describe('NurseAssignmentPortal', () => {
           employeeCode: 'NUR-12345678',
           mobileNo: '555-0100',
           employmentActive: true,
+          profileComplete: true,
+          status: 'ACTIVE',
         },
       ]));
       if (path === '/nursing/nurses/NUR-12345678/assignments') {

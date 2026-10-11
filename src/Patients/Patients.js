@@ -16,7 +16,7 @@ export default function Patients() {
   const [busy, setBusy] = useState(false);
   const [assigningPatientId, setAssigningPatientId] = useState('');
   const [showAdmissionForm, setShowAdmissionForm] = useState(false);
-  const [admissionForm, setAdmissionForm] = useState({ patientId: '', wardId: '', bedId: '' });
+  const [admissionForm, setAdmissionForm] = useState({ patientId: '', wardId: '', roomId: '', bedId: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -94,7 +94,7 @@ export default function Patients() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.message || 'Could not admit patient');
-      setAdmissionForm({ patientId: '', wardId: '', bedId: '' });
+      setAdmissionForm({ patientId: '', wardId: '', roomId: '', bedId: '' });
       setShowAdmissionForm(false);
       setSuccess(data.patientNurseId
         ? `${data.patientName} admitted under Patient ID ${data.patientId} and assigned to ${data.patientNurseassign}.`
@@ -130,7 +130,7 @@ export default function Patients() {
       if (!response.ok) throw new Error(data.message || data.detail || 'Could not add patient to the bed waiting list');
       setSuccess(`${data.patientName || 'Patient'} added to the bed waiting list for ${wards.find((ward) => ward.id === data.wardId)?.name || 'the selected ward'}.`);
       setShowAdmissionForm(false);
-      setAdmissionForm({ patientId: '', wardId: '', bedId: '' });
+      setAdmissionForm({ patientId: '', wardId: '', roomId: '', bedId: '' });
       await refresh();
     } catch (requestError) {
       setError(requestError.message || 'Could not add patient to the bed waiting list');
@@ -178,18 +178,42 @@ export default function Patients() {
   const admissionCandidates = useMemo(() => patients.filter((patient) =>
     !patient.patientAdmitdate || patient.patientDischargedate
   ), [patients]);
-  const availableAdmissionBeds = useMemo(() => (wards.find((ward) => ward.id === admissionForm.wardId)?.beds || [])
+  const matchingAdmissionBeds = useMemo(() => (wards.find((ward) => ward.id === admissionForm.wardId)?.beds || [])
     .filter((bed) => bed.status === 'VACANT' && (!bed.room?.status || bed.room.status === 'ACTIVE'))
     .filter((bed) => !bedPreference.acType || bed.room?.acType === bedPreference.acType)
-    .filter((bed) => !bedPreference.category
-      || String(bed.room?.category || '').toLowerCase().includes(bedPreference.category.toLowerCase()))
     .filter((bed) => {
       const patient = patients.find((entry) => entry.patientId === admissionForm.patientId);
       const rawGender = String(patient?.gender || '').toUpperCase();
       const gender = ['M', 'MALE'].includes(rawGender) ? 'MALE' : ['F', 'FEMALE'].includes(rawGender) ? 'FEMALE' : rawGender;
       return !bed.room?.genderRestriction || bed.room.genderRestriction === 'ANY'
         || bed.room.genderRestriction === gender;
-    }), [wards, admissionForm.wardId, admissionForm.patientId, bedPreference, patients]);
+    }), [wards, admissionForm.wardId, admissionForm.patientId, bedPreference.acType, patients]);
+  const roomTypeOptions = useMemo(() => [...new Set(matchingAdmissionBeds
+    .map((bed) => bed.room?.category)
+    .filter(Boolean))].sort((first, second) => first.localeCompare(second)), [matchingAdmissionBeds]);
+  const availableAdmissionBeds = useMemo(() => matchingAdmissionBeds.filter((bed) => !bedPreference.category
+    || String(bed.room?.category || '').toLowerCase() === bedPreference.category.toLowerCase()),
+  [matchingAdmissionBeds, bedPreference.category]);
+  const availableAdmissionRooms = useMemo(() => {
+    const rooms = new Map();
+    availableAdmissionBeds.forEach((bed) => {
+      const roomId = bed.room?.id || bed.roomId || '__unassigned__';
+      if (!rooms.has(roomId)) {
+        rooms.set(roomId, {
+          id: roomId,
+          roomNumber: bed.room?.roomNumber || '',
+          category: bed.room?.category || '',
+          acType: bed.room?.acType || '',
+          beds: 0,
+        });
+      }
+      rooms.get(roomId).beds += 1;
+    });
+    return [...rooms.values()];
+  }, [availableAdmissionBeds]);
+  const selectedRoomBeds = useMemo(() => availableAdmissionBeds.filter((bed) => (
+    (bed.room?.id || bed.roomId || '__unassigned__') === admissionForm.roomId
+  )), [availableAdmissionBeds, admissionForm.roomId]);
 
   return (
     <section className="workflow-page" aria-labelledby="patients-title">
@@ -215,16 +239,33 @@ export default function Patients() {
       {showAdmissionForm && <form className="workflow-form-panel" onSubmit={submitAdmission}>
         <div className="workflow-panel-heading"><div><h2>Admit patient</h2><p>Admission attaches to an existing patient record and preserves their Patient ID.</p></div><button className="workflow-button subtle" type="button" onClick={() => setShowAdmissionForm(false)}>Cancel</button></div>
         <div className="workflow-form-grid">
-          <label>Patient<select required value={admissionForm.patientId} onChange={(event) => setAdmissionForm({ ...admissionForm, patientId: event.target.value })}><option value="">Select a patient</option>{admissionCandidates.map((patient) => <option key={patient.patientId} value={patient.patientId}>{patient.patientName || 'Name unavailable'} — {patient.patientId || 'ID unavailable'}</option>)}</select>
+          <label>Patient<select required value={admissionForm.patientId} onChange={(event) => setAdmissionForm({ ...admissionForm, patientId: event.target.value, roomId: '', bedId: '' })}><option value="">Select a patient</option>{admissionCandidates.map((patient) => <option key={patient.patientId} value={patient.patientId}>{patient.patientName || 'Name unavailable'} — {patient.patientId || 'ID unavailable'}</option>)}</select>
             <small>{admissionCandidates.length} eligible patient{admissionCandidates.length === 1 ? '' : 's'} · currently admitted patients are excluded</small>
           </label>
-          <label>Ward / unit<select required value={admissionForm.wardId} onChange={(event) => setAdmissionForm({ ...admissionForm, wardId: event.target.value, bedId: '' })}>
+          <label>Ward / unit<select required value={admissionForm.wardId} onChange={(event) => {
+            setAdmissionForm({ ...admissionForm, wardId: event.target.value, roomId: '', bedId: '' });
+            setBedPreference({ acType: '', category: '' });
+          }}>
             <option value="">Select ward</option>{wards.map((ward) => <option key={ward.id} value={ward.id}>{ward.name} · {ward.type}</option>)}
           </select></label>
-          <label>Preferred AC type<select value={bedPreference.acType} onChange={(event) => setBedPreference({ ...bedPreference, acType: event.target.value })}><option value="">Any AC type</option><option value="AC">AC</option><option value="NON_AC">Non-AC</option></select></label>
-          <label>Preferred room category<input value={bedPreference.category} onChange={(event) => setBedPreference({ ...bedPreference, category: event.target.value })} placeholder="e.g. Private or ICU" /></label>
-          <label>Available bed<select required value={admissionForm.bedId} onChange={(event) => setAdmissionForm({ ...admissionForm, bedId: event.target.value })} disabled={!admissionForm.wardId}>
-            <option value="">{availableAdmissionBeds.length ? 'Select matching vacant bed' : 'No matching vacant beds'}</option>{availableAdmissionBeds.map((bed) => <option key={bed.id} value={bed.id}>
+          <label>Preferred AC type<select value={bedPreference.acType} onChange={(event) => {
+            setBedPreference({ ...bedPreference, acType: event.target.value });
+            setAdmissionForm((current) => ({ ...current, roomId: '', bedId: '' }));
+          }}><option value="">Any AC type</option><option value="AC">AC</option><option value="NON_AC">Non-AC</option></select></label>
+          <label>Room type<select value={bedPreference.category} onChange={(event) => {
+            setBedPreference({ ...bedPreference, category: event.target.value });
+            setAdmissionForm((current) => ({ ...current, roomId: '', bedId: '' }));
+          }} disabled={!admissionForm.wardId}>
+            <option value="">Any room type</option>{roomTypeOptions.map((category) => <option key={category} value={category}>{category}</option>)}
+          </select></label>
+          <label>Available room<select required value={admissionForm.roomId} onChange={(event) => setAdmissionForm({ ...admissionForm, roomId: event.target.value, bedId: '' })} disabled={!admissionForm.wardId}>
+            <option value="">{availableAdmissionRooms.length ? 'Select matching vacant room' : 'No matching vacant rooms'}</option>
+            {availableAdmissionRooms.map((room) => <option key={room.id} value={room.id}>
+              {room.roomNumber ? `Room ${room.roomNumber}` : 'Beds without a room'}{room.category ? ` · ${room.category}` : ''}{room.acType === 'AC' ? ' · AC' : room.acType === 'NON_AC' ? ' · Non-AC' : ''} · {room.beds} available
+            </option>)}
+          </select></label>
+          <label>Available bed<select required value={admissionForm.bedId} onChange={(event) => setAdmissionForm({ ...admissionForm, bedId: event.target.value })} disabled={!admissionForm.roomId}>
+            <option value="">{selectedRoomBeds.length ? 'Select a vacant bed' : 'Select a room first'}</option>{selectedRoomBeds.map((bed) => <option key={bed.id} value={bed.id}>
               {bed.bedNumber}{bed.room?.roomNumber ? ` · Room ${bed.room.roomNumber}` : ''}{bed.room?.category ? ` · ${bed.room.category}` : ''}{bed.room?.acType === 'AC' ? ' · AC' : bed.room?.acType === 'NON_AC' ? ' · Non-AC' : ''}
             </option>)}
           </select></label>

@@ -13,8 +13,12 @@ const today = (() => {
   const date = new Date();
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 })();
-const initialForm = { staffId: '', staffName: '', staffRole: 'Nurse', department: '', shiftDate: today, startTime: '08:00', endTime: '16:00', notes: '' };
+const initialForm = { staffId: '', staffName: '', staffRole: '', department: '', shiftDate: today, startTime: '08:00', endTime: '16:00', notes: '' };
 const initialWalkInForm = { firstName: '', lastName: '', mobile: '', email: '', qualification: '', licenseNumber: '', specialization: '' };
+
+const matchesEmployeeType = (role, employeeType) => (
+  employeeType.name === role || employeeType.code === role
+);
 
 export default function StaffShiftsPage() {
   const [shifts, setShifts] = useState([]);
@@ -25,11 +29,18 @@ export default function StaffShiftsPage() {
   const [success, setSuccess] = useState('');
   const [dateFilter, setDateFilter] = useState(today);
   const [form, setForm] = useState(initialForm);
+  const [employeeTypes, setEmployeeTypes] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [optionsLoading, setOptionsLoading] = useState(true);
   const [nurses, setNurses] = useState([]);
   const [nursesLoading, setNursesLoading] = useState(false);
   const [showWalkInForm, setShowWalkInForm] = useState(false);
   const [walkInForm, setWalkInForm] = useState(initialWalkInForm);
   const [creatingNurse, setCreatingNurse] = useState(false);
+  const selectedEmployeeType = employeeTypes.find((type) => matchesEmployeeType(form.staffRole, type));
+  const isNurseRole = selectedEmployeeType?.code?.toUpperCase() === 'NURSE'
+    || String(form.staffRole).toLowerCase() === 'nurse';
+  const selectedNurse = nurses.find((nurse) => nurse.employeeCode === form.staffId);
 
   const refresh = useCallback(async () => {
     setLoading(true); setError('');
@@ -40,7 +51,34 @@ export default function StaffShiftsPage() {
   useEffect(() => { refresh(); }, [refresh]);
 
   useEffect(() => {
-    if (form.staffRole !== 'Nurse') return undefined;
+    let active = true;
+    setOptionsLoading(true);
+    Promise.all([
+      apiFetch('/employee-types').then(readResponse),
+      apiFetch('/departments').then(readResponse),
+    ]).then(([typeData, departmentData]) => {
+      if (!active) return;
+      const activeTypes = typeData.filter((type) => String(type.status || 'ACTIVE').toUpperCase() === 'ACTIVE');
+      const activeDepartments = departmentData.filter((department) => String(department.status || 'ACTIVE').toUpperCase() === 'ACTIVE');
+      setEmployeeTypes(activeTypes);
+      setDepartments(activeDepartments);
+      setForm((current) => ({
+        ...current,
+        staffRole: activeTypes.some((type) => matchesEmployeeType(current.staffRole, type))
+          ? current.staffRole : activeTypes.find((type) => type.code === 'NURSE')?.name || activeTypes[0]?.name || '',
+        department: activeDepartments.some((department) => department.name === current.department)
+          ? current.department : activeDepartments[0]?.name || '',
+      }));
+    }).catch((requestError) => {
+      if (active) setError(requestError.message || 'Could not load roles and departments');
+    }).finally(() => {
+      if (active) setOptionsLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!isNurseRole) return undefined;
     let active = true;
     setNursesLoading(true);
     apiFetch('/nursing/nurses')
@@ -58,7 +96,7 @@ export default function StaffShiftsPage() {
         if (active) setNursesLoading(false);
       });
     return () => { active = false; };
-  }, [form.staffRole]);
+  }, [isNurseRole]);
 
   const createWalkInNurse = async (event) => {
     event.preventDefault();
@@ -80,9 +118,10 @@ export default function StaffShiftsPage() {
         walkIn: true,
       };
       setNurses((current) => [...current.filter((entry) => entry.employeeCode !== nurse.employeeCode), nurse]);
+      const nurseRole = employeeTypes.find((type) => type.code?.toUpperCase() === 'NURSE')?.name || 'Nurse';
       setForm((current) => ({
         ...current,
-        staffRole: 'Nurse',
+        staffRole: nurseRole,
         staffId: nurse.employeeCode,
         staffName: nurse.name,
       }));
@@ -132,7 +171,10 @@ export default function StaffShiftsPage() {
   const filteredShifts = shifts.filter((shift) => !dateFilter || shift.shiftDate === dateFilter);
   const todayCoverage = shifts.filter((shift) => shift.shiftDate === today && shift.status !== 'CANCELLED').length;
   const departmentsToday = new Set(shifts.filter((shift) => shift.shiftDate === today).map((shift) => shift.department)).size;
-  const roleCounts = ['Doctor', 'Nurse', 'Technician'].map((role) => ({ role, count: filteredShifts.filter((shift) => shift.staffRole === role).length }));
+  const roleCounts = employeeTypes.map((type) => ({
+    role: type.name,
+    count: filteredShifts.filter((shift) => shift.staffRole === type.name).length,
+  }));
 
   return (
     <section className="workflow-page" aria-labelledby="staff-shifts-title">
@@ -153,7 +195,7 @@ export default function StaffShiftsPage() {
       {showForm && <form className="workflow-form-panel" onSubmit={saveShift}>
         <div className="workflow-panel-heading"><div><h2>Schedule staff shift</h2><p>Each nurse shift uses the nurse's employee ID. The same nurse can be scheduled for multiple shifts.</p></div><button className="workflow-button subtle" type="button" onClick={() => setShowForm(false)}>Cancel</button></div>
         <div className="workflow-form-grid">
-          {form.staffRole === 'Nurse'
+          {isNurseRole
             ? <label>Nurse<select required value={form.staffId} disabled={nursesLoading} onChange={(event) => {
               const nurse = nurses.find((entry) => entry.employeeCode === event.target.value);
               setForm({ ...form, staffId: nurse?.employeeCode || '', staffName: nurse?.name || '' });
@@ -164,23 +206,29 @@ export default function StaffShiftsPage() {
               </option>)}
             </select></label>
             : <label>Staff ID<input required value={form.staffId} onChange={(event) => setForm({ ...form, staffId: event.target.value })} /></label>}
-          <label>Staff name<input required readOnly={form.staffRole === 'Nurse'} value={form.staffName} onChange={(event) => setForm({ ...form, staffName: event.target.value })} /></label>
-          <label>Role<select value={form.staffRole} onChange={(event) => {
+          <label>Staff name<input required readOnly={isNurseRole && !selectedNurse?.walkIn} value={form.staffName} onChange={(event) => setForm({ ...form, staffName: event.target.value })} /></label>
+          <label>Role<select required value={form.staffRole} disabled={optionsLoading || !employeeTypes.length} onChange={(event) => {
             setForm({ ...form, staffRole: event.target.value, staffId: '', staffName: '' });
             setShowWalkInForm(false);
-          }}><option>Doctor</option><option>Nurse</option><option>Technician</option><option>Pharmacist</option><option>Administrator</option></select></label>
-          <label>Department<input required value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} /></label>
+          }}><option value="">{optionsLoading ? 'Loading roles…' : 'Select role'}</option>
+            {employeeTypes.map((type) => <option key={type.id || type.code} value={type.name}>{type.name}</option>)}
+          </select></label>
+          <label>Department<select required value={form.department} disabled={optionsLoading || !departments.length}
+            onChange={(event) => setForm({ ...form, department: event.target.value })}>
+            <option value="">{optionsLoading ? 'Loading departments…' : 'Select department'}</option>
+            {departments.map((department) => <option key={department.id || department.code} value={department.name}>{department.name}</option>)}
+          </select></label>
           <label>Shift date<input required type="date" value={form.shiftDate} onChange={(e) => setForm({ ...form, shiftDate: e.target.value })} /></label>
           <label>Start time<input required type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} /></label>
           <label>End time<input required type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} /></label>
           <label className="workflow-form-wide">Handover notes<textarea rows="2" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></label>
         </div>
-        {form.staffRole === 'Nurse' && <div className="workflow-form-actions">
+        {isNurseRole && <div className="workflow-form-actions">
           <button className="workflow-button subtle" type="button" onClick={() => setShowWalkInForm((shown) => !shown)}>
             {showWalkInForm ? 'Cancel walk-in nurse' : 'Add walk-in nurse'}
           </button>
         </div>}
-        {showWalkInForm && form.staffRole === 'Nurse' && <section className="workflow-panel" aria-label="Add walk-in nurse">
+        {showWalkInForm && isNurseRole && <section className="workflow-panel" aria-label="Add walk-in nurse">
           <div className="workflow-panel-heading"><div><h3>Walk-in nurse details</h3><p>Creates one active nurse record with an NR-WK employee ID and no login account.</p></div></div>
           <div className="workflow-form-grid">
             <label>First name<input required value={walkInForm.firstName} onChange={(event) => setWalkInForm({ ...walkInForm, firstName: event.target.value })} /></label>

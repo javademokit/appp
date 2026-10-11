@@ -75,6 +75,51 @@ test('shows and searches patient records even when ward and nurse data cannot lo
   expect(screen.getByText('Showing 1 of 2 patient records')).toBeInTheDocument();
 });
 
+test('filters admission rooms by ward and room type and clears an outdated bed selection', async () => {
+  const patient = { patientId: 'PT-300', patientName: 'Admission Candidate', gender: 'FEMALE' };
+  const wards = [
+    {
+      id: 'ward-a', name: 'Ward A', type: 'GENERAL', beds: [
+        { id: 'bed-a1', bedNumber: '101-A', status: 'VACANT', room: { id: 'room-a1', roomNumber: '101', acType: 'AC', category: 'PRIVATE', status: 'ACTIVE' } },
+        { id: 'bed-a2', bedNumber: '102-A', status: 'VACANT', room: { id: 'room-a2', roomNumber: '102', acType: 'NON_AC', category: 'GENERAL', status: 'ACTIVE' } },
+      ],
+    },
+    {
+      id: 'ward-b', name: 'Ward B', type: 'ICU', beds: [
+        { id: 'bed-b1', bedNumber: '201-A', status: 'VACANT', room: { id: 'room-b1', roomNumber: '201', acType: 'AC', category: 'ICU', status: 'ACTIVE' } },
+      ],
+    },
+  ];
+  apiFetch.mockImplementation(async (path) => {
+    if (path === '/patients') return { ok: true, json: async () => [patient] };
+    if (path === '/nursing/nurses') return { ok: true, json: async () => [] };
+    if (path === '/nursing/wards') return { ok: true, json: async () => wards };
+    if (path === '/users/me') return { ok: true, json: async () => ({ roles: ['CRM_EXECUTIVE'] }) };
+    throw new Error(`Unexpected API request: ${path}`);
+  });
+
+  render(<Patients />);
+  await screen.findByText('Admission Candidate');
+  fireEvent.click(screen.getByRole('button', { name: 'Admit existing patient' }));
+  fireEvent.change(screen.getByRole('combobox', { name: /Patient/ }), { target: { value: patient.patientId } });
+  fireEvent.change(screen.getByLabelText('Ward / unit'), { target: { value: 'ward-a' } });
+  fireEvent.change(screen.getByLabelText('Preferred AC type'), { target: { value: 'AC' } });
+
+  const roomSelect = screen.getByLabelText('Available room');
+  expect(roomSelect).toHaveTextContent('Room 101');
+  expect(roomSelect).not.toHaveTextContent('Room 102');
+  fireEvent.change(screen.getByLabelText('Room type'), { target: { value: 'PRIVATE' } });
+  fireEvent.change(roomSelect, { target: { value: 'room-a1' } });
+  fireEvent.change(screen.getByLabelText('Available bed'), { target: { value: 'bed-a1' } });
+  expect(screen.getByLabelText('Available bed')).toHaveValue('bed-a1');
+
+  fireEvent.change(screen.getByLabelText('Ward / unit'), { target: { value: 'ward-b' } });
+  expect(screen.getByLabelText('Room type')).toHaveValue('');
+  expect(screen.getByLabelText('Available room')).toHaveTextContent('Room 201');
+  expect(screen.getByLabelText('Available bed')).toHaveValue('');
+  expect(screen.getByLabelText('Available bed')).toBeDisabled();
+});
+
 test('explains when patient records cannot load because the staff session expired', async () => {
   apiFetch.mockImplementation(async (path) => {
     if (path === '/patients') return {
