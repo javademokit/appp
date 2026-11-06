@@ -413,7 +413,7 @@ const BookAppointment = () => {
           <h4>Appointment Receipt</h4>
           <table>
             <tbody>
-              <tr><th>Appointment ID</th><td>${escapeHtml(report.id)}</td></tr>
+              <tr><th>Appointment ID</th><td>${escapeHtml(report.appointmentNumber || 'Legacy booking')}</td></tr>
               <tr><th>Patient ID</th><td>${escapeHtml(report.patientId)}</td></tr>
               <tr><th>Patient</th><td>${escapeHtml(report.patientName)}</td></tr>
               <tr><th>Doctor</th><td>${escapeHtml(report.doctor)}</td></tr>
@@ -753,7 +753,7 @@ const BookAppointment = () => {
               </thead>
               <tbody>
                 <tr>
-                  <td>{report.id}</td>
+                  <td>{report.appointmentNumber || 'Legacy booking'}</td>
                   <td>{report.patientName}</td>
                   <td>{report.patientId}</td>
                   <td>{report.doctor}</td>

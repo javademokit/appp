@@ -6,10 +6,20 @@ import BrandLogo from '../components/BrandLogo';
 import '../Operations/Operations.css';
 
 const emptyAppointment = { doctorId: '', doctor: '', date: '', time: '', reason: '' };
+const emptyProfileForm = { patientAge: '', gender: '', dateOfBirth: '', patientAddress: '' };
 const localDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+const normalizeGender = (value) => {
+  const gender = String(value || '').trim().toLowerCase();
+  if (gender === 'male') return 'Male';
+  if (gender === 'female') return 'Female';
+  if (gender === 'other') return 'Other';
+  if (gender === 'prefer not to say') return 'Prefer not to say';
+  return '';
+};
 
 export default function PatientPortal() {
   const [profile, setProfile] = useState(null);
+  const [profileForm, setProfileForm] = useState(emptyProfileForm);
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
   const [availableTimes, setAvailableTimes] = useState([]);
@@ -39,6 +49,12 @@ export default function PatientPortal() {
         return data;
       }));
       setProfile(results[0]);
+      setProfileForm({
+        patientAge: results[0].patientAge || '',
+        gender: normalizeGender(results[0].gender),
+        dateOfBirth: results[0].dateOfBirth || '',
+        patientAddress: results[0].patientAddress || '',
+      });
       setAppointments(results[1]);
       setDoctors(results[2]);
     } catch (requestError) {
@@ -47,6 +63,35 @@ export default function PatientPortal() {
       setLoading(false);
     }
   }, []);
+
+  const saveProfile = async (event) => {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    setSuccess('');
+    try {
+      const response = await apiFetch('/patient-portal/profile', {
+        method: 'PUT',
+        body: JSON.stringify(profileForm),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.message || data.detail || data.title || `Could not save profile (${response.status})`);
+      }
+      setProfile(data);
+      setProfileForm({
+        patientAge: data.patientAge || '',
+        gender: normalizeGender(data.gender),
+        dateOfBirth: data.dateOfBirth || '',
+        patientAddress: data.patientAddress || '',
+      });
+      setSuccess('Your patient details were saved successfully.');
+    } catch (requestError) {
+      setError(requestError.message || 'Could not save your patient details.');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   useEffect(() => { refresh(); }, [refresh]);
 
@@ -129,13 +174,33 @@ export default function PatientPortal() {
       {error && <div className="workflow-alert error" role="alert">{error}</div>}
       {success && <div className="workflow-alert success" role="status">{success}</div>}
 
-      {profile && <section className="workflow-panel">
-        <div className="workflow-panel-heading"><div><h2>Your patient profile</h2><p>Identity is matched to your verified account email.</p></div></div>
+      {profile && <form className="workflow-form-panel" onSubmit={saveProfile}>
+        <div className="workflow-panel-heading"><div><h2>Your patient profile</h2>
+          <p>Keep your health details up to date. Your profile is linked to your verified account email.</p></div></div>
         <div className="patient-portal-profile">
           <strong>{profile.patientName}</strong><span>Patient ID: {profile.patientId}</span>
-          <span>{profile.patientAge ? `${profile.patientAge} years` : 'Age not recorded'} · {profile.gender || 'Gender not recorded'}</span>
         </div>
-      </section>}
+        <div className="workflow-form-grid">
+          <label>Age<input type="number" min="0" max="150" step="1" required value={profileForm.patientAge}
+            onChange={(event) => setProfileForm({ ...profileForm, patientAge: event.target.value })} /></label>
+          <label>Gender<select required value={profileForm.gender}
+            onChange={(event) => setProfileForm({ ...profileForm, gender: event.target.value })}>
+            <option value="">Select gender</option><option value="Female">Female</option>
+            <option value="Male">Male</option><option value="Other">Other</option>
+            <option value="Prefer not to say">Prefer not to say</option>
+          </select></label>
+          <label>Date of birth<input type="date" required max={localDate(new Date())}
+            value={profileForm.dateOfBirth}
+            onChange={(event) => setProfileForm({ ...profileForm, dateOfBirth: event.target.value })} /></label>
+          <label className="workflow-form-wide">Address<textarea rows="3" required value={profileForm.patientAddress}
+            onChange={(event) => setProfileForm({ ...profileForm, patientAddress: event.target.value })} /></label>
+        </div>
+        <div className="workflow-form-actions">
+          <button className="workflow-button primary" type="submit" disabled={busy || loading}>
+            {busy ? 'Saving details…' : 'Save patient details'}
+          </button>
+        </div>
+      </form>}
 
       <form className="workflow-form-panel" onSubmit={bookAppointment}>
         <div className="workflow-panel-heading"><div><h2>Book an appointment</h2><p>Choose an available doctor and time from their schedule. Pay in cash at reception; your appointment is confirmed after reception records payment. No online payment is taken here.</p></div></div>
@@ -162,7 +227,7 @@ export default function PatientPortal() {
       <section className="workflow-panel">
         <div className="workflow-panel-heading"><div><h2>Your appointments</h2><p>Bookings associated with your Patient ID.</p></div></div>
         {loading ? <div className="workflow-empty">Loading appointments…</div> : !appointments.length ? <div className="workflow-empty">No appointments found.</div> : <div className="workflow-table-wrap"><table className="workflow-table">
-          <thead><tr><th>Date</th><th>Time</th><th>Doctor</th><th>Reason</th><th>Payment</th><th>Status</th><th>Confirmation</th></tr></thead>
+          <thead><tr><th>Appointment ID</th><th>Date</th><th>Time</th><th>Doctor</th><th>Reason</th><th>Payment</th><th>Status</th><th>Confirmation</th></tr></thead>
           <tbody>{appointments.map((appointment) => {
             const confirmed = appointment.appointmentStatus?.toLowerCase() === 'confirmed';
             const paymentStatus = Number(appointment.balanceDue || 0) > 0
@@ -170,6 +235,7 @@ export default function PatientPortal() {
               : appointment.billingStatus === 'NO_CHARGE' ? 'No charge'
                 : appointment.invoiceId ? 'Paid' : confirmed ? 'Confirmed' : 'Pay at reception';
             return <tr key={appointment.id}>
+              <td>{appointment.appointmentNumber || 'Legacy booking'}</td>
               <td>{appointment.date}</td><td>{appointment.time}</td><td>{appointment.doctor}</td>
               <td>{appointment.reason || '—'}</td><td>{paymentStatus}</td>
               <td>{appointment.appointmentStatus}</td>

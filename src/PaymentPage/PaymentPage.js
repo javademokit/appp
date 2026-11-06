@@ -138,7 +138,7 @@ const PaymentPage = () => {
     const rows = [
       ['Invoice ID', 'Appointment ID', 'Patient ID', 'Patient', 'Doctor', 'Amount', 'Paid', 'Balance', 'Status', 'Date'],
       ...invoices.map((invoice) => [
-        invoice.invoiceNumber, invoice.appointmentId, invoice.patientId, invoice.patientName, invoice.doctorName,
+        invoice.invoiceNumber, invoice.appointmentNumber || invoice.appointmentId, invoice.patientId, invoice.patientName, invoice.doctorName,
         invoice.amount, invoice.paidAmount, invoice.balanceDue, invoice.status, invoice.createdAt,
       ]),
     ];
@@ -190,7 +190,7 @@ const PaymentPage = () => {
             <thead><tr><th>Invoice</th><th>Patient</th><th>Doctor / Service</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Status</th><th>Action</th></tr></thead>
             <tbody>{filteredInvoices.map((invoice) => <React.Fragment key={invoice.id}>
               <tr>
-                <td>{invoice.invoiceNumber}<small>Appointment ID: {invoice.appointmentId}</small></td>
+                <td>{invoice.invoiceNumber}<small>Appointment ID: {invoice.appointmentNumber || 'Legacy booking'}</small></td>
                 <td><strong>{invoice.patientName}</strong><small>Patient ID: {invoice.patientId}</small></td>
                 <td>{invoice.doctorName}<small>{invoice.service}</small></td>
                 <td>₹{Number(invoice.amount).toLocaleString('en-IN')}</td>

@@ -173,6 +173,7 @@ const AppointmentsList = () => {
             <table className="appointments-table">
               <thead>
                 <tr>
+                  <th>Appointment ID</th>
                   <th>Patient ID</th>
                   <th>Patient Name</th>
                   <th>Gender</th>
@@ -191,6 +192,7 @@ const AppointmentsList = () => {
               <tbody>
                 {filteredAppointments.map((appt) => (
                   <tr key={appt.id}>
+                    <td>{appt.appointmentNumber || 'Legacy booking'}</td>
                     <td>{appt.patientId || 'Unlinked legacy appointment'}</td>
                     <td><FaUserInjured className="icon" /> {appt.patientName || '—'}</td>
                     <td>{appt.gender}</td>

@@ -30,7 +30,7 @@ export function createAppointmentConfirmationPdf(appointment, profile) {
   const details = [
     ['Patient', profile?.patientName || appointment.patientName],
     ['Patient ID', profile?.patientId || appointment.patientId],
-    ['Booking reference', appointment.id],
+    ['Appointment ID', appointment.appointmentNumber || 'Legacy booking'],
     ['Doctor', appointment.doctor],
     ['Date', appointment.date],
     ['Time', appointment.time],
