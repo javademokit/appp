@@ -89,6 +89,10 @@ export const startAppointmentCheckout = (invoiceId, provider, onPaid) => startCh
   invoiceId, provider, onPaid, '/billing/appointment-invoices',
 );
 
+export const startPatientAppointmentCheckout = (appointmentId, provider, onPaid) => startCheckout(
+  appointmentId, provider, onPaid, '/patient-portal/appointments',
+);
+
 export const startPharmacyCheckout = (invoiceId, provider, onPaid) => startCheckout(
   invoiceId, provider, onPaid, '/pharmacy/invoices',
 );

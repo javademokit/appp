@@ -143,7 +143,7 @@ const UserLogin = ({ portal = 'all' }) => {
               ? 'Doctor login'
               : portal === 'hospital'
                 ? 'Hospital CRM / HR login'
-                : 'Medora AI login'}
+                : 'Medora AI Health Care login'}
         </h1>
         <p className="login-description">
           {portal === 'patient'

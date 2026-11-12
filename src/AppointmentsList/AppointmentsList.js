@@ -43,7 +43,7 @@ const AppointmentsList = () => {
     setBusyId(id);
     setError('');
     try {
-      const response = await apiFetch(`/appointments1/${id}`, {
+      const response = await apiFetch(`/appointments1/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         body: JSON.stringify({ status: action === 'confirm' ? 'confirmed' : 'cancelled' }),
       });
@@ -53,7 +53,14 @@ const AppointmentsList = () => {
         await fetchAppointments();
       } else {
         const result = await response.json().catch(() => ({}));
-        showAlert(result.message || 'Something went wrong!', 'error');
+        const statusMessage = response.status === 401
+          ? 'Your session expired. Sign in again, then retry.'
+          : response.status === 403
+            ? 'Your account is not allowed to update this appointment.'
+            : response.status === 409
+              ? 'The appointment cannot be confirmed until its invoice is paid. Record the received payment, then retry.'
+              : `Could not ${action} appointment (HTTP ${response.status}).`;
+        showAlert(result.message || result.detail || result.title || statusMessage, 'error');
       }
     } catch (requestError) {
       showAlert(requestError.message || 'Failed to update appointment', 'error');
@@ -174,6 +181,7 @@ const AppointmentsList = () => {
               <thead>
                 <tr>
                   <th>Appointment ID</th>
+                  <th>Token number</th>
                   <th>Patient ID</th>
                   <th>Patient Name</th>
                   <th>Gender</th>
@@ -193,6 +201,7 @@ const AppointmentsList = () => {
                 {filteredAppointments.map((appt) => (
                   <tr key={appt.id}>
                     <td>{appt.appointmentNumber || 'Legacy booking'}</td>
+                    <td>{appt.tokenNumber ? String(appt.tokenNumber).padStart(3, '0') : '—'}</td>
                     <td>{appt.patientId || 'Unlinked legacy appointment'}</td>
                     <td><FaUserInjured className="icon" /> {appt.patientName || '—'}</td>
                     <td>{appt.gender}</td>

@@ -4,7 +4,7 @@ import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { apiFetch } from "../API/api";
 import { normalizeRoles } from "../Admin/roles";
 
-const ProtectedRoute = ({ children, allowedRoles = [], redirectFor }) => {
+const ProtectedRoute = ({ children, allowedRoles = [], redirectFor, loginPath = "/UserLogin" }) => {
   const [authState, setAuthState] = useState({ status: "checking", roles: [] });
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,7 +37,7 @@ const ProtectedRoute = ({ children, allowedRoles = [], redirectFor }) => {
   };
 
   if (authState.status === "checking") return <div role="status">Checking session...</div>;
-  if (authState.status === "anonymous") return <Navigate to="/UserLogin" replace />;
+  if (authState.status === "anonymous") return <Navigate to={loginPath} replace />;
   const normalizedAllowedRoles = normalizeRoles(allowedRoles);
   if (normalizedAllowedRoles.length && !normalizedAllowedRoles.some((role) => authState.roles.includes(role))) {
     return <main className="role-denied">

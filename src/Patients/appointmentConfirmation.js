@@ -31,6 +31,7 @@ export function createAppointmentConfirmationPdf(appointment, profile) {
     ['Patient', profile?.patientName || appointment.patientName],
     ['Patient ID', profile?.patientId || appointment.patientId],
     ['Appointment ID', appointment.appointmentNumber || 'Legacy booking'],
+    ['Token number', appointment.tokenNumber ? String(appointment.tokenNumber).padStart(3, '0') : '—'],
     ['Doctor', appointment.doctor],
     ['Date', appointment.date],
     ['Time', appointment.time],

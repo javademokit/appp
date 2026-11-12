@@ -1,23 +1,35 @@
 .header {
   box-sizing: border-box;
   width: 100%;
-  background: #fff;
+  min-height: 94px;
+  background: linear-gradient(110deg, #fff 0%, #f5fbf9 68%, #edf8f5 100%);
   border-bottom: 1px solid var(--clinic-line);
-  padding: 10px 20px;
+  padding: 11px 26px;
+  box-shadow: 0 3px 14px rgba(27, 105, 87, 0.06);
 }
 
 .top-nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 70px;
 }
 
-.logo {
+.hospital-brand-lockup {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 6.2rem;
   flex: 0 0 auto;
+}
+
+.hospital-brand-lockup .brand-logo {
+  box-sizing: border-box;
+  width: 154px;
+  height: 72px;
+  padding: 5px 9px;
+  border: 1px solid rgba(21, 156, 139, 0.12);
+  border-radius: 17px;
+  background: #fff;
+  box-shadow: 0 5px 15px rgba(28, 122, 103, 0.1);
 }
 
 .icons {
@@ -30,4 +42,22 @@
 
 .notifications, .settings {
   cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .header {
+    min-height: 76px;
+    padding: 8px 12px;
+  }
+
+  .top-nav {
+    min-height: 58px;
+  }
+
+  .hospital-brand-lockup .brand-logo {
+    width: 126px;
+    height: 58px;
+    padding: 4px 7px;
+    border-radius: 13px;
+  }
 }

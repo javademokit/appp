@@ -75,9 +75,9 @@ export default function HomePage() {
     <div className="med-home">
       <div className="med-home-frame">
         <header className="med-home-header">
-          <Link className="med-home-brand" to="/" aria-label="Medora AI home">
+          <Link className="med-home-brand" to="/" aria-label="Medora AI Health Care home">
             <img src="/medora-app-icon.svg" alt="" />
-            <span>Medora <strong>AI</strong></span>
+            <span>Medora <strong>AI Health Care</strong></span>
           </Link>
           <button className="med-home-signup med-home-trial" type="button" onClick={requestTrial}>Start free trial</button>
           <nav className="med-home-nav" aria-label="Main navigation">
@@ -96,7 +96,7 @@ export default function HomePage() {
             </div>
             <h1 id="med-home-title">Run your hospital <span>smarter</span> with AI</h1>
             <p className="med-home-intro">
-              Medora AI brings patients, doctors, nurses, and appointments into one CRM,
+              Medora AI Health Care brings patients, doctors, nurses, and appointments into one CRM,
               with an AI assistant that helps keep care on track.
             </p>
             <div className="med-home-actions">

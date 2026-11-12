@@ -369,10 +369,11 @@ export default function DoctorDashboard() {
             {loading ? <p className="doctor-empty">Loading your appointment schedule…</p>
               : appointments.length === 0 ? <p className="doctor-empty">No appointments found for this doctor profile.</p>
                 : <div className="doctor-table-scroll"><table className="doctor-table">
-                  <thead><tr><th>Appointment ID</th><th>Date</th><th>Time</th><th>Patient</th><th>Visit reason</th><th>Status</th><th /></tr></thead>
+                  <thead><tr><th>Appointment ID</th><th>Token number</th><th>Date</th><th>Time</th><th>Patient</th><th>Visit reason</th><th>Status</th><th /></tr></thead>
                   <tbody>{appointments.map((appointment) => (
                     <tr key={appointment.id}>
                       <td>{appointment.appointmentNumber || 'Legacy booking'}</td>
+                      <td>{appointment.tokenNumber ? String(appointment.tokenNumber).padStart(3, '0') : '—'}</td>
                       <td>{appointment.date || '—'}</td>
                       <td>{appointment.time || '—'}</td>
                       <td><strong>{appointment.patientName || 'Patient'}</strong><small>{appointment.patientId || 'Patient ID missing'}</small></td>

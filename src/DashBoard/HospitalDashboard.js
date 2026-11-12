@@ -254,7 +254,7 @@ const HospitalDashboard = () => {
       <div className="top-right-icons">
         <div className="user-profile">
           <FaUserCircle />
-          <span>{username ? `Username: ${username}` : "Username: Guest"}</span>
+          <span>: {username || "Guest"}</span>
         </div>
         <div className="logout" onClick={handleLogout} style={{ cursor: "pointer" }}>
           <FaSignOutAlt />

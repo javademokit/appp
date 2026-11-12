@@ -534,6 +534,61 @@
 .workflow-inline-form textarea,
 .workflow-form-panel > label textarea { min-height: 76px; resize: vertical; }
 .workflow-form-wide { grid-column: 1 / -1; }
+.workflow-patient-lookup {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: 0.75rem;
+  margin-top: 0.55rem;
+}
+.workflow-patient-lookup label {
+  display: grid;
+  gap: 0.32rem;
+  color: #52645e;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.workflow-patient-lookup input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #d5dfdb;
+  border-radius: 5px;
+  padding: 0.52rem 0.62rem;
+  background: #fff;
+  color: var(--clinic-ink);
+  font: inherit;
+  font-size: 0.78rem;
+}
+.workflow-patient-matches {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--clinic-line);
+  border-radius: 6px;
+}
+.workflow-patient-matches legend {
+  padding: 0 0.35rem;
+  color: var(--clinic-ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.workflow-patient-matches label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.55rem;
+}
+.workflow-patient-matches label span {
+  display: grid;
+  gap: 0.15rem;
+}
+.workflow-patient-matches label small {
+  color: var(--clinic-muted);
+  font-size: 0.68rem;
+  font-weight: 500;
+}
 .workflow-form-grid .workflow-checkbox { flex-direction: row; align-items: center; }
 .workflow-form-grid .workflow-checkbox input { width: 16px; min-height: auto; }
 .workflow-form-actions { justify-content: flex-end; margin-top: 0.85rem; }
@@ -611,6 +666,7 @@
   .workflow-panel-heading { align-items: flex-start; flex-direction: column; }
   .workflow-search input { width: 100%; }
   .workflow-form-grid,
+  .workflow-patient-lookup,
   .workflow-inline-form { grid-template-columns: 1fr; }
   .workflow-form-wide { grid-column: auto; }
   .workflow-form-actions { align-items: stretch; }
@@ -633,4 +689,11 @@
 
 .patient-portal-profile strong {
   color: #0f172a;
+}
+
+.patient-portal-payment-note {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--clinic-muted);
+  font-size: 0.7rem;
 }

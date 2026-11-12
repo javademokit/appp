@@ -15,6 +15,7 @@ test('loads the signed-in account patient profile and its linked appointments', 
     const responses = {
       '/patient-portal/profile': { patientId: 'PT-CANONICAL', patientName: 'A Patient', patientAge: '37', gender: 'Female' },
       '/patient-portal/appointments': [{ id: 'booking-1', patientId: 'PT-CANONICAL', date: '2030-01-03', time: '10:00 AM', doctor: 'Dr. Example', appointmentStatus: 'pending' }],
+      '/patient-portal/payments/gateways': { RAZORPAY: false },
       '/doctors': [],
     };
     return { ok: true, json: async () => responses[path] };
@@ -24,7 +25,7 @@ test('loads the signed-in account patient profile and its linked appointments', 
 
   expect(await screen.findByText('Patient ID: PT-CANONICAL')).toBeInTheDocument();
   expect(screen.getByText('Dr. Example')).toBeInTheDocument();
-  expect(screen.getByText(/Pay in cash at reception/)).toBeInTheDocument();
+  expect(screen.getByText(/Online payment is currently unavailable/)).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /pay now|online payment/i })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Download confirmation' })).not.toBeInTheDocument();
   expect(apiFetch).toHaveBeenCalledWith('/patient-portal/profile');
@@ -48,6 +49,7 @@ test('confirmed appointments offer a downloadable confirmation', async () => {
     const responses = {
       '/patient-portal/profile': profile,
       '/patient-portal/appointments': [appointment],
+      '/patient-portal/payments/gateways': { RAZORPAY: false },
       '/doctors': [],
     };
     return { ok: true, json: async () => responses[path] };
@@ -71,6 +73,9 @@ test('books through the selected doctor profile ID', async () => {
     }
     if (path === '/patient-portal/appointments') {
       return { ok: true, json: async () => [] };
+    }
+    if (path === '/patient-portal/payments/gateways') {
+      return { ok: true, json: async () => ({ RAZORPAY: false }) };
     }
     if (path === '/doctors') {
       return { ok: true, json: async () => [{
@@ -122,6 +127,9 @@ test('shows actionable booking error details returned by the API', async () => {
       return { ok: true, json: async () => ({ patientId: 'PT-CANONICAL', patientName: 'A Patient' }) };
     }
     if (path === '/patient-portal/appointments') return { ok: true, json: async () => [] };
+    if (path === '/patient-portal/payments/gateways') {
+      return { ok: true, json: async () => ({ RAZORPAY: false }) };
+    }
     if (path === '/doctors') return { ok: true, json: async () => [{
       id: 'doctor-profile-1',
       doctorName: 'Dr. Example',

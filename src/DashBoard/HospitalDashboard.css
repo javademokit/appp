@@ -67,7 +67,7 @@
 /* Top-right icons section */
 .top-right-icons {
   position: absolute;
-  top: 13px;
+  top: 29px;
   right: 20px;
   display: flex;
   align-items: center;
@@ -113,6 +113,23 @@
 }
 
 @media (max-width: 720px) {
+  .top-right-icons {
+    top: 17px;
+    right: 12px;
+    font-size: 0.75rem;
+  }
+
+  .top-right-icons .user-profile {
+    margin-right: 10px;
+  }
+
+  .top-right-icons .user-profile span {
+    max-width: 92px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .dashboard-container {
     height: auto;
     min-height: 100vh;

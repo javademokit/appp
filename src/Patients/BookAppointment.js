@@ -54,6 +54,9 @@ const BookAppointment = () => {
     mobileNo: '',
     patientEmailId: '',
     patientAddress: '',
+    patientPan: '',
+    patientAadhaar: '',
+    patientPostalCode: '',
     doctorId: '',
     doctor: '',
     date: '',
@@ -225,6 +228,7 @@ const BookAppointment = () => {
           ...form,
           fee: appointmentFee,
           patientId: patientId || undefined,
+          patientName: selectedPatient?.patientName || form.patientName,
           registerNewPatient: !patientId && registerNewPatientWithMobile,
         }),
       });
@@ -258,7 +262,14 @@ const BookAppointment = () => {
       ));
       setPatients((current) => (
         current.some((patient) => patient.patientId === data.patientId)
-          ? current
+          ? current.map((patient) => patient.patientId === data.patientId
+            ? {
+              ...patient,
+              patientPanMasked: form.patientPan ? maskIdentifier(form.patientPan) : patient.patientPanMasked,
+              patientAadhaarMasked: form.patientAadhaar ? maskIdentifier(form.patientAadhaar) : patient.patientAadhaarMasked,
+              patientPostalCode: form.patientPostalCode || patient.patientPostalCode,
+            }
+            : patient)
           : [{
             patientId: data.patientId,
             patientName: data.patientName,
@@ -267,6 +278,9 @@ const BookAppointment = () => {
             patientmobileNo: data.mobileNo,
             patientEmailId: data.patientEmailId,
             patientAddress: data.patientAddress,
+            patientPanMasked: maskIdentifier(form.patientPan),
+            patientAadhaarMasked: maskIdentifier(form.patientAadhaar),
+            patientPostalCode: form.patientPostalCode,
           }, ...current]
       ));
       setSelectedPatientId(newPatientOption);
@@ -275,7 +289,8 @@ const BookAppointment = () => {
       setMobileSearchResults(null);
       setForm({
         patientName: '', gender: '', patientAge: '', mobileNo: '', patientEmailId: '',
-        patientAddress: '', doctorId: '', doctor: '', date: '', time: '', reason: '', fee: '',
+        patientAddress: '', patientPan: '', patientAadhaar: '', patientPostalCode: '',
+        doctorId: '', doctor: '', date: '', time: '', reason: '', fee: '',
       });
       setAvailableTimes([]);
     } catch (error) {
@@ -286,6 +301,11 @@ const BookAppointment = () => {
     } finally {
       setBusy(false);
     }
+  };
+
+  const maskIdentifier = (value) => {
+    const normalized = String(value || '').replace(/[^a-zA-Z0-9]/g, '');
+    return normalized.length >= 4 ? `•••• ${normalized.slice(-4)}` : '';
   };
 
   const recordBookingPayment = async (event) => {
@@ -385,7 +405,7 @@ const BookAppointment = () => {
     newWin.document.write(`
       <html>
         <head>
-          <title>Appointment Report</title>
+          <title>Appointment Receipt</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 20px; }
             .print-brand { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 12px; }
@@ -409,11 +429,15 @@ const BookAppointment = () => {
           </style>
         </head>
         <body>
-          <header class="print-brand"><img src="/medora_ai_logo.svg" alt="Medora AI"><h2>Wellness Hospital</h2></header>
+          <header class="print-brand"><img src="/medora_ai_logo.svg" alt="Medora AI Health Care"><h2>Wellness Hospital</h2></header>
+          <p>123 Health St, Wellness City, IN · PIN: 000000</p>
+          <p>Main phone: +91 98765 43210</p>
+          <p>Emergency: +91 00000 00000 · Patient care: +91 00000 00001</p>
           <h4>Appointment Receipt</h4>
           <table>
             <tbody>
-              <tr><th>Appointment ID</th><td>${escapeHtml(report.appointmentNumber || 'Legacy booking')}</td></tr>
+              <tr><th>Booking No.</th><td>${escapeHtml(report.appointmentNumber || 'Legacy booking')}</td></tr>
+              <tr><th>Token number</th><td>${escapeHtml(report.tokenNumber ? String(report.tokenNumber).padStart(3, '0') : '—')}</td></tr>
               <tr><th>Patient ID</th><td>${escapeHtml(report.patientId)}</td></tr>
               <tr><th>Patient</th><td>${escapeHtml(report.patientName)}</td></tr>
               <tr><th>Doctor</th><td>${escapeHtml(report.doctor)}</td></tr>
@@ -439,7 +463,10 @@ const BookAppointment = () => {
       <h2 className="form-title">Book an Appointment</h2>
 
       {error && <div className="workflow-alert error" role="alert">{error}</div>}
-      {report && <div className="workflow-alert success" role="status">Appointment booked. Patient ID: <strong>{report.patientId}</strong></div>}
+      {report && <div className="workflow-alert success" role="status">
+        Appointment booked. Patient ID: <strong>{report.patientId}</strong>
+        {' · '}Token number: <strong>{report.tokenNumber ? String(report.tokenNumber).padStart(3, '0') : '—'}</strong>
+      </div>}
 
       <form onSubmit={handleSubmit} className="appointment-form">
         <label className="appointment-patient-select">Patient record
@@ -602,6 +629,55 @@ const BookAppointment = () => {
         </div>
         </>}
 
+        <fieldset className="appointment-sensitive-fields">
+          <legend>Additional patient details</legend>
+          <p>These are optional. PAN and Aadhaar are encrypted when saved and only shown in masked form.</p>
+          <label>
+            PAN (optional)
+            <input
+              type="text"
+              name="patientPan"
+              autoComplete="off"
+              maxLength={10}
+              pattern="[A-Za-z]{5}[0-9]{4}[A-Za-z]"
+              title="Enter PAN in the format ABCDE1234F"
+              placeholder={selectedPatient?.patientPanMasked ? `Saved ${selectedPatient.patientPanMasked}; leave blank to keep it` : 'ABCDE1234F'}
+              value={form.patientPan}
+              onChange={handleChange}
+            />
+          </label>
+          <label>
+            Aadhaar number (optional)
+            <input
+              type="text"
+              name="patientAadhaar"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={14}
+              pattern="[0-9 -]{12,14}"
+              title="Enter a 12-digit Aadhaar number"
+              placeholder={selectedPatient?.patientAadhaarMasked ? `Saved ${selectedPatient.patientAadhaarMasked}; leave blank to keep it` : '12-digit Aadhaar number'}
+              value={form.patientAadhaar}
+              onChange={handleChange}
+            />
+          </label>
+          <label>
+            Postal code (optional)
+            <input
+              type="text"
+              name="patientPostalCode"
+              inputMode="numeric"
+              autoComplete="postal-code"
+              maxLength={6}
+              pattern="[1-9][0-9]{5}"
+              title="Enter a valid 6-digit Indian PIN code"
+              placeholder={selectedPatient?.patientPostalCode || '6-digit PIN code'}
+              value={form.patientPostalCode}
+              onChange={handleChange}
+            />
+          </label>
+        </fieldset>
+
         <div className="form-group">
           <FaUserMd className="form-icon" />
           <select
@@ -733,13 +809,15 @@ const BookAppointment = () => {
           </section>
           <div id="appointment-report">
             <h2>🏥 Wellness Hospital</h2>
-            <p>123 Health St, Wellness City, IN</p>
-            <p>📞 +91 98765 43210</p>
-            <h4>🧾 Appointment Report</h4>
+            <p>123 Health St, Wellness City, IN · PIN: 000000</p>
+            <p>Main phone: +91 98765 43210</p>
+            <p>Emergency: +91 00000 00000 · Patient care: +91 00000 00001</p>
+            <h4>🧾 Appointment Receipt</h4>
             <table>
               <thead>
                 <tr>
-                  <th>Appointment ID</th>
+                  <th>Booking No.</th>
+                  <th>Token number</th>
                   <th>Patient</th>
                   <th>Patient ID</th>
                   <th>Doctor</th>
@@ -754,6 +832,7 @@ const BookAppointment = () => {
               <tbody>
                 <tr>
                   <td>{report.appointmentNumber || 'Legacy booking'}</td>
+                  <td>{report.tokenNumber ? String(report.tokenNumber).padStart(3, '0') : '—'}</td>
                   <td>{report.patientName}</td>
                   <td>{report.patientId}</td>
                   <td>{report.doctor}</td>

@@ -1,7 +1,7 @@
 import React from 'react';
 import './BrandLogo.css';
 
-export default function BrandLogo({ className = '', alt = 'Medora AI — Intelligent care, simplified' }) {
+export default function BrandLogo({ className = '', alt = 'Medora AI Health Care — Intelligent care, simplified' }) {
   return (
     <img
       className={`brand-logo ${className}`.trim()}
