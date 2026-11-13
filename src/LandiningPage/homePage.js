@@ -1,7 +1,19 @@
 import { useState } from 'react';
-import { FaArrowRight, FaHospital, FaPaperPlane, FaRobot, FaUserInjured, FaUserMd, FaClock } from 'react-icons/fa';
+import {
+  FaArrowRight,
+  FaBriefcaseMedical,
+  FaCalendarCheck,
+  FaClock,
+  FaHospital,
+  FaPaperPlane,
+  FaRobot,
+  FaShieldAlt,
+  FaUserInjured,
+  FaUserMd,
+} from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import './App.css';
+import hospitalLobby from './medora-hospital-lobby.jpg';
 
 const careServices = [
   {
@@ -23,6 +35,30 @@ const careServices = [
     icon: FaClock,
     title: 'Medicine timetable',
     description: 'Track medicine schedules and due checks for patients.',
+  },
+];
+
+const workspaces = [
+  {
+    icon: FaUserInjured,
+    title: 'Patient portal',
+    description: 'Manage appointments and stay connected with your care team.',
+    link: '/PatientLogin',
+    action: 'Patient sign in',
+  },
+  {
+    icon: FaUserMd,
+    title: 'Clinical workspace',
+    description: 'Give doctors and care teams a focused view of their daily work.',
+    link: '/DoctorLogin',
+    action: 'Doctor sign in',
+  },
+  {
+    icon: FaBriefcaseMedical,
+    title: 'Hospital workspace',
+    description: 'Coordinate operations, administration, and hospital services.',
+    link: '/HospitalLogin',
+    action: 'Staff sign in',
   },
 ];
 
@@ -83,6 +119,7 @@ export default function HomePage() {
           <nav className="med-home-nav" aria-label="Main navigation">
             <a href="#care-services">Features</a>
             <a href="#modules">Modules</a>
+            <a href="#workspaces">Portals</a>
             <Link to="/HospitalLogin">Login</Link>
           </nav>
         </header>
@@ -106,33 +143,39 @@ export default function HomePage() {
               }}>Book a demo <FaArrowRight aria-hidden="true" /></button>
               <a className="med-home-secondary-action" href="#care-services">See features</a>
             </div>
-            <p className="med-home-emergency"><FaHospital aria-hidden="true" /> Secure patient data, built for hospitals</p>
+            <div className="med-home-assurances">
+              <span><FaShieldAlt aria-hidden="true" /> Secure access</span>
+              <span><FaCalendarCheck aria-hidden="true" /> Connected care</span>
+              <span><FaHospital aria-hidden="true" /> Built for hospitals</span>
+            </div>
           </div>
 
-          <section className="med-home-dashboard-preview" id="modules" aria-label="Preview of the Medora AI hospital workspace">
-            <div className="med-home-preview-heading">
-              <span className="med-home-preview-mark"><FaHospital aria-hidden="true" /></span>
-              <span><small>SAMPLE DASHBOARD</small><strong>Hospital overview</strong></span>
-            </div>
-            <div className="med-home-preview-cards">
-              <article>
-                <span><small>Patients today</small><strong>128</strong></span>
-              </article>
-              <article>
-                <span><small>Medicines due</small><strong>34</strong></span>
-              </article>
-            </div>
-            <div className="med-home-preview-workflow">
-              <div className="med-home-preview-workflow-copy">
-                <div><span className="med-home-preview-kicker"><FaRobot aria-hidden="true" /> AI ASSISTANT</span><span className="med-home-preview-online">ONLINE</span></div>
-                <strong>3 patients need a medicine check</strong>
-                <small>Nurse alerts sent to Ward B.</small>
-              </div>
-            </div>
+          <section className="med-home-dashboard-preview" aria-label="Hospital reception">
+            <img className="med-home-hospital-image" src={hospitalLobby} alt="A bright, modern hospital reception and waiting area" />
           </section>
         </section>
 
-        <section className="med-home-services" id="care-services" aria-labelledby="med-home-services-title">
+        <section className="med-home-workspaces" id="workspaces" aria-labelledby="med-home-workspaces-title">
+          <div className="med-home-section-heading">
+            <div>
+              <p>One connected platform</p>
+              <h2 id="med-home-workspaces-title">A workspace for every care journey</h2>
+            </div>
+            <p className="med-home-section-description">Choose the portal that fits your role.</p>
+          </div>
+          <div className="med-home-workspace-grid">
+            {workspaces.map(({ icon: Icon, title, description, link, action }) => (
+              <article className="med-home-workspace-card" key={title}>
+                <span className="med-home-workspace-icon"><Icon aria-hidden="true" /></span>
+                <h3>{title}</h3>
+                <p>{description}</p>
+                <Link to={link}>{action} <FaArrowRight aria-hidden="true" /></Link>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="med-home-services" id="modules" aria-labelledby="med-home-services-title">
           <div className="med-home-section-heading">
             <div>
               <p>Built for connected care</p>
@@ -140,7 +183,7 @@ export default function HomePage() {
             </div>
             <Link to="/HospitalLogin">Explore the hospital portal <FaArrowRight aria-hidden="true" /></Link>
           </div>
-          <div className="med-home-service-grid">
+          <div className="med-home-service-grid" id="care-services">
             {careServices.map(({ icon: Icon, title, description }) => (
               <article className="med-home-service-card" key={title}>
                 <span className="med-home-service-icon"><Icon aria-hidden="true" /></span>
@@ -148,6 +191,17 @@ export default function HomePage() {
               </article>
             ))}
           </div>
+        </section>
+
+        <section className="med-home-cta" aria-labelledby="med-home-cta-title">
+          <div>
+            <span className="med-home-cta-icon"><FaClock aria-hidden="true" /></span>
+            <div>
+              <p>Make every handoff clearer</p>
+              <h2 id="med-home-cta-title">Bring your care team into one connected workspace.</h2>
+            </div>
+          </div>
+          <Link to="/HospitalLogin">Explore the hospital portal <FaArrowRight aria-hidden="true" /></Link>
         </section>
         </main>
       </div>

@@ -2,49 +2,106 @@
   box-sizing: border-box;
   background: #fff;
   color: var(--clinic-muted);
-    padding: 20px 30px;
-    text-align: center;
+    padding: 2rem clamp(1.25rem, 4vw, 3rem) 1.25rem;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    position: relative;
-    bottom: 0;
-    width: 100%;
     border-top: 1px solid var(--clinic-line);
   }
 
   .footer-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
+    display: grid;
+    width: min(100%, 1220px);
+    gap: 1.35rem;
+    margin: 0 auto;
   }
-  
+
+  .footer-main {
+    display: grid;
+    grid-template-columns: minmax(230px, 0.9fr) minmax(0, 2.1fr);
+    align-items: center;
+    gap: 2rem;
+  }
+
   .footer-content p {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: 0.82rem;
   }
-  
+
+  .footer-contact {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 0;
+    font-size: 0.84rem;
+    font-style: normal;
+  }
+
+  .footer-contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    min-width: 0;
+  }
+
+  .footer-contact-item > svg {
+    flex: 0 0 auto;
+    margin-top: 0.15rem;
+    color: var(--clinic-primary);
+  }
+
+  .footer-contact-item > span {
+    display: grid;
+    gap: 0.3rem;
+    min-width: 0;
+  }
+
+  .footer-contact-item strong {
+    color: var(--clinic-ink);
+    font-size: 0.78rem;
+  }
+
+  .footer-contact-item a,
+  .footer-contact-item span span {
+    overflow-wrap: anywhere;
+    color: var(--clinic-muted);
+    text-decoration: none;
+  }
+
+  .footer-contact-item a:hover {
+    color: var(--clinic-primary-strong);
+    text-decoration: underline;
+  }
+
+  .footer-bottom {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 1rem;
+    border-top: 1px solid var(--clinic-line);
+  }
+
   .footer-links {
     display: flex;
-    gap: 15px;
+    gap: 1.1rem;
   }
-  
+
   .footer-links a {
     color: var(--clinic-primary-strong);
-    text-decoration: none;
+    font-size: 0.82rem;
     font-weight: 500;
+    text-decoration: none;
     transition: color 0.3s ease;
   }
-  
+
   .footer-links a:hover {
     color: var(--clinic-ink);
     text-decoration: underline;
   }
 
-.footer-brand {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem 1rem;
+  }
 
 .footer-brand .brand-logo {
   width: 5.5rem;
@@ -52,4 +109,30 @@
 
 .footer-brand p {
   margin: 0;
+}
+
+@media (max-width: 900px) {
+  .footer-main {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .footer {
+    padding: 1.5rem 1rem 1rem;
+  }
+
+  .footer-contact {
+    grid-template-columns: 1fr;
+    gap: 0.9rem;
+  }
+
+  .footer-bottom {
+    justify-content: flex-start;
+  }
+
+  .footer-links {
+    flex-wrap: wrap;
+  }
 }

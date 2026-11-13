@@ -327,3 +327,160 @@
     transition: none;
   }
 }
+
+.login-container {
+  min-height: 100vh;
+  padding: clamp(1.25rem, 4vw, 3.5rem);
+  background:
+    radial-gradient(ellipse at 92% 8%, rgba(201, 231, 220, 0.46), transparent 30rem),
+    #f6f9f7;
+}
+
+.login-container .auth-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(410px, 0.95fr);
+  width: min(100%, 1160px);
+  min-height: 650px;
+  border-color: #e1e9e5;
+  border-radius: 1.5rem;
+  box-shadow: 0 28px 80px rgba(31, 69, 58, 0.12);
+}
+
+.login-container .auth-promo {
+  min-height: 650px;
+  background:
+    linear-gradient(145deg, rgba(14, 47, 42, 0.86), rgba(15, 91, 77, 0.78) 58%, rgba(17, 119, 98, 0.78)),
+    url("../LandiningPage/medora-hospital-lobby.jpg") center / cover no-repeat;
+}
+
+.login-container .auth-brand-icon {
+  width: 8rem;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.login-container .auth-promo-symbol {
+  border-color: rgba(203, 245, 227, 0.32);
+  color: #d7f5e9;
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.login-container .auth-promo-content h2 {
+  max-width: 11ch;
+  font-size: clamp(2.4rem, 4vw, 3.4rem);
+  line-height: 1.04;
+}
+
+.login-container .auth-card {
+  max-width: 540px;
+  padding: clamp(2.5rem, 5vw, 4.5rem);
+}
+
+.login-container .auth-card-heading {
+  margin-bottom: 2rem;
+}
+
+.login-container .auth-kicker {
+  color: #128774;
+}
+
+.login-container .auth-card h1 {
+  color: #173b36;
+  font-size: clamp(2rem, 3vw, 2.55rem);
+}
+
+.login-container .login-description {
+  max-width: 27rem;
+  color: #60736e;
+}
+
+.login-container .auth-input-group input {
+  min-height: 3.35rem;
+  border-radius: 0.75rem;
+  background: #f9fbfa;
+}
+
+.login-container .auth-submit {
+  min-height: 3.35rem;
+  margin-top: 0.55rem;
+  border-radius: 0.75rem;
+  background: #0f8977;
+}
+
+.login-container .auth-submit:hover:not(:disabled) {
+  background: #096f62;
+}
+
+.login-container .login-options {
+  gap: 0.8rem 1.1rem;
+}
+
+.login-container .login-options a {
+  color: #118573;
+}
+
+@media (max-width: 760px) {
+  .login-container {
+    padding: 0.75rem;
+  }
+
+  .login-container .auth-layout {
+    grid-template-columns: 1fr;
+    width: min(100%, 560px);
+    min-height: 0;
+  }
+
+  .login-container .auth-promo {
+    min-height: 300px;
+    padding: 1.25rem 1.3rem;
+    background-position: center 48%;
+  }
+
+  .login-container .auth-brand-icon {
+    width: 7rem;
+  }
+
+  .login-container .auth-promo-content {
+    max-width: 30rem;
+    margin: 1.8rem 0 1.2rem;
+  }
+
+  .login-container .auth-promo-content h2 {
+    max-width: 18ch;
+    font-size: clamp(1.9rem, 7vw, 2.6rem);
+  }
+
+  .login-container .auth-promo-symbol {
+    width: 2.7rem;
+    height: 2.7rem;
+    margin-bottom: 0.8rem;
+    font-size: 1rem;
+  }
+
+  .login-container .auth-promo-description {
+    margin-top: 0.6rem;
+  }
+
+  .login-container .auth-card {
+    max-width: none;
+    padding: 1.8rem 1.5rem 2rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .login-container .auth-promo {
+    min-height: 270px;
+  }
+
+  .login-container .auth-promo-content {
+    margin: 1.25rem 0 0.8rem;
+  }
+
+  .login-container .auth-card {
+    padding: 1.5rem 1.2rem 1.7rem;
+  }
+}

@@ -17,15 +17,20 @@ test('presents Medora AI and links visitors to the feature modules and hospital 
   expect(screen.getByRole('link', { name: 'Login' })).toHaveAttribute('href', '/HospitalLogin');
   expect(screen.getByRole('link', { name: 'Features' })).toHaveAttribute('href', '#care-services');
   expect(screen.getByRole('link', { name: 'Modules' })).toHaveAttribute('href', '#modules');
+  expect(screen.getByRole('link', { name: 'Portals' })).toHaveAttribute('href', '#workspaces');
   expect(screen.getByRole('button', { name: /Book a demo/ })).toBeInTheDocument();
   expect(screen.getByRole('link', { name: 'See features' })).toHaveAttribute('href', '#care-services');
   expect(screen.getByRole('heading', { name: 'Core modules' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'A workspace for every care journey' })).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Patient sign in' })).toHaveAttribute('href', '/PatientLogin');
+  expect(screen.getByRole('link', { name: 'Doctor sign in' })).toHaveAttribute('href', '/DoctorLogin');
+  expect(screen.getByRole('link', { name: 'Staff sign in' })).toHaveAttribute('href', '/HospitalLogin');
   ['Patient CRM', 'Appointments', 'Patient monitoring', 'Medicine timetable'].forEach((name) => {
     expect(screen.getByRole('heading', { name })).toBeInTheDocument();
   });
-  expect(screen.getByText('128')).toBeInTheDocument();
-  expect(screen.getByText('34')).toBeInTheDocument();
-  expect(screen.getByText('3 patients need a medicine check')).toBeInTheDocument();
+  expect(screen.getByRole('img', { name: 'A bright, modern hospital reception and waiting area' })).toBeInTheDocument();
+  expect(screen.queryByText('SAMPLE DASHBOARD')).not.toBeInTheDocument();
+  expect(screen.queryByText('3 patients need a medicine check')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Open Ask Medora chat' })).toHaveTextContent('Ask Medora');
 });
 
