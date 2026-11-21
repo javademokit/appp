@@ -114,7 +114,7 @@ const HospitalDashboard = () => {
         return <Dashboard />;
       case "book-appointment":
         if (!appointmentAccess) return <Dashboard />;
-        return <BookAppointment />;
+        return <BookAppointment username={username} />;
       case "patients":
         return <Patients />;
       case "appointments":
@@ -122,7 +122,7 @@ const HospitalDashboard = () => {
       case "doctorsp":
         return <DoctorProfile />;
       case "reports":
-        return <ReportViewer />;
+        return <ReportViewer username={username} />;
       case "billing":
         return <PaymentPage />;
       case "discharges":

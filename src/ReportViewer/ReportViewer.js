@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { apiFetch } from '../API/api';
+import { printAppointmentReceipt } from './appointmentReceipt';
 import './ReportViewer.css';
+
+const APPOINTMENT_RECEIPTS_REPORT = 'Appointment Receipts';
 
 const mockData = {
   'Appointments Report': [
@@ -12,11 +16,65 @@ const mockData = {
   ],
 };
 
-const ReportViewer = () => {
+const ReportViewer = ({ username = '' }) => {
   const [selectedReport, setSelectedReport] = useState('Appointments Report');
   const [selectedRows, setSelectedRows] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [mobileSearch, setMobileSearch] = useState('');
+  const [appointmentDateFilter, setAppointmentDateFilter] = useState('');
+  const [submittedSearch, setSubmittedSearch] = useState(null);
+  const [searchError, setSearchError] = useState('');
+  const [loadingAppointments, setLoadingAppointments] = useState(false);
+  const [appointmentError, setAppointmentError] = useState('');
+  const [receiptError, setReceiptError] = useState('');
 
-  const data = mockData[selectedReport];
+  const isAppointmentReceiptsReport = selectedReport === APPOINTMENT_RECEIPTS_REPORT;
+  const data = mockData[selectedReport] || [];
+  const matchingAppointments = useMemo(() => appointments.filter((appointment) => (
+    submittedSearch
+    && String(appointment.mobileNo || '').replace(/\D/g, '').includes(submittedSearch.mobileDigits)
+    && (!submittedSearch.date || appointment.date === submittedSearch.date)
+  )), [appointments, submittedSearch]);
+
+  const handleAppointmentSearch = (event) => {
+    event.preventDefault();
+    const mobileDigits = mobileSearch.replace(/\D/g, '');
+    if (mobileDigits.length < 3) {
+      setSubmittedSearch(null);
+      setSearchError('Enter at least 3 digits of the patient mobile number.');
+      return;
+    }
+
+    setSearchError('');
+    setReceiptError('');
+    setSubmittedSearch({ mobileDigits, date: appointmentDateFilter });
+  };
+
+  useEffect(() => {
+    if (!isAppointmentReceiptsReport) return undefined;
+
+    let active = true;
+    const loadAppointments = async () => {
+      setLoadingAppointments(true);
+      setAppointmentError('');
+      try {
+        const response = await apiFetch('/appointments1');
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(result.message || result.detail || `Could not load appointments (${response.status})`);
+        }
+        if (!Array.isArray(result)) throw new Error('Appointment service returned an invalid appointment list');
+        if (active) setAppointments(result);
+      } catch (requestError) {
+        if (active) setAppointmentError(requestError.message || 'Could not load appointments');
+      } finally {
+        if (active) setLoadingAppointments(false);
+      }
+    };
+
+    loadAppointments();
+    return () => { active = false; };
+  }, [isAppointmentReceiptsReport]);
 
   const toggleSelectRow = (id) => {
     setSelectedRows((prev) =>
@@ -208,25 +266,124 @@ const ReportViewer = () => {
 
   return (
     <div className="report-container">
-      <h1>📊 Report Viewer</h1>
+      <header className="report-heading">
+        <p>Operations &amp; finance</p>
+        <h1>Report Viewer</h1>
+        <span>Review hospital reports and access patient appointment receipts.</span>
+      </header>
       <div className="report-controls">
         <select
+          aria-label="Report type"
           value={selectedReport}
           onChange={(e) => {
             setSelectedReport(e.target.value);
             setSelectedRows([]); // reset selection
+            setMobileSearch('');
+            setAppointmentDateFilter('');
+            setSubmittedSearch(null);
+            setSearchError('');
+            setReceiptError('');
           }}
         >
-          {Object.keys(mockData).map((type) => (
+          {[...Object.keys(mockData), APPOINTMENT_RECEIPTS_REPORT].map((type) => (
             <option key={type} value={type}>
               {type}
             </option>
           ))}
         </select>
-        <button onClick={handlePrintSelected}>🖨️ Print Selected</button>
+        {!isAppointmentReceiptsReport && <button onClick={handlePrintSelected}>🖨️ Print Selected</button>}
       </div>
 
-      <div className="report-table-wrapper">{renderTable()}</div>
+      {isAppointmentReceiptsReport ? (
+        <section className="receipt-report" aria-label="Appointment receipt lookup">
+          <form className="receipt-search-form" onSubmit={handleAppointmentSearch}>
+            <label htmlFor="receipt-patient-mobile">Patient mobile number</label>
+            <input
+              id="receipt-patient-mobile"
+              type="search"
+              inputMode="tel"
+              autoComplete="off"
+              placeholder="Enter a full or partial mobile number"
+              value={mobileSearch}
+              onChange={(event) => {
+                setMobileSearch(event.target.value);
+                setSubmittedSearch(null);
+                setSearchError('');
+                setReceiptError('');
+              }}
+              disabled={loadingAppointments}
+            />
+            <label htmlFor="receipt-appointment-date">Appointment date (optional)</label>
+            <input
+              id="receipt-appointment-date"
+              type="date"
+              value={appointmentDateFilter}
+              onChange={(event) => {
+                setAppointmentDateFilter(event.target.value);
+                setSubmittedSearch(null);
+                setReceiptError('');
+              }}
+              disabled={loadingAppointments}
+            />
+            <button className="receipt-search-button" type="submit" disabled={loadingAppointments}>
+              Search
+            </button>
+          </form>
+
+          {loadingAppointments && <p role="status">Loading appointments…</p>}
+          {appointmentError && <p className="receipt-report-error" role="alert">{appointmentError}</p>}
+          {searchError && <p className="receipt-report-error" role="alert">{searchError}</p>}
+          {receiptError && <p className="receipt-report-error" role="alert">{receiptError}</p>}
+          {!submittedSearch && !searchError
+            && <p role="status">Enter a mobile number and optionally an appointment date, then select Search.</p>}
+
+          {matchingAppointments.length > 0 && (
+            <div className="report-table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Booking No.</th><th>Token</th><th>Patient</th><th>Mobile</th>
+                    <th>Doctor</th><th>Date</th><th>Time</th><th>Reason</th><th>Fee</th><th>Receipt</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {matchingAppointments.map((appointment) => (
+                    <tr key={appointment.id}>
+                      <td>{appointment.appointmentNumber || 'Legacy booking'}</td>
+                      <td>{appointment.tokenNumber ? String(appointment.tokenNumber).padStart(3, '0') : '—'}</td>
+                      <td>{appointment.patientName || '—'}<small>{appointment.patientId || 'No patient ID'}</small></td>
+                      <td>{appointment.mobileNo || '—'}</td>
+                      <td>{appointment.doctor || '—'}</td>
+                      <td>{appointment.date || '—'}</td>
+                      <td>{appointment.time || '—'}</td>
+                      <td>{appointment.reason || '—'}</td>
+                      <td>₹{Number(appointment.fee || 0).toLocaleString('en-IN', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}</td>
+                      <td>
+                        <button
+                          className="receipt-download-button"
+                          type="button"
+                          onClick={() => {
+                            setReceiptError(printAppointmentReceipt(appointment, undefined, username)
+                              ? ''
+                              : 'Allow pop-ups to print or save the appointment receipt.');
+                          }}
+                        >
+                          Print / Save as PDF
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          {submittedSearch && !loadingAppointments && !appointmentError && matchingAppointments.length === 0
+            && <p role="status">No appointment receipts found for this mobile number and date.</p>}
+        </section>
+      ) : <div className="report-table-wrapper">{renderTable()}</div>}
     </div>
   );
 };

@@ -5,63 +5,295 @@
   font-family: inherit;
 }
 
+.report-heading {
+  margin-bottom: 1.15rem;
+}
+
+.report-heading p {
+  margin: 0 0 0.3rem;
+  color: var(--clinic-primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .report-container h1 {
-  margin: 0 0 1rem;
-  font-size: 1.55rem;
+  margin: 0;
+  color: var(--clinic-ink);
+  font-size: 1.65rem;
+}
+
+.report-heading span {
+  display: block;
+  margin-top: 0.35rem;
+  color: #70817b;
+  font-size: 0.86rem;
 }
 
 .report-controls {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 0.65rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.1rem;
+  padding: 0.9rem;
+  border: 1px solid var(--clinic-line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(27, 51, 45, 0.04);
 }
 
 .report-controls select,
 .report-controls button {
   box-sizing: border-box;
-  min-height: 40px;
+  min-height: 42px;
   border: 1px solid var(--clinic-line);
-  border-radius: 5px;
-  padding: 0.55rem 0.75rem;
+  border-radius: 7px;
+  padding: 0.6rem 0.85rem;
   background: #fff;
   color: var(--clinic-ink);
   font: inherit;
   font-size: 0.82rem;
 }
 
+.report-controls select {
+  min-width: 220px;
+}
+
 .report-controls button {
-  border-color: var(--clinic-primary);
-  background: var(--clinic-primary);
+  border-color: var(--clinic-primary-strong);
+  background: var(--clinic-primary-strong);
   color: #fff;
   font-weight: 700;
   cursor: pointer;
+  transition: background-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+}
+
+.report-controls button:hover,
+.receipt-search-button:hover:not(:disabled),
+.receipt-download-button:hover {
+  background: #124e43;
+  box-shadow: 0 4px 10px rgba(27, 84, 73, 0.18);
+  transform: translateY(-1px);
+}
+
+.report-controls select:focus-visible,
+.report-controls button:focus-visible,
+.receipt-search-form input:focus-visible,
+.receipt-search-button:focus-visible,
+.receipt-download-button:focus-visible {
+  outline: 3px solid rgba(31, 111, 95, 0.22);
+  outline-offset: 2px;
+}
+
+.receipt-report {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 100%;
+  padding: 1rem;
+  border: 1px solid var(--clinic-line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(27, 51, 45, 0.04);
+}
+
+.receipt-search-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.65rem 0.8rem;
+}
+
+.receipt-search-form label {
+  grid-row: 1;
+  color: var(--clinic-ink);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.receipt-search-form input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid var(--clinic-line);
+  border-radius: 7px;
+  padding: 0.6rem 0.8rem;
+  background: #fff;
+  color: var(--clinic-ink);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.receipt-search-form input:nth-of-type(1) { grid-column: 1; grid-row: 2; }
+.receipt-search-form input:nth-of-type(2) { grid-column: 2; grid-row: 2; }
+
+.receipt-search-button {
+  grid-column: 3;
+  grid-row: 2;
+  min-height: 42px;
+  border: 0;
+  border-radius: 7px;
+  padding: 0.6rem 1rem;
+  background: var(--clinic-primary-strong);
+  color: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+}
+
+.receipt-search-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.receipt-report-error {
+  color: #a62222;
+}
+
+.receipt-report > p[role='status'] {
+  margin: 0;
+  color: #687a74;
+  font-size: 0.8rem;
+}
+
+.receipt-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  background: #eef2f1;
+  color: #536761;
+  font-size: 0.7rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.receipt-status.paid,
+.receipt-status.no_charge {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.receipt-status.pending,
+.receipt-status.partially_paid {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.receipt-status.void,
+.receipt-status.refund_required {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.receipt-report table small {
+  display: block;
+  margin-top: 0.2rem;
+  color: #687a74;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.receipt-download-button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 7px;
+  padding: 0.5rem 0.75rem;
+  background: var(--clinic-primary-strong);
+  color: #fff;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
 }
 
 .report-table-wrapper {
   overflow-x: auto;
   border: 1px solid var(--clinic-line);
-  border-radius: 7px;
+  border-radius: 10px;
   background: #fff;
+  box-shadow: 0 3px 12px rgba(27, 51, 45, 0.05);
 }
 
 .report-table-wrapper table {
   width: 100%;
+  min-width: 680px;
   border-collapse: collapse;
 }
 
 .report-table-wrapper th,
 .report-table-wrapper td {
   border-bottom: 1px solid #e7eeeb;
-  padding: 0.72rem 0.8rem;
+  padding: 0.85rem 0.9rem;
   text-align: left;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
+  vertical-align: middle;
+}
+
+.report-table-wrapper tbody tr {
+  transition: background-color 120ms ease;
+}
+
+.report-table-wrapper tbody tr:hover {
+  background: #f7fbf9;
+}
+
+.report-table-wrapper tbody tr:last-child td {
+  border-bottom: 0;
 }
 
 .report-table-wrapper th {
-  background-color: #edf5f2;
+  background: #edf5f2;
   color: #536761;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  font-weight: bold;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.report-table-wrapper input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--clinic-primary-strong);
+  cursor: pointer;
+}
+
+@media (max-width: 620px) {
+  .report-heading h1 {
+    font-size: 1.4rem;
+  }
+
+  .report-controls {
+    align-items: stretch;
+  }
+
+  .report-controls select,
+  .report-controls button {
+    width: 100%;
+  }
+
+  .receipt-search-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .receipt-search-form label,
+  .receipt-search-form input:nth-of-type(1),
+  .receipt-search-form input:nth-of-type(2),
+  .receipt-search-button {
+    grid-column: 1;
+    grid-row: auto;
+  }
+
+  .receipt-search-button {
+    width: 100%;
+  }
+
+  .receipt-report {
+    padding: 0.75rem;
+  }
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './BookAppointment.css';
 import { apiFetch } from '../API/api';
 import { startAppointmentCheckout } from '../PaymentPage/paymentGatewayCheckout';
+import { printAppointmentReceipt } from '../ReportViewer/appointmentReceipt';
 import { doctorDepartment, doctorOptionLabel } from '../utils/doctorDisplay';
 import {
   FaUser,
@@ -43,7 +44,7 @@ const parseAppointmentDateTime = (date, time) => {
   );
 };
 
-const BookAppointment = () => {
+const BookAppointment = ({ username = '' }) => {
   const newPatientOption = 'NEW';
   const followUpWindowHours = 48;
   const minimumDate = formatLocalDate(new Date());
@@ -250,7 +251,9 @@ const BookAppointment = () => {
         setRequiresReload(true);
         throw new Error('The server saved the appointment without returning a Patient ID. Do not submit again; contact support and reload after reconciliation.');
       }
-      setBookingTime(new Date().toLocaleString());
+      setBookingTime(data.bookingTime
+        ? new Date(data.bookingTime).toLocaleString('en-GB')
+        : new Date().toLocaleString('en-GB'));
       setReport(data);
       setPaymentAmount(data.balanceDue || '');
       setPaymentError('');
@@ -386,76 +389,10 @@ const BookAppointment = () => {
   };
   const displayedFee = selectedPatient && feeDetails.isFollowUp ? 0 : form.fee;
 
-  const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;',
-  })[character]);
-
   const handlePrint = () => {
-    const printContent = document.getElementById('appointment-report');
-    const newWin = window.open('', '_blank');
-    if (!newWin || !printContent) {
+    if (!printAppointmentReceipt(report, bookingTime, username)) {
       setError('Allow pop-ups to print the appointment receipt.');
-      return;
     }
-
-    newWin.document.write(`
-      <html>
-        <head>
-          <title>Appointment Receipt</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; }
-            .print-brand { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 12px; }
-            .print-brand img { width: 112px; height: auto; }
-            h2, h4 { text-align: center; margin: 5px 0; }
-            p { text-align: center; margin: 2px 0; }
-            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-            th, td { border: 1px solid #333; padding: 10px; text-align: center; }
-            .signature-block { margin-top: 40px; text-align: right; font-size: 14px; }
-            .signature-block p { margin: 4px 0; }
-            .close-btn {
-              display: block;
-              margin: 30px auto 0;
-              padding: 10px 20px;
-              font-size: 16px;
-              background-color: #f44336;
-              color: white;
-              border: none;
-              cursor: pointer;
-            }
-          </style>
-        </head>
-        <body>
-          <header class="print-brand"><img src="/medora_ai_logo.svg" alt="Medora AI Health Care"><h2>Wellness Hospital</h2></header>
-          <p>123 Health St, Wellness City, IN · PIN: 000000</p>
-          <p>Main phone: +91 98765 43210</p>
-          <p>Emergency: +91 00000 00000 · Patient care: +91 00000 00001</p>
-          <h4>Appointment Receipt</h4>
-          <table>
-            <tbody>
-              <tr><th>Booking No.</th><td>${escapeHtml(report.appointmentNumber || 'Legacy booking')}</td></tr>
-              <tr><th>Token number</th><td>${escapeHtml(report.tokenNumber ? String(report.tokenNumber).padStart(3, '0') : '—')}</td></tr>
-              <tr><th>Patient ID</th><td>${escapeHtml(report.patientId)}</td></tr>
-              <tr><th>Patient</th><td>${escapeHtml(report.patientName)}</td></tr>
-              <tr><th>Doctor</th><td>${escapeHtml(report.doctor)}</td></tr>
-              <tr><th>Date</th><td>${escapeHtml(report.date)}</td></tr>
-              <tr><th>Time</th><td>${escapeHtml(report.time)}</td></tr>
-              <tr><th>Reason</th><td>${escapeHtml(report.reason)}</td></tr>
-              <tr><th>Fee</th><td>${escapeHtml(report.fee)}</td></tr>
-            </tbody>
-          </table>
-          <p>Booking time: ${escapeHtml(bookingTime)}</p>
-          <button class="close-btn" onclick="window.close()">Close</button>
-        </body>
-      </html>
-    `);
-
-    newWin.document.close();
-    newWin.focus();
-    newWin.print();
   };
 
   return (
