@@ -13,7 +13,10 @@ const jsonResponse = (body) => ({
 });
 
 describe('PayrollPage', () => {
-  afterEach(() => jest.clearAllMocks());
+  afterEach(() => {
+    jest.clearAllMocks();
+    window.history.pushState({}, '', '/');
+  });
 
   it('shows the generic HR dashboard and employee onboarding UI', async () => {
     apiFetch.mockImplementation(async (path, options = {}) => {
@@ -100,11 +103,43 @@ describe('PayrollPage', () => {
     render(<PayrollPage hideHeader payrollOnly />);
 
     expect(await screen.findByRole('heading', { name: /Run Payroll/ })).toBeInTheDocument();
-    expect(screen.getByRole('navigation', { name: 'HR workspace' }))
-      .toHaveTextContent('Payroll');
+    expect(screen.getByRole('navigation', { name: 'Payroll views' }))
+      .toHaveTextContent('Payroll run');
+    expect(screen.queryByRole('navigation', { name: 'HR workspace' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Employees' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Salary' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Attendance' })).not.toBeInTheDocument();
+  });
+
+  it('keeps embedded payroll run, approval, history, and overtime views available', async () => {
+    apiFetch.mockImplementation(async (path) => {
+      if (path === '/users/me') return jsonResponse({ username: 'admin', roles: ['HOSPITAL_ADMIN'] });
+      if (path === '/payroll') return jsonResponse([{
+        id: 'history-run', month: '2026-10', status: 'PAID',
+        employeeCount: 1, totalGross: 1000, totalDeduction: 100, totalNet: 900,
+      }]);
+      if (path.startsWith('/payroll?month=')) return jsonResponse([{
+        id: 'approval-run', month: '2026-10', status: 'PENDING_APPROVAL',
+        employeeCount: 1, totalGross: 1000, totalDeduction: 100, totalNet: 900,
+      }]);
+      return jsonResponse([]);
+    });
+
+    render(<PayrollPage hideHeader payrollOnly />);
+
+    const tabs = await screen.findByRole('navigation', { name: 'Payroll views' });
+    expect(tabs).toHaveTextContent('Payroll run');
+    expect(tabs).toHaveTextContent('Payroll approval');
+    expect(tabs).toHaveTextContent('Payroll history');
+    expect(tabs).toHaveTextContent('Overtime allowances');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Payroll history' }));
+    expect(await screen.findByRole('heading', { name: 'Payroll History' })).toBeInTheDocument();
+    expect(screen.getByText('Paid')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Payroll approval' }));
+    expect(await screen.findByRole('heading', { name: 'Payroll Approval' })).toBeInTheDocument();
+    expect(screen.getByRole('navigation', { name: 'Payroll views' })).toBeInTheDocument();
   });
 
   it('lets payroll managers access generated employee payslips inside the admin payroll workspace', async () => {
@@ -153,13 +188,11 @@ describe('PayrollPage', () => {
     const continueButtons = await screen.findAllByRole('button', { name: 'Continue current run' });
     fireEvent.click(continueButtons[0]);
 
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      `A payroll run for ${month} already exists (Draft).`,
-    );
-    expect(screen.getByRole('button', { name: 'Calculate' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Review payroll' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Calculate payroll' })).toBeInTheDocument();
   });
 
-  it('explains maker-checker approval and hides self-approval action', async () => {
+  it('allows an admin to request and approve its own payroll run', async () => {
     const month = new Date().toISOString().slice(0, 7);
     let status = 'CALCULATED';
     apiFetch.mockImplementation(async (path, options = {}) => {
@@ -178,6 +211,10 @@ describe('PayrollPage', () => {
         status = 'PENDING_APPROVAL';
         return jsonResponse({ id: 'calculated-run', status });
       }
+      if (path === '/payroll/calculated-run/approve' && options.method === 'POST') {
+        status = 'APPROVED';
+        return jsonResponse({ id: 'calculated-run', status });
+      }
       return jsonResponse([]);
     });
 
@@ -189,7 +226,12 @@ describe('PayrollPage', () => {
     fireEvent.click(requestButton);
 
     expect(await screen.findByRole('status')).toHaveTextContent('Payroll request-approval completed.');
-    expect(await screen.findByText('Awaiting another approver')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Approve' })).toBeInTheDocument();
+    expect(screen.queryByText('Awaiting another approver')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Approve' }));
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Payroll approve completed.');
+    expect(await screen.findByRole('button', { name: 'Generate payslips' })).toBeInTheDocument();
   });
 
   it('keeps employee onboarding available in its separate embedded workspace', async () => {
@@ -560,6 +602,7 @@ describe('PayrollPage', () => {
 
     render(<PayrollPage />);
     expect(await screen.findByText('Total employees')).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Payroll month'), { target: { value: '2026-10' } });
     fireEvent.click(screen.getByRole('button', { name: 'Payroll', exact: true }));
     fireEvent.click(await screen.findByRole('button', { name: 'Preview' }));
     expect(await screen.findByText('Rahul Sharma')).toBeInTheDocument();
@@ -598,12 +641,15 @@ describe('PayrollPage', () => {
     });
 
     render(<PayrollPage />);
+    fireEvent.change(await screen.findByLabelText('Payroll month'), { target: { value: '2026-10' } });
     fireEvent.click(await screen.findByRole('button', { name: 'Payroll', exact: true }));
     fireEvent.click(await screen.findByRole('button', { name: 'Calculate' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Payroll was not calculated. These active employee(s) need an active salary structure covering the full payroll month: DT-100 (Dr Example) is missing an active salary structure covering the full payroll month (2026-10). Open Salary → Salary Structures, assign each employee an active structure whose effective dates cover the entire month, then calculate again. After calculation succeeds, the CRM team can review and approve the payroll run.',
     );
+    expect(screen.getByRole('link', { name: 'Open Salary Structures' }))
+      .toHaveAttribute('href', '/AdminDashboard?section=salary&salaryView=structures');
     expect(screen.getByRole('alert')).not.toHaveTextContent('Unprocessable Entity');
   });
 
@@ -679,7 +725,7 @@ describe('PayrollPage', () => {
 
   it('loads all pay periods in Payroll History and exits an open payroll preview', async () => {
     apiFetch.mockImplementation(async (path) => {
-      if (path === '/users/me') return jsonResponse({ username: 'crm-user', roles: ['CRM_EXECUTIVE'] });
+      if (path === '/users/me') return jsonResponse({ username: 'admin', roles: ['HOSPITAL_ADMIN'] });
       if (path.startsWith('/payroll?month=')) {
         return jsonResponse([{
           id: 'run-current', month: '2026-10', status: 'PAID', employeeCount: 1,
@@ -696,7 +742,8 @@ describe('PayrollPage', () => {
     });
 
     render(<PayrollPage />);
-    fireEvent.click(await screen.findByRole('button', { name: 'View preview' }));
+    fireEvent.click(await screen.findByRole('button', { name: 'Payroll', exact: true }));
+    fireEvent.click(await screen.findByRole('button', { name: 'View paid run' }));
     expect(await screen.findByRole('heading', { name: 'Review payroll' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Payroll History' }));

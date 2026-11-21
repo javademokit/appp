@@ -4,10 +4,7 @@ import { HrDataTable, HrPanelHeading, asArray, formatMoney } from '../hrUi';
 
 export default function SalaryStructure({ structures = [], components = [], onAssign }) {
   const componentsById = new Map(asArray(components).map((component) => [component.id, component]));
-  const grossForStructure = (structure) => structure.grossSalary ?? structure.totalGross
-    ?? asArray(structure.components).reduce((total, line) => {
-      const component = componentsById.get(line.componentId);
-      if (String(component?.type || '').toUpperCase() !== 'EARNING') return total;
+  const ctcForStructure = (structure) => asArray(structure.components).reduce((total, line) => {
       const amount = Number(line.amount ?? 0);
       const units = Number(line.units ?? 1);
       return total + (Number.isFinite(amount) ? amount : 0) * (Number.isFinite(units) ? units : 1);
@@ -19,7 +16,8 @@ export default function SalaryStructure({ structures = [], components = [], onAs
     <HrDataTable rows={asArray(structures)} columns={[
       { key: 'employeeName', label: 'Employee' }, { key: 'employeeCode', label: 'Employee ID' },
       { key: 'effectiveFrom', label: 'Effective from' }, { key: 'effectiveTo', label: 'Effective to' },
-      { key: 'grossSalary', label: 'Gross salary', render: (row) => formatMoney(grossForStructure(row)) },
+      { key: 'monthlyCtc', label: 'Monthly CTC', render: (row) => formatMoney(ctcForStructure(row)) },
+      { key: 'annualCtc', label: 'Annual CTC', render: (row) => formatMoney(ctcForStructure(row) * 12) },
       { key: 'status', label: 'Status' },
     ]} />
   </section>;

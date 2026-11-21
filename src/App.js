@@ -20,6 +20,13 @@ const adminPayrollRedirect = (roles, location) => {
   const isAdmin = roles.some((role) => [
     ROLES.SUPER_ADMIN, ROLES.HOSPITAL_ADMIN, ROLES.CLINIC_ADMIN,
   ].includes(role));
+  if (isAdmin && location.pathname === "/PayrollPortal") {
+    const requestedSection = new URLSearchParams(location.search).get("section");
+    if (requestedSection === "overtime-allowances") {
+      return "/AdminDashboard?section=payroll&payrollView=overtime";
+    }
+    return "/AdminDashboard?section=payroll";
+  }
   if (isAdmin && new URLSearchParams(location.search).get("section") === "overtime-allowances") {
     return "/AdminDashboard?section=payroll&payrollView=overtime";
   }

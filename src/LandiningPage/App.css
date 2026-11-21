@@ -1880,6 +1880,16 @@
   opacity: 0.5;
 }
 
+.med-home-chat-disclaimer {
+  margin: 0;
+  padding: 0 0.75rem 0.7rem;
+  color: #647a74;
+  background: #fff;
+  font-size: 0.65rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .med-home-video-scene,
   .med-home-video-scene img,

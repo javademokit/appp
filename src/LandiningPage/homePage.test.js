@@ -2,12 +2,22 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 import HomePage from './homePage';
 
+const originalFetch = global.fetch;
+
 jest.mock('react-router-dom', () => {
   const React = jest.requireActual('react');
   return {
     Link: ({ to, ...props }) => React.createElement('a', { ...props, href: to }),
   };
 }, { virtual: true });
+
+afterEach(() => {
+  if (originalFetch) {
+    global.fetch = originalFetch;
+  } else {
+    delete global.fetch;
+  }
+});
 
 test('presents Medora AI and links visitors to the feature modules and hospital portals', () => {
   render(<HomePage />);
@@ -72,4 +82,39 @@ test('opens Ask Medora from the free trial button with trial access guidance', (
   expect(screen.getByRole('region', { name: 'Medora AI assistance' })).toBeInTheDocument();
   expect(screen.getByText('Thanks for your interest in a Medora AI free trial. Please contact your hospital administrator to discuss trial access.'))
     .toBeInTheDocument();
+});
+
+test('answers open-ended product questions with the configured local Ollama model', async () => {
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => ({ message: { content: 'Local model reply' } }),
+  });
+  render(<HomePage />);
+  fireEvent.click(screen.getByRole('button', { name: 'Open Ask Medora chat' }));
+  fireEvent.change(screen.getByRole('textbox', { name: 'Ask the assistant' }), {
+    target: { value: 'What features does Medora have?' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+
+  expect(await screen.findByText('Local model reply')).toBeInTheDocument();
+  expect(global.fetch).toHaveBeenCalledWith('http://localhost:11434/api/chat', expect.objectContaining({
+    method: 'POST',
+    body: expect.stringContaining('"model":"llama3.2:latest"'),
+  }));
+  const request = JSON.parse(global.fetch.mock.calls[0][1].body);
+  expect(request.messages[0].content).toContain('Use only these facts');
+  expect(request.messages[0].content).toContain('Never diagnose');
+  expect(screen.getByText(/Do not share health details/)).toBeInTheDocument();
+});
+
+test('shows an actionable message when local Ollama is unavailable', async () => {
+  global.fetch = jest.fn().mockRejectedValue(new Error('connection refused'));
+  render(<HomePage />);
+  fireEvent.click(screen.getByRole('button', { name: 'Open Ask Medora chat' }));
+  fireEvent.change(screen.getByRole('textbox', { name: 'Ask the assistant' }), {
+    target: { value: 'What features does Medora have?' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Send message' }));
+
+  expect(await screen.findByText(/could not get a reply from local Ollama/)).toBeInTheDocument();
 });

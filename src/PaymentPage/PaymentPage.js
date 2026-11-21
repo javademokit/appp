@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { apiFetch } from '../API/api';
 import { startAppointmentCheckout } from './paymentGatewayCheckout';
+import { printAppointmentInvoice } from './appointmentInvoiceReceipt';
 import './PaymentPage.css';
 
 const paymentMethods = ['CASH', 'UPI', 'CARD', 'BANK_TRANSFER'];
@@ -11,7 +12,7 @@ async function readResponse(response) {
   return data;
 }
 
-const PaymentPage = () => {
+const PaymentPage = ({ username = '' }) => {
   const [invoices, setInvoices] = useState([]);
   const [filter, setFilter] = useState('All');
   const [loading, setLoading] = useState(true);
@@ -19,6 +20,7 @@ const PaymentPage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [activeInvoiceId, setActiveInvoiceId] = useState('');
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [payment, setPayment] = useState({ amount: '', method: 'CASH', reference: '' });
   const [gateways, setGateways] = useState({});
   const [gatewayBusy, setGatewayBusy] = useState('');
@@ -94,6 +96,12 @@ const PaymentPage = () => {
     setSuccess('');
   };
 
+  const printInvoice = (invoice) => {
+    if (!printAppointmentInvoice(invoice, username)) {
+      setError('Your browser blocked the invoice print window. Allow pop-ups for this site, then try again.');
+    }
+  };
+
   const recordPayment = async (event, invoice) => {
     event.preventDefault();
     setBusy(true);
@@ -136,9 +144,9 @@ const PaymentPage = () => {
 
   const exportCSV = () => {
     const rows = [
-      ['Invoice ID', 'Appointment ID', 'Patient ID', 'Patient', 'Doctor', 'Amount', 'Paid', 'Balance', 'Status', 'Date'],
+      ['Invoice ID', 'Appointment number', 'Patient ID', 'Patient', 'Doctor', 'Amount', 'Paid', 'Balance', 'Status', 'Date'],
       ...invoices.map((invoice) => [
-        invoice.invoiceNumber, invoice.appointmentNumber || invoice.appointmentId, invoice.patientId, invoice.patientName, invoice.doctorName,
+        invoice.invoiceNumber, invoice.appointmentNumber || 'Legacy booking', invoice.patientId, invoice.patientName, invoice.doctorName,
         invoice.amount, invoice.paidAmount, invoice.balanceDue, invoice.status, invoice.createdAt,
       ]),
     ];
@@ -169,7 +177,11 @@ const PaymentPage = () => {
         <div className="summary-card paid"><span>Total Collected</span><strong>₹{totals.paid.toLocaleString('en-IN')}</strong></div>
         <div className="summary-card pending"><span>Outstanding</span><strong>₹{totals.pending.toLocaleString('en-IN')}</strong></div>
         <div className="summary-card total"><span>Total Billing</span><strong>₹{totals.total.toLocaleString('en-IN')}</strong></div>
-        <div className="summary-card"><span>Invoices</span><strong>{invoices.length}</strong></div>
+        <button className="summary-card invoice-count-card" type="button" onClick={() => {
+          document.getElementById('appointment-invoices')?.scrollIntoView({ behavior: 'smooth' });
+        }}>
+          <span>Invoices · View list</span><strong>{invoices.length}</strong>
+        </button>
       </div>
       {!Object.values(gateways).some(Boolean) && !loading
         && <p className="billing-empty" role="status">Online gateways are not configured. Staff can record payments after receiving them at the hospital.</p>}
@@ -185,27 +197,34 @@ const PaymentPage = () => {
 
       {loading ? <p role="status">Loading appointment invoices…</p> : filteredInvoices.length === 0
         ? <p className="billing-empty">No appointment invoices match this filter.</p>
-        : <div className="invoice-table-wrap">
+        : <div className="invoice-table-wrap" id="appointment-invoices">
           <table className="invoice-table">
-            <thead><tr><th>Invoice</th><th>Patient</th><th>Doctor / Service</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Status</th><th>Action</th></tr></thead>
+            <thead><tr><th>Invoice</th><th>Patient</th><th>Doctor / Service</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody>{filteredInvoices.map((invoice) => <React.Fragment key={invoice.id}>
               <tr>
-                <td>{invoice.invoiceNumber}<small>Appointment ID: {invoice.appointmentNumber || 'Legacy booking'}</small></td>
+                <td>{invoice.invoiceNumber}<small>Appointment number: {invoice.appointmentNumber || 'Legacy booking'}</small></td>
                 <td><strong>{invoice.patientName}</strong><small>Patient ID: {invoice.patientId}</small></td>
                 <td>{invoice.doctorName}<small>{invoice.service}</small></td>
                 <td>₹{Number(invoice.amount).toLocaleString('en-IN')}</td>
                 <td>₹{Number(invoice.paidAmount).toLocaleString('en-IN')}</td>
                 <td>₹{Number(invoice.balanceDue).toLocaleString('en-IN')}</td>
                 <td><span className={`status ${String(invoice.status).toLowerCase()}`}>{String(invoice.status).replaceAll('_', ' ')}</span></td>
-                <td>{Number(invoice.balanceDue) > 0 ? <div className="billing-row-actions">
-                  <button type="button" className="mark-paid-btn" onClick={() => openPaymentForm(invoice)}>Record received payment</button>
-                  {['RAZORPAY', 'PAYU', 'STRIPE'].filter((provider) => gateways[provider]).map((provider) => (
-                    <button key={provider} type="button" className="filter-chip" disabled={Boolean(gatewayBusy)}
-                      onClick={() => startOnlinePayment(invoice, provider)}>
-                      {gatewayBusy === `${invoice.id}:${provider}` ? 'Opening…' : `Pay ${provider}`}
-                    </button>
-                  ))}
-                </div> : invoice.status === 'PAID' ? <span className="paid-text">Completed</span> : '—'}</td>
+                <td><div className="billing-row-actions">
+                  <button type="button" className="filter-chip" aria-label={`View invoice ${invoice.invoiceNumber}`}
+                    onClick={() => setSelectedInvoice(invoice)}>View</button>
+                  <button type="button" className="filter-chip" aria-label={`Print invoice ${invoice.invoiceNumber}`}
+                    onClick={() => printInvoice(invoice)}>Print</button>
+                  {Number(invoice.balanceDue) > 0 && <>
+                    <button type="button" className="mark-paid-btn" onClick={() => openPaymentForm(invoice)}>Record received payment</button>
+                    {['RAZORPAY', 'PAYU', 'STRIPE'].filter((provider) => gateways[provider]).map((provider) => (
+                      <button key={provider} type="button" className="filter-chip" disabled={Boolean(gatewayBusy)}
+                        onClick={() => startOnlinePayment(invoice, provider)}>
+                        {gatewayBusy === `${invoice.id}:${provider}` ? 'Opening…' : `Pay ${provider}`}
+                      </button>
+                    ))}
+                  </>}
+                  {Number(invoice.balanceDue) <= 0 && invoice.status === 'PAID' && <span className="paid-text">Completed</span>}
+                </div></td>
               </tr>
               {activeInvoiceId === invoice.id && <tr><td colSpan="8">
                 <form className="billing-payment-form" onSubmit={(event) => recordPayment(event, invoice)}>
@@ -231,6 +250,54 @@ const PaymentPage = () => {
             </React.Fragment>)}</tbody>
           </table>
         </div>}
+
+      {selectedInvoice && (
+        <div className="invoice-dialog-backdrop" onMouseDown={(event) => {
+          if (event.target === event.currentTarget) setSelectedInvoice(null);
+        }}>
+          <section className="invoice-dialog" role="dialog" aria-modal="true"
+            aria-labelledby="invoice-dialog-title">
+            <header className="invoice-dialog-header">
+              <div><p className="eyebrow">Billing audit</p><h3 id="invoice-dialog-title">{selectedInvoice.invoiceNumber}</h3></div>
+              <button type="button" className="invoice-dialog-close" aria-label="Close invoice details"
+                onClick={() => setSelectedInvoice(null)}>×</button>
+            </header>
+            <dl className="invoice-detail-grid">
+              <div><dt>Patient</dt><dd>{selectedInvoice.patientName || '—'}</dd></div>
+              <div><dt>Patient ID</dt><dd>{selectedInvoice.patientId || '—'}</dd></div>
+              <div><dt>Doctor</dt><dd>{selectedInvoice.doctorName || '—'}</dd></div>
+              <div><dt>Service</dt><dd>{selectedInvoice.service || '—'}</dd></div>
+              <div><dt>Appointment number</dt><dd>{selectedInvoice.appointmentNumber || 'Legacy booking'}</dd></div>
+              <div><dt>Created</dt><dd>{selectedInvoice.createdAt ? new Date(selectedInvoice.createdAt).toLocaleString('en-IN') : '—'}</dd></div>
+              <div><dt>Status</dt><dd>{String(selectedInvoice.status || '—').replaceAll('_', ' ')}</dd></div>
+              <div><dt>Total</dt><dd>₹{Number(selectedInvoice.amount || 0).toLocaleString('en-IN')}</dd></div>
+              <div><dt>Paid</dt><dd>₹{Number(selectedInvoice.paidAmount || 0).toLocaleString('en-IN')}</dd></div>
+              <div><dt>Balance due</dt><dd>₹{Number(selectedInvoice.balanceDue || 0).toLocaleString('en-IN')}</dd></div>
+            </dl>
+            <h4>Payment history</h4>
+            {selectedInvoice.payments?.length ? (
+              <div className="invoice-payment-history">
+                <table><thead><tr><th>Date</th><th>Method</th><th>Reference</th><th>Received by</th><th>Status</th><th>Amount</th></tr></thead>
+                  <tbody>{selectedInvoice.payments.map((item, index) => (
+                    <tr key={item.id || `${item.createdAt}-${index}`}>
+                      <td>{item.createdAt ? new Date(item.createdAt).toLocaleString('en-IN') : '—'}</td>
+                      <td>{item.method || item.provider || '—'}</td>
+                      <td>{item.reference || item.gatewayPaymentId || '—'}</td>
+                      <td>{item.receivedBy || '—'}</td>
+                      <td>{item.status || '—'}</td>
+                      <td>₹{Number(item.amount || 0).toLocaleString('en-IN')}</td>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              </div>
+            ) : <p className="invoice-no-payments">No payments recorded.</p>}
+            <footer className="invoice-dialog-actions">
+              <button type="button" className="mark-paid-btn" onClick={() => printInvoice(selectedInvoice)}>Print invoice</button>
+              <button type="button" className="filter-chip" onClick={() => setSelectedInvoice(null)}>Close</button>
+            </footer>
+          </section>
+        </div>
+      )}
     </div>
   );
 };

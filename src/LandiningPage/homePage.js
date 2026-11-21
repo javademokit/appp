@@ -15,6 +15,9 @@ import { Link } from 'react-router-dom';
 import './App.css';
 import hospitalLobby from './medora-hospital-lobby.jpg';
 
+const ollamaUrl = (process.env.REACT_APP_OLLAMA_URL || 'http://localhost:11434').replace(/\/+$/, '');
+const ollamaModel = process.env.REACT_APP_OLLAMA_MODEL || 'llama3.2:latest';
+
 const careServices = [
   {
     icon: FaUserInjured,
@@ -65,13 +68,14 @@ const workspaces = [
 export default function HomePage() {
   const [chatOpen, setChatOpen] = useState(false);
   const [draft, setDraft] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [messages, setMessages] = useState([
     { sender: 'assistant', text: 'Hi! I can help with appointments, doctor login, and hospital services.' },
   ]);
 
-  const askQuestion = (questionText) => {
+  const askQuestion = async (questionText) => {
     const text = questionText.trim();
-    if (!text) return;
+    if (!text || isLoading) return;
 
     const question = text.toLowerCase();
     let reply = 'I can help with appointments, doctors, emergency care, or hospital services.';
@@ -92,6 +96,43 @@ export default function HomePage() {
       reply = 'Explore the Hospital services section on this page, or sign in to your portal for more options.';
     } else if (question.includes('hello') || question.includes('hi')) {
       reply = 'Hello! How can I help you find the right portal or service?';
+    } else {
+      setMessages((current) => [...current, { sender: 'user', text }]);
+      setDraft('');
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${ollamaUrl}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: ollamaModel,
+            stream: false,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are the Medora website navigation assistant. Known product information: Medora is an AI medical CRM for hospitals. The website describes patient profiles, appointment scheduling, patient monitoring, and medicine timetables. It provides patient, doctor, and hospital staff portals. Patients sign in to the patient portal to request appointments. Use only these facts and basic navigation instructions; do not invent features, policies, or clinical capabilities. If you do not know an answer, say so and refer the user to their hospital administrator. Do not claim to access accounts, appointments, or patient records. Never diagnose, interpret symptoms or test results, recommend treatment, or give medication advice. For medical questions, direct the user to a qualified clinician; for emergencies, tell them to contact local emergency services. Do not request personal health information.',
+              },
+              { role: 'user', content: text },
+            ],
+          }),
+        });
+        if (!response.ok) throw new Error(`Ollama returned HTTP ${response.status}`);
+        const data = await response.json();
+        const assistantReply = data.message?.content?.trim();
+        if (!assistantReply) throw new Error('Ollama returned an empty reply');
+        setMessages((current) => [...current, { sender: 'assistant', text: assistantReply }]);
+      } catch {
+        setMessages((current) => [
+          ...current,
+          {
+            sender: 'assistant',
+            text: `I could not get a reply from local Ollama. Check that Ollama is running and ${ollamaModel} is installed, then try again.`,
+          },
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
     }
     setMessages((current) => [...current, { sender: 'user', text }, { sender: 'assistant', text: reply, link: replyLink }]);
     setDraft('');
@@ -210,7 +251,7 @@ export default function HomePage() {
           <section className="med-home-chat-panel" aria-label="Medora AI assistance">
             <header className="med-home-chat-header">
               <span className="med-home-chat-avatar"><FaRobot aria-hidden="true" /></span>
-              <span><strong>Medora AI assistant</strong><small>Here to help you find your way</small></span>
+              <span><strong>Medora AI assistant</strong><small>Powered by local Ollama</small></span>
               <button type="button" aria-label="Close assistant" onClick={() => setChatOpen(false)}>×</button>
             </header>
             <div className="med-home-chat-messages" aria-live="polite">
@@ -220,10 +261,11 @@ export default function HomePage() {
                   {message.link && <> <Link to={message.link.to}>{message.link.text}</Link></>}
                 </p>
               ))}
+              {isLoading && <p className="med-home-chat-message assistant" role="status">Connecting to local Ollama…</p>}
             </div>
             <div className="med-home-chat-suggestions" aria-label="Suggested questions">
               {['Appointments', 'Emergency', 'Portal help'].map((suggestion) => (
-                <button key={suggestion} type="button" onClick={() => askQuestion(suggestion)}>
+                <button key={suggestion} type="button" disabled={isLoading} onClick={() => askQuestion(suggestion)}>
                   {suggestion}
                 </button>
               ))}
@@ -233,12 +275,14 @@ export default function HomePage() {
                 aria-label="Ask the assistant"
                 placeholder="Ask about appointments…"
                 value={draft}
+                disabled={isLoading}
                 onChange={(event) => setDraft(event.target.value)}
               />
-              <button type="submit" aria-label="Send message" disabled={!draft.trim()}>
+              <button type="submit" aria-label="Send message" disabled={!draft.trim() || isLoading}>
                 <FaPaperPlane aria-hidden="true" />
               </button>
             </form>
+            <p className="med-home-chat-disclaimer">Portal help only. Do not share health details or emergencies.</p>
           </section>
         )}
         <button

@@ -124,7 +124,7 @@ const HospitalDashboard = () => {
       case "reports":
         return <ReportViewer username={username} />;
       case "billing":
-        return <PaymentPage />;
+        return <PaymentPage username={username} />;
       case "discharges":
         return <DischargePage />;
       case "pharmacy":

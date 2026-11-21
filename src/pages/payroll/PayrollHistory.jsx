@@ -8,7 +8,8 @@ const isPayrollMaker = (payroll, user) => {
 };
 
 export default function PayrollHistory({
-  runs = [], busy, canManagePayroll, canApprovePayroll, currentUser, onAction, onPreview, historyMode = false,
+  runs = [], busy, canManagePayroll, canApprovePayroll, currentUser, onAction, onPreview, onReopen,
+  allowAdminSelfApproval = false, historyMode = false,
 }) {
   return <section className="hr-panel">
     <HrPanelHeading title={historyMode ? 'Payroll History' : 'Payroll runs'} description={historyMode
@@ -27,7 +28,10 @@ export default function PayrollHistory({
         { key: 'actions', label: 'Next step', render: (row) => {
           const status = String(row.status || '').toUpperCase();
           if (status === 'DRAFT') return canManagePayroll
-            ? <button className="hr-text-button" disabled={busy} onClick={() => onAction(row, 'calculate')}>Calculate</button>
+            ? <div className="hr-row-actions">
+              <button className="hr-text-button" onClick={() => onPreview(row)}>Open draft</button>
+              <button className="hr-text-button positive" disabled={busy} onClick={() => onAction(row, 'calculate')}>Calculate</button>
+            </div>
             : <span>Awaiting calculation</span>;
           if (status === 'CALCULATED' || status === 'PENDING_APPROVAL') return <div className="hr-row-actions">
             <button className="hr-text-button" onClick={() => onPreview(row)}>Preview</button>
@@ -38,9 +42,9 @@ export default function PayrollHistory({
               && <span className="hr-approval-blocked" title="The payroll maker must submit this run for approval first">
                 Awaiting request
               </span>}
-            {status === 'PENDING_APPROVAL' && canApprovePayroll && !isPayrollMaker(row, currentUser)
+            {status === 'PENDING_APPROVAL' && canApprovePayroll && (allowAdminSelfApproval || !isPayrollMaker(row, currentUser))
               && <button className="hr-text-button positive" disabled={busy} onClick={() => onAction(row, 'approve')}>Approve</button>}
-            {status === 'PENDING_APPROVAL' && canApprovePayroll && isPayrollMaker(row, currentUser)
+            {status === 'PENDING_APPROVAL' && canApprovePayroll && !allowAdminSelfApproval && isPayrollMaker(row, currentUser)
               && <span className="hr-approval-blocked" title="Use a different authorized account to approve this run">
                 Awaiting another approver
               </span>}
@@ -50,8 +54,17 @@ export default function PayrollHistory({
             ? <button className="hr-text-button positive" disabled={busy} onClick={() => onAction(row, 'process')}>Generate payslips</button>
             : <span>Approved</span>;
           if (status === 'PROCESSED') return canManagePayroll
-            ? <button className="hr-text-button positive" disabled={busy} onClick={() => onAction(row, 'paid')}>Mark paid</button>
+            ? <div className="hr-row-actions">
+              <button className="hr-text-button positive" disabled={busy} onClick={() => onAction(row, 'paid')}>Mark paid</button>
+              {onReopen && <button className="hr-text-button negative" disabled={busy} onClick={() => onReopen(row)}>Reopen</button>}
+            </div>
             : <span>Processed</span>;
+          if (status === 'PAID') return canManagePayroll
+            ? <div className="hr-row-actions">
+              <button className="hr-text-button" onClick={() => onPreview(row)}>View paid run</button>
+              {onReopen && <button className="hr-text-button negative" disabled={busy} onClick={() => onReopen(row)}>Reopen</button>}
+            </div>
+            : <span>Paid</span>;
           if (status === 'REJECTED') return canManagePayroll
             ? <button className="hr-text-button" disabled={busy} onClick={() => onAction(row, 'reset')}>Return to draft</button>
             : <span>Rejected</span>;

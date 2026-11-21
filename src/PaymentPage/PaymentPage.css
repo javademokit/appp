@@ -55,6 +55,19 @@
   box-shadow: 0 2px 8px rgba(27, 51, 45, 0.04);
 }
 
+.invoice-count-card {
+  width: 100%;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.invoice-count-card:hover {
+  border-color: #b8d8cf;
+  background: #fbfefc;
+}
+
 .summary-card span {
   display: block;
   color: #64748b;
@@ -196,7 +209,143 @@
 .billing-payment-form select { min-height: 36px; border: 1px solid var(--clinic-line); border-radius: 5px; padding: 0.4rem 0.55rem; font: inherit; }
 .billing-payment-row { color: #5b6b64; font-size: 0.85rem; }
 .billing-empty { padding: 1rem; border: 1px dashed var(--clinic-line); border-radius: 6px; color: #64748b; }
-.billing-row-actions { display: grid; justify-items: start; gap: 0.35rem; }
+.billing-row-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; min-width: 150px; }
+
+.invoice-dialog-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 1.25rem;
+  background: rgba(18, 38, 32, 0.48);
+}
+
+.invoice-dialog {
+  box-sizing: border-box;
+  width: min(100%, 900px);
+  max-height: min(90vh, 900px);
+  overflow-y: auto;
+  border: 1px solid #dce8e2;
+  border-radius: 14px;
+  padding: 1.4rem;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(20, 45, 37, 0.24);
+}
+
+.invoice-dialog-header,
+.invoice-dialog-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.invoice-dialog-header {
+  margin-bottom: 1.1rem;
+}
+
+.invoice-dialog-header h3 {
+  margin: 0;
+  color: var(--clinic-ink);
+  font-size: 1.35rem;
+}
+
+.invoice-dialog-header .eyebrow {
+  margin-bottom: 0.25rem;
+}
+
+.invoice-dialog-close {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid var(--clinic-line);
+  border-radius: 50%;
+  background: #fff;
+  color: #536761;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.invoice-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  border-top: 1px solid #e7eeeb;
+}
+
+.invoice-detail-grid > div {
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid #e7eeeb;
+}
+
+.invoice-detail-grid dt {
+  margin-bottom: 0.25rem;
+  color: #71817c;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.invoice-detail-grid dd {
+  margin: 0;
+  color: #263d36;
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+
+.invoice-dialog h4 {
+  margin: 1.25rem 0 0.65rem;
+  color: var(--clinic-ink);
+}
+
+.invoice-payment-history {
+  overflow-x: auto;
+  border: 1px solid #e7eeeb;
+  border-radius: 7px;
+}
+
+.invoice-payment-history table {
+  width: 100%;
+  min-width: 620px;
+  border-collapse: collapse;
+}
+
+.invoice-payment-history th,
+.invoice-payment-history td {
+  padding: 0.65rem;
+  border-bottom: 1px solid #e7eeeb;
+  text-align: left;
+  font-size: 0.77rem;
+}
+
+.invoice-payment-history th {
+  background: #edf5f2;
+  color: #536761;
+}
+
+.invoice-no-payments {
+  margin: 0;
+  border: 1px dashed var(--clinic-line);
+  border-radius: 6px;
+  padding: 0.8rem;
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.invoice-dialog-actions {
+  justify-content: flex-end;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 620px) {
+  .invoice-dialog-backdrop { padding: 0.65rem; }
+  .invoice-dialog { padding: 1rem; }
+  .invoice-detail-grid { grid-template-columns: 1fr; }
+}
 
 @media (max-width: 900px) {
   .summary-grid {

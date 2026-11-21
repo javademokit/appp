@@ -10,6 +10,10 @@ export const performPayrollStep = (payroll, step) => request(
   `/payroll/${payroll.id}/${step}`,
   jsonOptions('POST', {}),
 );
+export const reopenPayroll = (payroll, reason) => request(
+  `/payroll/${payroll.id}/reopen`,
+  jsonOptions('POST', { reason }),
+);
 export const getPayslips = (month) => request(`/payslips?month=${encodeURIComponent(month)}`);
 export const getMyPayslips = () => request('/payroll/me/payslips');
 export const downloadPayslip = (payslip) => apiResponse(`/payslips/${payslip.id}/download`);

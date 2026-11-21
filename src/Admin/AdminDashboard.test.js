@@ -1,7 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import AdminDashboard from './AdminDashboard';
 
-jest.mock('../components/HospitalOperationsBoard', () => () => <div>Operations overview content</div>);
 jest.mock('./UserAccessPage', () => () => <div>User access content</div>);
 jest.mock('../pages/payroll/PayrollRun', () => ({ hideHeader, employeesOnly, payrollOnly, salaryOnly, initialSalaryView, initialPayrollView }) => (
   <div>
@@ -16,8 +15,9 @@ jest.mock('../pages/payroll/PayrollRun', () => ({ hideHeader, employeesOnly, pay
 test('shows the administration control center and switches between its sections', () => {
   render(<AdminDashboard />);
 
-  expect(screen.getByRole('heading', { name: 'Hospital control center' })).toBeInTheDocument();
-  expect(screen.getByText('Operations overview content')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Administration workspace' })).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Operations Hospital overview/ })).not.toBeInTheDocument();
+  expect(screen.getByText('Employee workspace content')).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: /Users & access Accounts and roles/ }));
   expect(screen.getByText('User access content')).toBeInTheDocument();
@@ -28,8 +28,7 @@ test('shows the administration control center and switches between its sections'
   expect(screen.getByRole('button', { name: /Employees Staff records and onboarding/ })).toHaveAttribute('aria-current', 'page');
 
   fireEvent.click(screen.getByRole('button', { name: /HR & payroll People and compensation/ }));
-  expect(screen.getByText('Payroll content')).toBeInTheDocument();
-  expect(screen.getByRole('heading', { name: 'Hospital control center' })).toBeInTheDocument();
+  expect(screen.getByText(/Payroll (?:payroll )?content/)).toBeInTheDocument();
   expect(screen.getByRole('navigation', { name: 'Administration pages' })).toBeInTheDocument();
   expect(screen.queryByText('Payroll workspace header')).not.toBeInTheDocument();
 
@@ -53,5 +52,19 @@ test('opens overtime allowance review inside the AdminDashboard payroll workspac
 
   expect(screen.getByText('Payroll overtime content')).toBeInTheDocument();
 
+  window.history.pushState({}, '', '/');
+});
+
+test('opens payroll history and approval views from URL state', () => {
+  window.history.pushState({}, '', '/AdminDashboard?section=payroll&payrollView=history');
+  render(<AdminDashboard />);
+  expect(screen.getByText('Payroll history content')).toBeInTheDocument();
+  window.history.pushState({}, '', '/');
+});
+
+test('opens payroll approval view from URL state', () => {
+  window.history.pushState({}, '', '/AdminDashboard?section=payroll&payrollView=approval');
+  render(<AdminDashboard />);
+  expect(screen.getByText('Payroll approval content')).toBeInTheDocument();
   window.history.pushState({}, '', '/');
 });

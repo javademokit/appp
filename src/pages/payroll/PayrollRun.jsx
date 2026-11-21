@@ -162,6 +162,30 @@ export default function PayrollPage({
   const [formError, setFormError] = useState('');
   const [notice, setNotice] = useState('');
 
+  const updateEmbeddedPayrollView = (nextView) => {
+    setData((current) => ({ ...current, preview: null }));
+    setPayrollView(nextView);
+    setSection(nextView === 'payslips' ? 'payslips' : 'payroll');
+    const payrollQuery = nextView === 'overtime'
+      ? '&payrollView=overtime'
+      : nextView === 'history'
+        ? '&payrollView=history'
+        : nextView === 'approval'
+          ? '&payrollView=approval'
+          : '';
+    window.history.replaceState({}, '', `/AdminDashboard?section=payroll${payrollQuery}`);
+  };
+
+  const updateEmbeddedSalaryView = (nextView) => {
+    setSalaryView(nextView);
+    setSection('salary');
+    window.history.replaceState(
+      {},
+      '',
+      `/AdminDashboard?section=salary${nextView === 'structures' ? '&salaryView=structures' : ''}`,
+    );
+  };
+
   const roles = useMemo(() => normalizeRoles(account?.roles), [account]);
   const canAccessAdminDashboard = roles.some((role) => ADMIN_ROLES.includes(role));
   const approvalOnlyAccount = roles.includes('CRM_EXECUTIVE')
@@ -178,7 +202,10 @@ export default function PayrollPage({
   const canManageHr = roles.some((role) => HR_ROLES.includes(role));
   const canManagePayroll = roles.some((role) => PAYROLL_ROLES.includes(role));
   const canApprovePayroll = roles.some((role) => PAYROLL_APPROVAL_ROLES.includes(role));
+  const isAdminUser = roles.some((role) => ADMIN_ROLES.includes(role));
+  const embeddedOnly = hideHeader && (payrollOnly || employeesOnly || salaryOnly);
   const activeNav = visibleItems.some((item) => item.id === section) ? section : visibleItems[0]?.id || 'payslips';
+  const salarySetupBlocked = activeNav === 'payroll' && /active salary structure/i.test(error);
 
   useEffect(() => {
     let active = true;
@@ -205,8 +232,11 @@ export default function PayrollPage({
         setSection(availableSections.includes(requestedSection)
           ? requestedSection
           : payrollOnly ? 'payroll' : employeesOnly ? 'employees' : salaryOnly ? 'salary'
-            : hrManager ? 'overview' : payrollManager || assignedRoles.includes('CRM_EXECUTIVE') ? 'payroll'
-              : availableSections[0] || 'overview');
+            : hrManager ? 'overview'
+              : payrollManager || assignedRoles.includes('CRM_EXECUTIVE') ? 'payroll'
+                : assignedRoles.some((role) => STAFF_ROLES.includes(role)) && availableSections.includes('payslips')
+                  ? 'payslips'
+                  : availableSections[0] || 'overview');
       })
       .catch((requestError) => {
         if (active) setError(requestError.message);
@@ -400,6 +430,10 @@ export default function PayrollPage({
       const componentIds = submitted.getAll('componentId');
       const amounts = submitted.getAll('amount');
       const units = submitted.getAll('units');
+      if (values.effectiveTo && values.effectiveFrom && values.effectiveTo < values.effectiveFrom) {
+        setFormError('Effective to date cannot be before effective from date.');
+        return;
+      }
       values.components = componentIds.map((componentId, index) => ({
         componentId,
         amount: Number(amounts[index] || 0),
@@ -430,9 +464,15 @@ export default function PayrollPage({
     setPayrollView('payroll');
     if (!selectedPayroll) return runPayroll();
     setSection('payroll');
-    setNotice(
-      `A payroll run for ${month} already exists (${titleCase(selectedPayroll.status)}). `
-      + 'Use the available action in the Payroll runs table to continue it.',
+    setData((current) => ({ ...current, preview: selectedPayroll }));
+  };
+
+  const reopenPayroll = (payroll) => {
+    const reason = window.prompt('Why should this payroll run be reopened?');
+    if (!reason?.trim()) return;
+    void runAction(
+      () => payrollService.reopenPayroll(payroll, reason.trim()),
+      'Payroll reopened as a new draft.',
     );
   };
 
@@ -542,8 +582,8 @@ export default function PayrollPage({
           <span className="hr-avatar">{(account?.username || 'H').slice(0, 1).toUpperCase()}</span>
         </div>
       </header>}
-      <div className="hr-layout">
-        <aside className="hr-sidebar">
+      <div className={`hr-layout${embeddedOnly ? ' hr-layout-embedded' : ''}`}>
+        {!embeddedOnly && <aside className="hr-sidebar">
           {activeNav === 'payroll' && <div className="hr-payroll-brand">HR &amp; Payroll 360</div>}
           <div className="hr-side-label">WORKSPACE</div>
           <nav aria-label="HR workspace">
@@ -577,14 +617,40 @@ export default function PayrollPage({
             ))}
           </nav>
           <div className="hr-sidebar-footer"><HeartPulse size={17} /><span>Care starts with our people</span></div>
-        </aside>
+        </aside>}
 
         <section className={`hr-main${activeNav === 'payroll' ? ' hr-payroll-main' : ''}`}>
+          {payrollOnly && <nav className="hr-embedded-tabs" aria-label="Payroll views">
+            <button type="button" className={payrollView === 'payroll' ? 'active' : ''}
+              aria-current={payrollView === 'payroll' ? 'page' : undefined}
+              onClick={() => updateEmbeddedPayrollView('payroll')}>Payroll run</button>
+            <button type="button" className={payrollView === 'approval' ? 'active' : ''}
+              aria-current={payrollView === 'approval' ? 'page' : undefined}
+              onClick={() => updateEmbeddedPayrollView('approval')}>Payroll approval</button>
+            <button type="button" className={payrollView === 'history' ? 'active' : ''}
+              aria-current={payrollView === 'history' ? 'page' : undefined}
+              onClick={() => updateEmbeddedPayrollView('history')}>Payroll history</button>
+            <button type="button" className={payrollView === 'overtime' ? 'active' : ''}
+              aria-current={payrollView === 'overtime' ? 'page' : undefined}
+              onClick={() => updateEmbeddedPayrollView('overtime')}>Overtime allowances</button>
+            {canManagePayroll && <button type="button" className={activeNav === 'payslips' ? 'active' : ''}
+              aria-current={activeNav === 'payslips' ? 'page' : undefined}
+              onClick={() => updateEmbeddedPayrollView('payslips')}>Payslips</button>}
+          </nav>}
+          {salaryOnly && <nav className="hr-embedded-tabs" aria-label="Salary setup views">
+            <button type="button" className={salaryView === 'components' ? 'active' : ''}
+              aria-current={salaryView === 'components' ? 'page' : undefined}
+              onClick={() => updateEmbeddedSalaryView('components')}>Salary Components</button>
+            <button type="button" className={salaryView === 'structures' ? 'active' : ''}
+              aria-current={salaryView === 'structures' ? 'page' : undefined}
+              onClick={() => updateEmbeddedSalaryView('structures')}>Salary Structures</button>
+          </nav>}
           <div className="hr-page-header">
             <div>
               <p className="hr-eyebrow">{activeNav === 'payroll' ? 'PEOPLE OPERATIONS · PAYROLL REVIEW' : 'PEOPLE OPERATIONS'}</p>
               <h1>{activeNav === 'payroll'
                 ? payrollView === 'history' ? 'Payroll History'
+                  : payrollView === 'approval' ? 'Payroll Approval'
                   : `Run Payroll — ${new Date(`${month}-01T12:00:00`).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}`
                 : NAV_ITEMS.find((item) => item.id === activeNav)?.label || 'Payslips'}</h1>
               <p className="hr-page-subtitle">
@@ -611,7 +677,10 @@ export default function PayrollPage({
             </div>
           </div>
 
-          {error && <div className="hr-alert error" role="alert"><span>{error}</span><button type="button" onClick={() => setError('')} aria-label="Dismiss error"><X size={16} /></button></div>}
+          {error && <div className="hr-alert error" role="alert"><span>{error}
+            {salarySetupBlocked && <> <a className="hr-alert-action"
+              href="/AdminDashboard?section=salary&salaryView=structures">Open Salary Structures</a></>}
+          </span><button type="button" onClick={() => setError('')} aria-label="Dismiss error"><X size={16} /></button></div>}
           {notice && <div className="hr-alert success" role="status"><CheckCircle2 size={17} />{notice}<button type="button" onClick={() => setNotice('')} aria-label="Dismiss message"><X size={16} /></button></div>}
           {loading && account && <div className="hr-loading" role="status">Loading {NAV_ITEMS.find((item) => item.id === activeNav)?.label.toLowerCase()}…</div>}
 
@@ -644,8 +713,8 @@ export default function PayrollPage({
                 ? <OvertimeAllowances month={month} canApprove={canManageHr} />
                 : data.preview ? <PayrollPreview payroll={data.preview}
                 canManagePayroll={canManagePayroll}
-                canApprovePayroll={canApprovePayroll && !isPayrollMaker(data.preview, account)}
-                makerCannotApprove={isPayrollMaker(data.preview, account)}
+                canApprovePayroll={canApprovePayroll && (isAdminUser || !isPayrollMaker(data.preview, account))}
+                makerCannotApprove={!isAdminUser && isPayrollMaker(data.preview, account)}
                 makerCanRequestApproval={canManagePayroll && isPayrollMaker(data.preview, account)}
                 awaitingApprovalRequest={String(data.preview.status).toUpperCase() === 'CALCULATED'
                   && canApprovePayroll && !isPayrollMaker(data.preview, account)}
@@ -660,7 +729,9 @@ export default function PayrollPage({
               </div>}
               <PayrollHistory runs={data.payrolls} busy={busy} canManagePayroll={canManagePayroll}
                 canApprovePayroll={canApprovePayroll} currentUser={account} onAction={performPayrollStep}
+                allowAdminSelfApproval={isAdminUser}
                 historyMode={payrollView === 'history'}
+                onReopen={reopenPayroll}
                 onPreview={(row) => setData((current) => ({ ...current, preview: row }))} />
               </>}
             </>
@@ -801,7 +872,11 @@ function AttendanceForm({ employees }) {
 function ComponentForm() {
   return <div className="hr-form-grid">
     <Field label="Name" required><input name="name" required /></Field><Field label="Code" required><input name="code" required /></Field>
-    <Field label="Type"><select name="type"><option value="EARNING">Earning</option><option value="DEDUCTION">Deduction</option></select></Field>
+    <Field label="Type"><select name="type">
+      <option value="EARNING">Earning</option>
+      <option value="DEDUCTION">Deduction</option>
+      <option value="EMPLOYER_CONTRIBUTION">Employer contribution</option>
+    </select></Field>
     <Field label="Calculation type"><select name="calculationType"><option value="FIXED">Fixed</option><option value="PERCENTAGE">Percentage</option><option value="FORMULA">Formula</option></select></Field>
     <Field label="Value / formula"><input name="value" required placeholder="e.g. 3000 or 30" /></Field>
     <Field label="Base component code"><input name="baseCode" defaultValue="BASIC" /></Field>
@@ -810,12 +885,16 @@ function ComponentForm() {
 
 function StructureForm({ employees, components }) {
   const [lines, setLines] = useState([0]);
+  const [effectiveFrom, setEffectiveFrom] = useState('');
   const addLine = () => setLines((current) => [...current, Math.max(...current) + 1]);
   return <>
     <div className="hr-form-grid">
       <Field label="Employee" required><select name="employeeId" required><option value="">Select employee</option>{employees.map((item) => <option key={item.id} value={item.id}>{[item.firstName, item.lastName].filter(Boolean).join(' ')}</option>)}</select></Field>
-      <Field label="Effective from" required><input name="effectiveFrom" type="date" required /></Field>
-      <Field label="Effective to"><input name="effectiveTo" type="date" /></Field>
+      <Field label="Effective from" required><input name="effectiveFrom" type="date" required value={effectiveFrom}
+        onChange={(event) => setEffectiveFrom(event.target.value)} /></Field>
+      <Field label="Effective to"><input name="effectiveTo" type="date" min={effectiveFrom || undefined} />
+        <span className="hr-form-hint">Leave blank for an open-ended structure. Set the end date to the last day of the period for fixed-term salary.</span>
+      </Field>
     </div>
     <div className="hr-structure-lines">
       <div className="hr-structure-lines-heading"><strong>Salary components</strong>

@@ -190,6 +190,21 @@ MFA, data retention, backup/restore, operational monitoring, and jurisdictional
 privacy/security review—must be completed and verified in the deployment
 environment.
 
+## Local AI assistant (Ollama)
+
+The home-page assistant uses a local Ollama server for open-ended product and
+portal questions. Install/start Ollama and download the default model if needed:
+
+```sh
+ollama serve
+ollama pull llama3.2:latest
+```
+
+The defaults are `http://localhost:11434` and `llama3.2:latest`. To override
+them, copy `.env.example` to `.env.development.local`, edit the values, and
+restart the React development server. The assistant is limited to general
+product navigation; do not enter health details, and do not use it for medical
+advice or emergencies.
 
 
 

@@ -108,7 +108,7 @@ export default function OvertimeAllowances({ month, canApprove, title = 'Overtim
         ? `Review overtime requests and set approved allowance amounts for the ${month} payroll.`
         : 'Apply for overtime already worked. Approved allowances are included in the relevant monthly payroll.'}
       action={!canApprove && <button className="hr-button primary" onClick={() => setShowRequest((open) => !open)}>
-        <Plus size={16} /> Apply for overtime
+        <Plus size={16} /> Request allowance
       </button>} />
     {error && <div className="hr-alert error" role="alert">{error}</div>}
     {notice && <div className="hr-alert success" role="status">{notice}</div>}
@@ -123,7 +123,7 @@ export default function OvertimeAllowances({ month, canApprove, title = 'Overtim
         <input name="reason" maxLength="500" required />
       </label>
       <button className="hr-button primary" type="submit" disabled={submitting}>
-        <Clock3 size={16} /> Submit overtime request
+        <Clock3 size={16} /> Submit request
       </button>
     </form>}
     {loading ? <div className="hr-loading" role="status">Loading overtime requests…</div>

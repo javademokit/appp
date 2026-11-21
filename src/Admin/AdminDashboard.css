@@ -1,3 +1,20 @@
+.admin-page-shell {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  background: #f3f7f5;
+}
+
+.admin-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .admin-dashboard {
   --admin-ink: #18332f;
   --admin-muted: #6a7d78;
@@ -5,7 +22,8 @@
   --admin-primary: #176b60;
   --admin-primary-dark: #10564d;
   box-sizing: border-box;
-  min-height: 100vh;
+  min-height: 520px;
+  flex: 1;
   padding: clamp(1rem, 3vw, 2.1rem);
   background:
     radial-gradient(ellipse at 92% 0%, rgba(198, 227, 216, 0.48), transparent 32rem),
@@ -16,7 +34,7 @@
 .admin-hero {
   position: relative;
   display: flex;
-  min-height: 190px;
+  min-height: 112px;
   align-items: center;
   justify-content: space-between;
   gap: 2rem;
@@ -66,7 +84,7 @@
 .admin-hero h1 {
   margin: 0;
   color: #fff;
-  font-size: clamp(1.85rem, 4vw, 2.8rem);
+  font-size: clamp(1.55rem, 3vw, 2.05rem);
   font-weight: 750;
   letter-spacing: -0.045em;
   line-height: 1.08;
@@ -94,9 +112,13 @@
   padding: 0.2rem;
 }
 
+.admin-dashboard {
+  padding-top: clamp(0.8rem, 2vw, 1.25rem);
+}
+
 .admin-navigation {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.75rem;
   box-sizing: border-box;
   width: min(1440px, 100%);
