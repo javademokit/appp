@@ -34,7 +34,7 @@ const Header = () => {
           <span className="header-care-status"><Headset size={16} aria-hidden="true" /> 24/7 Care</span>
           <span className="header-date-time" aria-label={`Current local date and time: ${dateLabel}, ${timeLabel}`}>
             <time dateTime={now.toISOString()}>
-              <span>{dateLabel}</span>
+              <strong className="header-date-label">{dateLabel}</strong>
               <strong className="header-digital-clock">{timeLabel}</strong>
             </time>
           </span>

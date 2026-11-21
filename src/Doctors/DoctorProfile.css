@@ -1,0 +1,226 @@
+.doctor-directory {
+  width: 100%;
+  color: #233a35;
+}
+
+.doctor-directory-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.doctor-directory-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.45rem;
+  color: #137b6b;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.doctor-directory-header h1 {
+  margin: 0;
+  color: #18342e;
+  font-size: clamp(1.7rem, 3vw, 2.25rem);
+  letter-spacing: -0.035em;
+}
+
+.doctor-directory-intro {
+  margin: 0.5rem 0 0;
+  color: #71817c;
+  font-size: 0.9rem;
+}
+
+.doctor-directory-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.doctor-directory-count {
+  border: 1px solid #dcebe5;
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  background: #f3faf6;
+  color: #287565;
+  font-size: 0.78rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.doctor-directory-refresh {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid #d9e6e1;
+  border-radius: 9px;
+  padding: 0.5rem 0.75rem;
+  background: #fff;
+  color: #3e5b53;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.doctor-directory-refresh:hover:not(:disabled) {
+  border-color: #a9d1c2;
+  background: #f6fbf8;
+}
+
+.doctor-directory-refresh:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.doctor-directory-message {
+  border: 1px solid #dce9e4;
+  border-radius: 12px;
+  padding: 1.25rem;
+  background: #fff;
+  color: #60736c;
+  font-size: 0.9rem;
+}
+
+.doctor-directory-message.error {
+  margin-bottom: 1rem;
+  border-color: #f1d0ca;
+  background: #fff8f6;
+  color: #984b3e;
+}
+
+.doctor-directory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr));
+  gap: 1rem;
+}
+
+.doctor-directory-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  border: 1px solid #e0ebe6;
+  border-radius: 14px;
+  padding: 1.1rem;
+  background: linear-gradient(155deg, #fff 0%, #fbfdfc 100%);
+  box-shadow: 0 8px 24px rgba(32, 75, 63, 0.045);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.doctor-directory-card:hover {
+  transform: translateY(-2px);
+  border-color: #c3ded3;
+  box-shadow: 0 12px 28px rgba(32, 75, 63, 0.09);
+}
+
+.doctor-directory-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.doctor-directory-avatar {
+  display: grid;
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  place-items: center;
+  border: 1px solid #d8ece3;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #eaf7f0, #e8f1fb);
+  color: #267865;
+  font-size: 0.98rem;
+  font-weight: 800;
+}
+
+.doctor-directory-card-heading h2 {
+  overflow: hidden;
+  margin: 0;
+  color: #203b34;
+  font-size: 1rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.doctor-directory-specialty {
+  margin: 0.3rem 0 0;
+  color: #248372;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.doctor-directory-details {
+  display: grid;
+  gap: 0.55rem;
+  margin: 1rem 0;
+  color: #647770;
+  font-size: 0.82rem;
+}
+
+.doctor-directory-details p {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.doctor-directory-details svg {
+  flex: 0 0 15px;
+  margin-top: 1px;
+  color: #75948a;
+}
+
+.doctor-directory-details a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.doctor-directory-details a:hover {
+  color: #137b6b;
+  text-decoration: underline;
+}
+
+.doctor-directory-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: auto;
+  border-top: 1px solid #edf2ef;
+  padding-top: 0.8rem;
+  color: #82918b;
+  font-size: 0.7rem;
+}
+
+.doctor-directory-card-footer strong {
+  color: #3c6257;
+  font-size: 0.74rem;
+  text-align: right;
+}
+
+@media (max-width: 600px) {
+  .doctor-directory-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .doctor-directory-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doctor-directory-card {
+    transition: none;
+  }
+}

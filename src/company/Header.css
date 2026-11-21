@@ -79,8 +79,9 @@
   gap: 0.65rem;
 }
 
-.header-date-time time > span {
+.header-date-label {
   color: #60736e;
+  font-weight: 750;
 }
 
 .header-digital-clock {
