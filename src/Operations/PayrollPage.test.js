@@ -777,4 +777,64 @@ describe('PayrollPage', () => {
     expect(navigation).not.toHaveTextContent('Payslips');
     expect(screen.queryByRole('button', { name: 'Calculate' })).not.toBeInTheDocument();
   });
+
+  it('opens the finance approval queue from the Payroll Approval shortcut', async () => {
+    apiFetch.mockImplementation(async (path) => {
+      if (path === '/users/me') return jsonResponse({ username: 'finance-user', roles: ['FINANCE'] });
+      if (path.startsWith('/payroll?month=')) {
+        return jsonResponse([{
+          id: 'run-pending', month: '2026-10', status: 'PENDING_APPROVAL',
+          employeeCount: 2, totalGross: 2500, totalDeduction: 300, totalNet: 2200, items: [],
+        }]);
+      }
+      return jsonResponse([]);
+    });
+
+    render(<PayrollPage />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Payroll', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Payroll Approval' }));
+
+    expect(await screen.findByRole('heading', { name: 'Pending approval queue' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Generate brief' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Review details/ })).toBeInTheDocument();
+  });
+
+  it('sends aggregate approval totals to the verified local Ollama model only', async () => {
+    const originalFetch = global.fetch;
+    global.fetch = jest.fn(async (url) => {
+      if (url.endsWith('/api/tags')) {
+        return { ok: true, json: async () => ({ models: [{ name: 'llama3.2:latest' }] }) };
+      }
+      return { ok: true, json: async () => ({ message: { content: 'One payroll run is waiting for review.' } }) };
+    });
+
+    try {
+      apiFetch.mockImplementation(async (path) => {
+        if (path === '/users/me') return jsonResponse({ username: 'finance-user', roles: ['FINANCE'] });
+        if (path.startsWith('/payroll?month=')) {
+          return jsonResponse([{
+            id: 'run-pending', month: '2026-10', status: 'PENDING_APPROVAL',
+            employeeCount: 2, totalGross: 2500, totalDeduction: 300, totalNet: 2200,
+            items: [{ employeeName: 'Private Employee', flags: [] }],
+          }]);
+        }
+        return jsonResponse([]);
+      });
+
+      render(<PayrollPage />);
+      fireEvent.click(await screen.findByRole('button', { name: 'Payroll', exact: true }));
+      fireEvent.click(screen.getByRole('button', { name: 'Payroll Approval' }));
+      fireEvent.click(await screen.findByRole('button', { name: 'Generate brief' }));
+
+      expect(await screen.findByText('One payroll run is waiting for review.')).toBeInTheDocument();
+      const chatCall = global.fetch.mock.calls.find(([url]) => url.endsWith('/api/chat'));
+      expect(chatCall[0]).toBe('http://localhost:11434/api/chat');
+      const requestBody = JSON.parse(chatCall[1].body);
+      const financeTotals = JSON.parse(requestBody.messages[1].content);
+      expect(financeTotals.pendingNetTotal).toBe(2200);
+      expect(requestBody.messages[1].content).not.toContain('Private Employee');
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
 });

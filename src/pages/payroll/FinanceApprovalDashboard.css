@@ -1,0 +1,222 @@
+.finance-approval-dashboard {
+  display: grid;
+  gap: 1rem;
+}
+
+.finance-approval-intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid #dfeae5;
+  border-radius: 12px;
+  padding: 1.15rem 1.25rem;
+  background: linear-gradient(125deg, #fff 0%, #f1f8f4 100%);
+}
+
+.finance-approval-intro h2 {
+  margin: 0;
+  color: #203c35;
+  font-size: clamp(1.1rem, 2vw, 1.35rem);
+  letter-spacing: -0.035em;
+}
+
+.finance-approval-intro > div > p:last-child {
+  margin: 0.4rem 0 0;
+  color: #71817b;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.finance-approval-security {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid #cfe7da;
+  border-radius: 999px;
+  padding: 0.45rem 0.7rem;
+  background: #f0faf4;
+  color: #287653;
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.finance-approval-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.finance-approval-metrics article {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  align-content: start;
+  column-gap: 0.65rem;
+  row-gap: 0.2rem;
+  border: 1px solid #e1e9e5;
+  border-radius: 10px;
+  padding: 0.9rem;
+  background: #fff;
+}
+
+.finance-metric-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  grid-row: span 3;
+  place-items: center;
+  border-radius: 8px;
+}
+
+.finance-metric-icon.teal {
+  background: #e8f5ef;
+  color: #19775f;
+}
+
+.finance-metric-icon.amber {
+  background: #fff4df;
+  color: #a9781d;
+}
+
+.finance-metric-label {
+  color: #74847e;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.finance-approval-metrics article strong {
+  overflow: hidden;
+  color: #203c35;
+  font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+}
+
+.finance-approval-metrics article small {
+  color: #84928d;
+  font-size: 0.64rem;
+  line-height: 1.45;
+}
+
+.finance-ai-brief {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  border: 1px solid #dbe8e2;
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  background: #f8fbf9;
+}
+
+.finance-ai-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.finance-ai-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 8px;
+  background: #e8f4f0;
+  color: #14796e;
+}
+
+.finance-ai-heading h3 {
+  margin: 0;
+  color: #29443d;
+  font-size: 0.78rem;
+}
+
+.finance-ai-heading p,
+.finance-ai-brief > small {
+  margin: 0.22rem 0 0;
+  color: #7a8a84;
+  font-size: 0.66rem;
+  line-height: 1.5;
+}
+
+.finance-ai-brief > small {
+  grid-column: 1 / -1;
+  margin: -0.25rem 0 0 2.65rem;
+}
+
+.finance-ai-brief > .hr-button {
+  min-width: 132px;
+}
+
+.finance-ai-response,
+.finance-ai-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  border-radius: 7px;
+  padding: 0.7rem 0.8rem;
+  font-size: 0.74rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.finance-ai-response {
+  background: #fff;
+  color: #3e5a51;
+}
+
+.finance-ai-error {
+  background: #fff4f3;
+  color: #a3433c;
+}
+
+.finance-approval-queue .hr-panel-heading {
+  align-items: flex-start;
+}
+
+.finance-approval-row-action {
+  display: grid;
+  justify-items: start;
+  gap: 0.25rem;
+}
+
+.finance-approval-row-action .hr-text-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.finance-approval-row-action .hr-approval-blocked {
+  white-space: nowrap;
+}
+
+.finance-approval-waiting {
+  margin: -0.35rem 0 0;
+  color: #805c14;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 760px) {
+  .finance-approval-intro {
+    flex-direction: column;
+    padding: 1rem;
+  }
+
+  .finance-approval-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-ai-brief {
+    grid-template-columns: 1fr;
+  }
+
+  .finance-ai-brief > .hr-button {
+    width: 100%;
+  }
+
+  .finance-ai-brief > small {
+    margin-left: 0;
+  }
+}

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaUserShield } from 'react-icons/fa';
+import { FaArrowLeft } from 'react-icons/fa';
 import { apiFetch } from '../API/api';
 import BrandLogo from '../components/BrandLogo';
+import Footer from '../company/Footer';
 import './LoginPage.css';
 import { getPortalPathForRoles, normalizeRoles, ROLES, STAFF_PORTAL_ROLES } from '../Admin/roles';
 
@@ -110,20 +111,13 @@ const UserLogin = ({ portal = 'all' }) => {
   };
 
   return (
-    <div className="login-container">
-      <div className="auth-layout">
+    <div className="login-page">
+      <div className="login-container">
+        <div className="auth-layout">
         <aside className="auth-promo">
           <Link className="auth-brand" to="/">
             <BrandLogo className="auth-brand-icon" />
           </Link>
-          <div className="auth-promo-content">
-            <span className="auth-promo-symbol"><FaUserShield aria-hidden="true" /></span>
-            <p className="auth-kicker">Your care, connected</p>
-            <h2>A simpler way to stay close to your care.</h2>
-            <p className="auth-promo-description">
-              Sign in to continue to appointments and services for your hospital portal.
-            </p>
-          </div>
           <Link className="auth-back-link" to="/"><FaArrowLeft aria-hidden="true" /> Back to home</Link>
           <span className="auth-promo-decoration auth-promo-decoration-one" />
           <span className="auth-promo-decoration auth-promo-decoration-two" />
@@ -190,7 +184,9 @@ const UserLogin = ({ portal = 'all' }) => {
           {portal !== 'hospital' && <Link to="/SignUpPage">Create a patient account</Link>}
         </nav>
         </motion.div>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };

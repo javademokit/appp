@@ -25,6 +25,7 @@ import SalaryComponent from '../salary/SalaryComponent';
 import SalaryStructure from '../salary/SalaryStructure';
 import PayrollHistory from './PayrollHistory';
 import PayrollPreview from './PayrollPreview';
+import FinanceApprovalDashboard from './FinanceApprovalDashboard';
 import Payslip, { PayslipDetails } from './Payslip';
 import OvertimeAllowances from './OvertimeAllowances';
 import { omitBlankOptionalEmployeeFields } from './employeePayload';
@@ -541,7 +542,7 @@ export default function PayrollPage({
       ['Payroll Preview', () => { setPayrollView('payroll'); setSection('payroll'); if (selectedPayroll) setData((current) => ({ ...current, preview: selectedPayroll })); }],
       ['Payroll Approval', () => {
         setData((current) => ({ ...current, preview: null }));
-        setPayrollView('payroll');
+        setPayrollView('approval');
         setSection('payroll');
       }],
       ['Payroll History', () => {
@@ -558,7 +559,7 @@ export default function PayrollPage({
     ] : [
       ['Payroll Approval', () => {
         setData((current) => ({ ...current, preview: null }));
-        setPayrollView('payroll');
+        setPayrollView('approval');
         setSection('payroll');
       }],
       ['Payroll History', () => {
@@ -720,7 +721,14 @@ export default function PayrollPage({
                   && canApprovePayroll && !isPayrollMaker(data.preview, account)}
                 busy={busy}
                 onAction={performPayrollStep}
-                onClose={() => setData((current) => ({ ...current, preview: null }))} /> : <>
+                onClose={() => setData((current) => ({ ...current, preview: null }))} />
+                  : payrollView === 'approval' ? <FinanceApprovalDashboard
+                    runs={data.payrolls}
+                    currentUser={account}
+                    canApprovePayroll={canApprovePayroll}
+                    allowAdminSelfApproval={isAdminUser}
+                    onReview={(run) => setData((current) => ({ ...current, preview: run }))}
+                  /> : <>
               {payrollView !== 'history' && selectedPayroll && <div className="hr-run-summary">
                 <div><span>Employees</span><strong>{selectedPayroll.employeeCount ?? asArray(selectedPayroll.items).length}</strong></div>
                 <div><span>Gross payroll</span><strong>{money(selectedPayroll.totalGross)}</strong></div>

@@ -1,13 +1,15 @@
 // SignUpPage.js
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FaArrowLeft, FaUserPlus } from 'react-icons/fa';
+import { FaArrowLeft } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { toast, ToastContainer } from 'react-toastify';
 import { apiFetch } from '../API/api';
 import BrandLogo from '../components/BrandLogo';
+import Footer from '../company/Footer';
 import 'react-toastify/dist/ReactToastify.css';
 import '../Login/LoginPage.css';
+import './SignUpPage.css';
 
 const SignUpPage = () => {
   const [userId, setName] = useState('');
@@ -60,21 +62,14 @@ const SignUpPage = () => {
   };
 
   return (
-    <div className="signup-container">
-      <ToastContainer position="top-center" />
-      <div className="auth-layout auth-layout-signup">
+    <div className="signup-page">
+      <div className="signup-container">
+        <ToastContainer position="top-center" />
+        <div className="auth-layout auth-layout-signup">
         <aside className="auth-promo">
           <Link className="auth-brand" to="/">
             <BrandLogo className="auth-brand-icon" />
           </Link>
-          <div className="auth-promo-content">
-            <span className="auth-promo-symbol"><FaUserPlus aria-hidden="true" /></span>
-            <p className="auth-kicker">Start with your patient account</p>
-            <h2>Your next step in care starts here.</h2>
-            <p className="auth-promo-description">
-              Create your account to connect with your patient portal and manage appointments.
-            </p>
-          </div>
           <Link className="auth-back-link" to="/"><FaArrowLeft aria-hidden="true" /> Back to home</Link>
           <span className="auth-promo-decoration auth-promo-decoration-one" />
           <span className="auth-promo-decoration auth-promo-decoration-two" />
@@ -142,7 +137,9 @@ const SignUpPage = () => {
         </form>
         <p className="auth-switch-link">Already have an account? <Link to="/PatientLogin">Sign in</Link></p>
         </motion.div>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };

@@ -12,6 +12,17 @@ function renderLogin(portal) {
   return render(<UserLogin portal={portal} />);
 }
 
+test('login hero shows the image without the promotional headline or description', () => {
+  renderLogin();
+
+  expect(screen.queryByText('Your care, connected')).not.toBeInTheDocument();
+  expect(screen.queryByText('A simpler way to stay close to your care.')).not.toBeInTheDocument();
+  expect(screen.queryByText('Sign in to continue to appointments and services for your hospital portal.'))
+    .not.toBeInTheDocument();
+  expect(screen.getAllByRole('img', { name: /Medora AI Health Care/ })).toHaveLength(2);
+  expect(screen.getByRole('contentinfo')).toHaveTextContent('All rights reserved');
+});
+
 function mockSuccessfulLogin(roles) {
   apiFetch.mockImplementation(async (path) => {
     if (path === '/users/login') {

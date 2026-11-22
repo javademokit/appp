@@ -62,3 +62,174 @@
 .signup-btn:hover {
   background-color: var(--clinic-primary-strong);
 }
+
+.signup-container {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: clamp(1.25rem, 4vw, 3.5rem);
+  background:
+    radial-gradient(ellipse at 92% 8%, rgba(201, 231, 220, 0.46), transparent 30rem),
+    #f6f9f7;
+}
+
+.signup-container .auth-layout-signup {
+  grid-template-columns: minmax(0, 1fr) minmax(410px, 0.95fr);
+  width: min(100%, 1000px);
+  min-height: 590px;
+  border-color: #e1e9e5;
+  border-radius: 1.5rem;
+  box-shadow: 0 28px 80px rgba(31, 69, 58, 0.12);
+}
+
+.signup-container .auth-promo {
+  min-height: 590px;
+  background:
+    linear-gradient(135deg, rgba(8, 39, 35, 0.42), rgba(14, 87, 73, 0.22) 56%, rgba(12, 93, 76, 0.38)),
+    radial-gradient(ellipse at 74% 77%, rgba(106, 211, 172, 0.23), transparent 25rem),
+    url("../LandiningPage/medora-hospital-lobby.jpg") center / cover no-repeat;
+}
+
+.signup-container .auth-brand {
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 0.9rem;
+  padding: 0.55rem 0.7rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 32px rgba(8, 39, 35, 0.14);
+}
+
+.signup-container .auth-brand-icon {
+  width: 8rem;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.signup-container .auth-back-link {
+  width: fit-content;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  padding: 0.62rem 0.85rem;
+  background: rgba(12, 57, 49, 0.24);
+  backdrop-filter: blur(8px);
+}
+
+.signup-container .signup-form {
+  max-width: 520px;
+  padding: clamp(2rem, 4vw, 3.4rem);
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
+  text-align: left;
+}
+
+.signup-container .auth-card-heading {
+  margin-bottom: 1.2rem;
+}
+
+.signup-container .auth-card h1 {
+  margin: 0;
+  color: #173b36;
+  font-size: clamp(1.85rem, 2.8vw, 2.25rem);
+  letter-spacing: -0.055em;
+  line-height: 1.15;
+}
+
+.signup-container .auth-kicker {
+  color: #128774;
+}
+
+.signup-container .signup-description {
+  margin: 0.7rem 0 0;
+  color: #60736e;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.signup-container .auth-input-group input {
+  min-height: 3.1rem;
+  border-radius: 0.75rem;
+  background: #f9fbfa;
+}
+
+.signup-container .auth-submit {
+  min-height: 3.1rem;
+  margin-top: 0.55rem;
+  border-radius: 0.75rem;
+  background: #0f8977;
+}
+
+.signup-container .auth-submit:hover:not(:disabled) {
+  background: #096f62;
+}
+
+@media (max-width: 760px) {
+  .signup-container {
+    padding: 0.75rem;
+  }
+
+  .signup-container .auth-layout-signup {
+    grid-template-columns: 1fr;
+    width: min(100%, 500px);
+    min-height: 0;
+  }
+
+  .signup-container .auth-promo {
+    min-height: 155px;
+    padding: 0.85rem 0.95rem;
+    background-position: center 48%;
+  }
+
+  .signup-container .auth-brand {
+    padding: 0.38rem 0.55rem;
+  }
+
+  .signup-container .auth-brand-icon {
+    width: 5.8rem;
+  }
+
+  .signup-container .auth-back-link {
+    padding: 0.48rem 0.7rem;
+    font-size: 0.75rem;
+  }
+
+  .signup-container .signup-form {
+    max-width: none;
+    padding: 1.45rem 1.25rem 1.65rem;
+  }
+
+  .signup-container .auth-card-heading {
+    margin-bottom: 1rem;
+  }
+
+  .signup-container .auth-card h1 {
+    font-size: clamp(1.7rem, 6vw, 2.05rem);
+  }
+
+  .signup-container .signup-description {
+    font-size: 0.82rem;
+  }
+
+  .signup-container .auth-input-group {
+    margin-bottom: 0.8rem;
+  }
+
+  .signup-container .auth-input-group input,
+  .signup-container .auth-submit {
+    min-height: 3rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .signup-container .auth-promo {
+    min-height: 140px;
+  }
+
+  .signup-container .signup-form {
+    padding: 1.25rem 1.1rem 1.45rem;
+  }
+}

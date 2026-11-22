@@ -14,6 +14,19 @@
   font-family: Inter, "Segoe UI", sans-serif;
 }
 
+.login-page,
+.signup-page {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+}
+
+.login-page .login-container,
+.signup-page .signup-container {
+  min-height: 0;
+  flex: 1 0 auto;
+}
+
 .auth-layout {
   display: grid;
   grid-template-columns: minmax(280px, 0.92fr) minmax(360px, 1.08fr);
@@ -338,18 +351,27 @@
 
 .login-container .auth-layout {
   grid-template-columns: minmax(0, 1fr) minmax(410px, 0.95fr);
-  width: min(100%, 1160px);
-  min-height: 650px;
+  width: min(100%, 1000px);
+  min-height: 590px;
   border-color: #e1e9e5;
   border-radius: 1.5rem;
   box-shadow: 0 28px 80px rgba(31, 69, 58, 0.12);
 }
 
 .login-container .auth-promo {
-  min-height: 650px;
+  min-height: 590px;
   background:
-    linear-gradient(145deg, rgba(14, 47, 42, 0.86), rgba(15, 91, 77, 0.78) 58%, rgba(17, 119, 98, 0.78)),
+    linear-gradient(135deg, rgba(8, 39, 35, 0.42), rgba(14, 87, 73, 0.22) 56%, rgba(12, 93, 76, 0.38)),
+    radial-gradient(ellipse at 74% 77%, rgba(106, 211, 172, 0.23), transparent 25rem),
     url("../LandiningPage/medora-hospital-lobby.jpg") center / cover no-repeat;
+}
+
+.login-container .auth-brand {
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 0.9rem;
+  padding: 0.55rem 0.7rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10px 32px rgba(8, 39, 35, 0.14);
 }
 
 .login-container .auth-brand-icon {
@@ -376,12 +398,12 @@
 }
 
 .login-container .auth-card {
-  max-width: 540px;
-  padding: clamp(2.5rem, 5vw, 4.5rem);
+  max-width: 520px;
+  padding: clamp(2rem, 4vw, 3.4rem);
 }
 
 .login-container .auth-card-heading {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .login-container .auth-kicker {
@@ -390,7 +412,7 @@
 
 .login-container .auth-card h1 {
   color: #173b36;
-  font-size: clamp(2rem, 3vw, 2.55rem);
+  font-size: clamp(1.85rem, 2.8vw, 2.25rem);
 }
 
 .login-container .login-description {
@@ -399,13 +421,13 @@
 }
 
 .login-container .auth-input-group input {
-  min-height: 3.35rem;
+  min-height: 3.1rem;
   border-radius: 0.75rem;
   background: #f9fbfa;
 }
 
 .login-container .auth-submit {
-  min-height: 3.35rem;
+  min-height: 3.1rem;
   margin-top: 0.55rem;
   border-radius: 0.75rem;
   background: #0f8977;
@@ -423,6 +445,33 @@
   color: #118573;
 }
 
+.login-container .auth-promo-decoration {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.login-container .auth-promo-decoration-one {
+  right: -9rem;
+  bottom: 4rem;
+  width: 28rem;
+  height: 28rem;
+}
+
+.login-container .auth-promo-decoration-two {
+  right: -4rem;
+  bottom: 9rem;
+  width: 18rem;
+  height: 18rem;
+}
+
+.login-container .auth-back-link {
+  width: fit-content;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  padding: 0.62rem 0.85rem;
+  background: rgba(12, 57, 49, 0.24);
+  backdrop-filter: blur(8px);
+}
+
 @media (max-width: 760px) {
   .login-container {
     padding: 0.75rem;
@@ -430,57 +479,72 @@
 
   .login-container .auth-layout {
     grid-template-columns: 1fr;
-    width: min(100%, 560px);
+    width: min(100%, 500px);
     min-height: 0;
   }
 
   .login-container .auth-promo {
-    min-height: 300px;
-    padding: 1.25rem 1.3rem;
+    min-height: 155px;
+    padding: 0.85rem 0.95rem;
     background-position: center 48%;
   }
 
+  .login-container .auth-promo-decoration-one {
+    right: -11rem;
+    bottom: -7rem;
+    width: 23rem;
+    height: 23rem;
+  }
+
+  .login-container .auth-promo-decoration-two {
+    right: -7rem;
+    bottom: -3rem;
+    width: 15rem;
+    height: 15rem;
+  }
+
+  .login-container .auth-back-link {
+    padding: 0.48rem 0.7rem;
+    font-size: 0.75rem;
+  }
+
+  .login-container .auth-brand {
+    padding: 0.38rem 0.55rem;
+  }
+
   .login-container .auth-brand-icon {
-    width: 7rem;
-  }
-
-  .login-container .auth-promo-content {
-    max-width: 30rem;
-    margin: 1.8rem 0 1.2rem;
-  }
-
-  .login-container .auth-promo-content h2 {
-    max-width: 18ch;
-    font-size: clamp(1.9rem, 7vw, 2.6rem);
-  }
-
-  .login-container .auth-promo-symbol {
-    width: 2.7rem;
-    height: 2.7rem;
-    margin-bottom: 0.8rem;
-    font-size: 1rem;
-  }
-
-  .login-container .auth-promo-description {
-    margin-top: 0.6rem;
+    width: 5.8rem;
   }
 
   .login-container .auth-card {
     max-width: none;
-    padding: 1.8rem 1.5rem 2rem;
+    padding: 1.45rem 1.25rem 1.65rem;
+  }
+
+  .login-container .auth-card-heading {
+    margin-bottom: 1.15rem;
+  }
+
+  .login-container .auth-card h1 {
+    font-size: clamp(1.7rem, 6vw, 2.05rem);
+  }
+
+  .login-container .login-description {
+    font-size: 0.82rem;
+  }
+
+  .login-container .auth-input-group input,
+  .login-container .auth-submit {
+    min-height: 3rem;
   }
 }
 
 @media (max-width: 420px) {
   .login-container .auth-promo {
-    min-height: 270px;
-  }
-
-  .login-container .auth-promo-content {
-    margin: 1.25rem 0 0.8rem;
+    min-height: 140px;
   }
 
   .login-container .auth-card {
-    padding: 1.5rem 1.2rem 1.7rem;
+    padding: 1.25rem 1.1rem 1.45rem;
   }
 }
