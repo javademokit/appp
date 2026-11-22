@@ -373,6 +373,15 @@ organization setup, shifts, attendance, leave requests, salary components and
 structures, payroll review/approval, payslips, and reports. Configure employee
 types and salary components before onboarding and running payroll.
 
+On backend startup, payroll creates any missing monthly **draft** runs for the
+current calendar year; it also ensures the new calendar year's drafts every
+January 1. On the fifth day of each month, the previous month's draft is
+automatically calculated if payroll inputs validate. Missing salary structures
+or other validation failures leave the run uncalculated and are logged for HR
+to resolve. Payroll approval and payment remain manual; configure active salary
+structures and review attendance and allowances before relying on calculations.
+The scheduler uses the `Asia/Kolkata` time zone.
+
 The React entry point is `src/pages/payroll/PayrollRun.jsx`. Dashboard,
 employee, organization, attendance, leave, salary, payroll, and payslip views
 are decomposed under `src/pages/`; API operations are grouped in
