@@ -2,14 +2,9 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import AdminDashboard from './AdminDashboard';
 
 jest.mock('./UserAccessPage', () => () => <div>User access content</div>);
-jest.mock('../pages/payroll/PayrollRun', () => ({ hideHeader, employeesOnly, payrollOnly, salaryOnly, initialSalaryView, initialPayrollView }) => (
-  <div>
-    {!hideHeader && <header>Payroll workspace header</header>}
-    {employeesOnly ? <div>Employee workspace content</div>
-      : payrollOnly ? <div>Payroll {initialPayrollView || 'payroll'} content</div>
-        : salaryOnly ? <div>Salary setup {initialSalaryView || 'components'} content</div>
-          : null}
-  </div>
+jest.mock('./EmployeeOnboarding', () => () => <div>Employee onboarding content</div>);
+jest.mock('../payrollDesk/PayrollDesk', () => ({ initialTab }) => (
+  <div>Payroll desk {initialTab}</div>
 ));
 
 test('shows the administration control center and switches between its sections', () => {
@@ -17,54 +12,48 @@ test('shows the administration control center and switches between its sections'
 
   expect(screen.getByRole('heading', { name: 'Administration workspace' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /Operations Hospital overview/ })).not.toBeInTheDocument();
-  expect(screen.getByText('Employee workspace content')).toBeInTheDocument();
+  expect(screen.getByText('Employee onboarding content')).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: /Users & access Accounts and roles/ }));
   expect(screen.getByText('User access content')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Users & access Accounts and roles/ })).toHaveAttribute('aria-current', 'page');
 
   fireEvent.click(screen.getByRole('button', { name: /Employees Staff records and onboarding/ }));
-  expect(screen.getByText('Employee workspace content')).toBeInTheDocument();
+  expect(screen.getByText('Employee onboarding content')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Employees Staff records and onboarding/ })).toHaveAttribute('aria-current', 'page');
 
   fireEvent.click(screen.getByRole('button', { name: /HR & payroll People and compensation/ }));
-  expect(screen.getByText(/Payroll (?:payroll )?content/)).toBeInTheDocument();
+  expect(screen.getByText('Payroll desk run')).toBeInTheDocument();
   expect(screen.getByRole('navigation', { name: 'Administration pages' })).toBeInTheDocument();
-  expect(screen.queryByText('Payroll workspace header')).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: /Salary setup Components and structures/ }));
-  expect(screen.getByText('Salary setup components content')).toBeInTheDocument();
+  expect(screen.getByText('Payroll desk str')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /Salary setup Components and structures/ })).toHaveAttribute('aria-current', 'page');
 });
 
-test('opens the requested salary view from a PayrollPortal link', () => {
+test('opens salary setup from a PayrollPortal link', () => {
   window.history.pushState({}, '', '/AdminDashboard?section=salary&salaryView=structures');
   render(<AdminDashboard />);
 
-  expect(screen.getByText('Salary setup structures content')).toBeInTheDocument();
+  expect(screen.getByText('Payroll desk str')).toBeInTheDocument();
 
   window.history.pushState({}, '', '/');
 });
 
-test('opens overtime allowance review inside the AdminDashboard payroll workspace', () => {
+test('opens the payroll desk from overtime, history, and approval links', () => {
   window.history.pushState({}, '', '/AdminDashboard?section=payroll&payrollView=overtime');
-  render(<AdminDashboard />);
+  const { unmount } = render(<AdminDashboard />);
+  expect(screen.getByText('Payroll desk run')).toBeInTheDocument();
+  unmount();
 
-  expect(screen.getByText('Payroll overtime content')).toBeInTheDocument();
-
-  window.history.pushState({}, '', '/');
-});
-
-test('opens payroll history and approval views from URL state', () => {
   window.history.pushState({}, '', '/AdminDashboard?section=payroll&payrollView=history');
-  render(<AdminDashboard />);
-  expect(screen.getByText('Payroll history content')).toBeInTheDocument();
-  window.history.pushState({}, '', '/');
-});
+  const historyView = render(<AdminDashboard />);
+  expect(screen.getByText('Payroll desk run')).toBeInTheDocument();
+  historyView.unmount();
 
-test('opens payroll approval view from URL state', () => {
   window.history.pushState({}, '', '/AdminDashboard?section=payroll&payrollView=approval');
   render(<AdminDashboard />);
-  expect(screen.getByText('Payroll approval content')).toBeInTheDocument();
+  expect(screen.getByText('Payroll desk run')).toBeInTheDocument();
+
   window.history.pushState({}, '', '/');
 });

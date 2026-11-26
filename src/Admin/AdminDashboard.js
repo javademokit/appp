@@ -1,7 +1,8 @@
 // ./DashBoard/AdminDashboard.js
 import React, { useEffect, useState } from "react";
 import UserAccessPage from "./UserAccessPage";
-import PayrollRun from "../pages/payroll/PayrollRun";
+import EmployeeOnboarding from "./EmployeeOnboarding";
+import PayrollDesk from "../payrollDesk/PayrollDesk";
 import { Banknote, BadgeIndianRupee, UserRoundPlus, UsersRound } from "lucide-react";
 import Header from "../company/Header";
 import Footer from "../company/Footer";
@@ -14,40 +15,16 @@ const getAdminSection = () => {
 };
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState(getAdminSection);
-  const [salaryView, setSalaryView] = useState(() => (
-    new URLSearchParams(window.location.search).get("salaryView") === "structures" ? "structures" : "components"
-  ));
-  const [payrollView, setPayrollView] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    const requested = params.get("payrollView");
-    if (requested === "overtime" || params.get("section") === "overtime-allowances") return "overtime";
-    if (requested === "history") return "history";
-    if (requested === "approval") return "approval";
-    return "payroll";
-  });
 
   useEffect(() => {
-    const syncSection = () => {
-      const params = new URLSearchParams(window.location.search);
-      setActiveSection(getAdminSection());
-      setSalaryView(params.get("salaryView") === "structures" ? "structures" : "components");
-      const requested = params.get("payrollView");
-      setPayrollView(requested === "overtime" || params.get("section") === "overtime-allowances"
-        ? "overtime"
-        : requested === "history" ? "history"
-          : requested === "approval" ? "approval" : "payroll");
-    };
+    const syncSection = () => setActiveSection(getAdminSection());
     window.addEventListener("popstate", syncSection);
     return () => window.removeEventListener("popstate", syncSection);
   }, []);
 
-  const openSection = (section, extraQuery = "") => {
+  const openSection = (section) => {
     setActiveSection(section);
-    if (section === "salary") setSalaryView(extraQuery.includes("structures") ? "structures" : "components");
-    if (section === "payroll") setPayrollView(extraQuery.includes("overtime") ? "overtime"
-      : extraQuery.includes("history") ? "history"
-        : extraQuery.includes("approval") ? "approval" : "payroll");
-    window.history.pushState({}, "", `/AdminDashboard?section=${section}${extraQuery}`);
+    window.history.pushState({}, "", `/AdminDashboard?section=${section}`);
   };
 
   return (
@@ -83,10 +60,10 @@ const AdminDashboard = () => {
       </nav>
       <section className="admin-content" aria-live="polite">
         {activeSection === "users" ? <UserAccessPage />
-          : activeSection === "employees" ? <PayrollRun hideHeader employeesOnly />
-          : activeSection === "payroll" ? <PayrollRun hideHeader payrollOnly initialPayrollView={payrollView} />
-            : activeSection === "salary" ? <PayrollRun hideHeader salaryOnly initialSalaryView={salaryView} />
-            : <PayrollRun hideHeader employeesOnly />}
+          : activeSection === "employees" ? <EmployeeOnboarding />
+          : activeSection === "payroll" ? <PayrollDesk initialTab="run" />
+            : activeSection === "salary" ? <PayrollDesk initialTab="str" />
+            : <PayrollDesk initialTab="emp" />}
       </section>
       </main>
       <Footer />

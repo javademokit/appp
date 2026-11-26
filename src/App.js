@@ -13,7 +13,7 @@ import { HOSPITAL_WORKSPACE_ROLES, ROLES } from "./Admin/roles";
 import AdminDashboard from "./Admin/AdminDashboard.js"
 import PatientPortal from "./Patients/PatientPortal";
 import DoctorDashboard from "./Doctors/DoctorDashboard";
-import PayrollRun from "./pages/payroll/PayrollRun";
+import PayrollDesk from "./payrollDesk/PayrollDesk";
 import AmbulanceDriverPage from "./Operations/AmbulanceDriverPage";
 
 const adminPayrollRedirect = (roles, location) => {
@@ -45,7 +45,7 @@ const PayrollPortalRoute = () => {
   if (new URLSearchParams(location.search).get("section") === "payslips") {
     return <Navigate to="/AdminDashboard" replace />;
   }
-  return <PayrollRun />;
+  return <PayrollDesk initialTab="run" />;
 };
 
 function App() {

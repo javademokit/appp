@@ -1,9 +1,14 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { apiFetch } from '../API/api';
+import { api as payrollApi } from '../payrollDesk/payrollApi';
 import Doctors from './Doctors';
 
 jest.mock('../API/api', () => ({ apiFetch: jest.fn() }));
+jest.mock('../payrollDesk/payrollApi', () => ({
+  api: { employees: jest.fn() },
+}));
 
+beforeEach(() => payrollApi.employees.mockResolvedValue([]));
 afterEach(() => jest.clearAllMocks());
 
 test('shows the HR-created doctor profile and schedule in the doctor roster', async () => {
@@ -73,6 +78,64 @@ test('updates the selected HR doctor employee schedule without creating a duplic
   ));
   expect(await screen.findByText('Doctor schedule updated successfully!')).toBeInTheDocument();
   expect(apiFetch).not.toHaveBeenCalledWith('/doctors', expect.objectContaining({ method: 'POST' }));
+});
+
+test('lists and schedules doctors sourced from payroll employees', async () => {
+  const employee = {
+    id: 101,
+    code: 'E101',
+    name: 'Mira Patel',
+    department: 'Cardiology',
+    role: 'Doctor',
+    phone: '5551234567',
+  };
+  payrollApi.employees.mockResolvedValue([employee]);
+  apiFetch.mockImplementation((path, options) => {
+    if (path === '/doctors' && !options) return Promise.resolve({ ok: true, json: async () => [] });
+    if (path === '/doctors/employees') return Promise.resolve({ ok: true, json: async () => [] });
+    if (path === '/doctors/payroll-employees/E101/schedule') {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          id: 'doctor-profile-101',
+          payrollEmployeeCode: 'E101',
+          employeeId: 'DT-1234ABCD',
+          doctorName: 'Mira Patel',
+          doctorSpecialistName: 'Cardiology',
+          doctorDestination: 'Cardiology',
+          doctorAvailabletime: ['10:00'],
+          doctorfee: 650,
+        }),
+      });
+    }
+    return Promise.reject(new Error(`Unexpected request: ${path}`));
+  });
+
+  render(<Doctors />);
+  expect(await screen.findAllByText('Mira Patel')).toHaveLength(2);
+  expect(screen.getAllByText(/E101/)).toHaveLength(2);
+
+  fireEvent.click(await screen.findByRole('button', { name: /add doctor/i }));
+  fireEvent.change(screen.getByLabelText('Doctor employee'), { target: { value: 'PAYROLL:101' } });
+  fireEvent.change(screen.getByLabelText('Available time slots'), { target: { value: '10:00' } });
+  fireEvent.click(screen.getByRole('button', { name: /add time/i }));
+  fireEvent.click(screen.getByRole('button', { name: /save doctor/i }));
+
+  await waitFor(() => expect(apiFetch).toHaveBeenCalledWith(
+    '/doctors/payroll-employees/E101/schedule',
+    {
+      method: 'PUT',
+      body: JSON.stringify({
+        doctorName: 'Mira Patel',
+        doctorSpecialistName: 'Cardiology',
+        doctorMobileNo: '5551234567',
+        doctorDestination: 'Cardiology',
+        availableTimes: ['10:00'],
+        consultationFee: null,
+      }),
+    },
+  ));
+  expect(await screen.findByText('Doctor schedule updated successfully!')).toBeInTheDocument();
 });
 
 test('keeps manual doctor creation available for non-employee clinicians', async () => {

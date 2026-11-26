@@ -33,7 +33,7 @@ const ranges = [
   { id: 'week', label: '7 days' },
   { id: 'month', label: '30 days' },
 ];
-const mixColors = ['#087f8c', '#e17b43', '#6a9b6e', '#bb5872'];
+const mixColors = ['#397fbe', '#e17b43', '#8b73c4', '#bb5872'];
 
 function WardBedTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -262,14 +262,14 @@ export default function HospitalOperationsBoard() {
               {timeline.some((point) => point.visits || point.emergency) ? <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={timeline} margin={{ top: 12, right: 8, left: -16, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="visitFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#087f8c" stopOpacity={0.24} /><stop offset="100%" stopColor="#087f8c" stopOpacity={0.01} /></linearGradient>
+                    <linearGradient id="visitFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#397fbe" stopOpacity={0.24} /><stop offset="100%" stopColor="#397fbe" stopOpacity={0.01} /></linearGradient>
                     <linearGradient id="emergencyFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e17b43" stopOpacity={0.2} /><stop offset="100%" stopColor="#e17b43" stopOpacity={0.01} /></linearGradient>
                   </defs>
-                  <CartesianGrid vertical={false} stroke="#e5ecea" strokeDasharray="3 5" />
-                  <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: '#6d7d7a', fontSize: 11 }} />
-                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: '#6d7d7a', fontSize: 11 }} />
-                  <Tooltip contentStyle={{ borderRadius: 8, borderColor: '#dce5e2', fontSize: 12 }} />
-                  <Area type="monotone" dataKey="visits" name="Appointments" stroke="#087f8c" strokeWidth={2.5} fill="url(#visitFill)" />
+                  <CartesianGrid vertical={false} stroke="#e5ebf2" strokeDasharray="3 5" />
+                  <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fill: '#718096', fontSize: 11 }} />
+                  <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fill: '#718096', fontSize: 11 }} />
+                  <Tooltip contentStyle={{ borderRadius: 8, borderColor: '#dce5ef', fontSize: 12 }} />
+                  <Area type="monotone" dataKey="visits" name="Appointments" stroke="#397fbe" strokeWidth={2.5} fill="url(#visitFill)" />
                   <Area type="monotone" dataKey="emergency" name="Emergency" stroke="#e17b43" strokeWidth={2} fill="url(#emergencyFill)" />
                 </AreaChart>
               </ResponsiveContainer> : <div className="ops-data-state">No activity recorded in this date range.</div>}
@@ -293,13 +293,13 @@ export default function HospitalOperationsBoard() {
                 <div className="ward-chart-canvas" style={{ height: `${Math.max(260, metrics.wardData.length * 42)}px` }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={metrics.wardData} layout="vertical" margin={{ top: 4, right: 20, left: 4, bottom: 4 }} barCategoryGap="28%">
-                      <CartesianGrid horizontal={false} stroke="#edf2ef" />
+                      <CartesianGrid horizontal={false} stroke="#e9eef4" />
                       <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false}
-                        tick={{ fill: '#82918c', fontSize: 11 }} />
+                        tick={{ fill: '#8290a1', fontSize: 11 }} />
                       <YAxis dataKey="unit" type="category" width={112} tickLine={false} axisLine={false}
-                        tick={{ fill: '#50645e', fontSize: 11 }} />
-                      <Tooltip content={<WardBedTooltip />} cursor={{ fill: '#f3f8f5' }} />
-                      <Bar dataKey="availableBeds" name="Available" stackId="beds" fill="#35a77c" />
+                        tick={{ fill: '#50657e', fontSize: 11 }} />
+                      <Tooltip content={<WardBedTooltip />} cursor={{ fill: '#f3f7fc' }} />
+                      <Bar dataKey="availableBeds" name="Available" stackId="beds" fill="#5688c4" />
                       <Bar dataKey="occupiedBeds" name="Occupied" stackId="beds" fill="#e29a4a" />
                       <Bar dataKey="unavailableBeds" name="Unavailable" stackId="beds" fill="#aab8b2" radius={[0, 5, 5, 0]} />
                     </BarChart>

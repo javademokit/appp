@@ -1,29 +1,30 @@
 .ops-board {
-  --ops-ink: #18332f;
-  --ops-muted: #71827d;
-  --ops-line: #e2ebe7;
-  --ops-teal: #0d766b;
+  --ops-ink: #1c2d45;
+  --ops-muted: #738196;
+  --ops-line: #dfe7f0;
+  --ops-blue: #397eb7;
   width: 100%;
   margin: 0;
-  border: 1px solid #e1ebe6;
+  border: 1px solid #e1e9f1;
   border-radius: 22px;
   padding: clamp(1rem, 2.4vw, 1.8rem);
   background:
-    radial-gradient(ellipse at 100% 0%, rgba(208, 235, 225, 0.4), transparent 36rem),
-    #f6f9f7;
-  box-shadow: 0 18px 54px rgba(31, 71, 60, 0.09);
+    radial-gradient(ellipse at 100% 0%, rgba(208, 226, 246, 0.42), transparent 36rem),
+    #f6f8fc;
+  box-shadow: 0 18px 54px rgba(40, 67, 102, 0.09);
 }
 
 .ops-board .ops-board-header {
   position: relative;
   align-items: center;
   overflow: hidden;
-  margin: 0 0 1.25rem;
+  width: min(92%, 1080px);
+  margin: 0 auto 1.25rem;
   border: 0;
   border-radius: 17px;
-  padding: clamp(1.25rem, 3vw, 2rem);
-  background: linear-gradient(118deg, #123d38 0%, #176b60 61%, #278779 100%);
-  box-shadow: 0 12px 26px rgba(24, 76, 66, 0.18);
+  padding: clamp(1rem, 2.4vw, 1.55rem);
+  background: linear-gradient(118deg, #17304f 0%, #235b8d 61%, #3987b7 100%);
+  box-shadow: 0 12px 26px rgba(28, 62, 101, 0.2);
 }
 
 .ops-board .ops-board-header::after {
@@ -47,7 +48,7 @@
 
 .ops-board .ops-eyebrow {
   gap: 0.5rem;
-  color: #c3e7dc;
+  color: #c9e6ff;
   letter-spacing: 0.1em;
 }
 
@@ -60,7 +61,7 @@
 
 .ops-board .ops-subtitle {
   max-width: 600px;
-  color: rgba(239, 250, 246, 0.78);
+  color: rgba(240, 247, 255, 0.8);
 }
 
 .ops-board .ops-header-controls {
@@ -69,18 +70,35 @@
 }
 
 .ops-board .demo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
   border-radius: 999px;
   padding: 0.4rem 0.72rem;
-  background: rgba(229, 255, 239, 0.12);
-  border-color: rgba(210, 244, 227, 0.35);
-  color: #e3f7ec;
+  background: rgba(231, 244, 255, 0.12);
+  border-color: rgba(211, 233, 255, 0.35);
+  color: #e3f2ff;
   letter-spacing: 0.04em;
 }
 
+.ops-board .demo-badge.live-badge::before,
+.ops-board .demo-badge.live-badge-error::before {
+  width: 0.48rem;
+  height: 0.48rem;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  content: "";
+}
+
 .ops-board .demo-badge.live-badge {
-  background: rgba(225, 255, 238, 0.14);
-  border-color: rgba(208, 245, 225, 0.38);
-  color: #e3f7ec;
+  background: rgba(225, 243, 255, 0.14);
+  border-color: rgba(208, 233, 255, 0.38);
+  color: #e3f2ff;
+}
+
+.ops-board .demo-badge.live-badge::before {
+  background: #91ccff;
+  box-shadow: 0 0 0 3px rgba(145, 204, 255, 0.16);
 }
 
 .ops-board .demo-badge.live-badge-error {
@@ -89,19 +107,24 @@
   color: #ffe5de;
 }
 
+.ops-board .demo-badge.live-badge-error::before {
+  background: #ffb59f;
+  box-shadow: 0 0 0 3px rgba(255, 181, 159, 0.14);
+}
+
 .ops-board .range-control {
   gap: 0.18rem;
-  border: 1px solid rgba(218, 245, 233, 0.25);
+  border: 1px solid rgba(218, 237, 255, 0.25);
   border-radius: 10px;
   padding: 0.22rem;
-  background: rgba(3, 45, 40, 0.24);
+  background: rgba(3, 30, 57, 0.24);
 }
 
 .ops-board .range-button {
   min-height: 36px;
   border-radius: 7px;
   padding-inline: 0.72rem;
-  color: #e3f3ee;
+  color: #e3effa;
 }
 
 .ops-board .range-button:hover:not(:disabled) {
@@ -110,12 +133,12 @@
 
 .ops-board .range-button.active {
   background: #fff;
-  color: #145a50;
-  box-shadow: 0 2px 7px rgba(3, 36, 32, 0.17);
+  color: #173d66;
+  box-shadow: 0 2px 7px rgba(3, 27, 51, 0.17);
 }
 
 .ops-board .ops-header-controls > .range-button {
-  border: 1px solid rgba(218, 245, 233, 0.35);
+  border: 1px solid rgba(218, 237, 255, 0.35);
   border-radius: 9px;
   background: rgba(255, 255, 255, 0.1);
 }
@@ -140,21 +163,21 @@
   border-left: 1px solid var(--ops-line);
   padding: 1rem;
   background: #fff;
-  box-shadow: 0 5px 16px rgba(32, 67, 57, 0.035);
+  box-shadow: 0 5px 16px rgba(42, 67, 101, 0.04);
   transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
 }
 
 .ops-board .ops-kpi:hover {
   transform: translateY(-2px);
-  border-color: #cbded6;
-  box-shadow: 0 10px 24px rgba(32, 67, 57, 0.09);
+  border-color: #cbd9e8;
+  box-shadow: 0 10px 24px rgba(42, 67, 101, 0.09);
 }
 
 .ops-board .ops-kpi::before {
   position: absolute;
   inset: 0 auto 0 0;
   width: 3px;
-  background: var(--ops-accent, #168477);
+  background: var(--ops-accent, var(--ops-blue));
   content: "";
 }
 
@@ -167,14 +190,14 @@
   height: 2.25rem;
   place-items: center;
   border-radius: 10px;
-  background: color-mix(in srgb, var(--ops-accent, #168477) 11%, white);
-  color: var(--ops-accent, #168477);
+  background: color-mix(in srgb, var(--ops-accent, var(--ops-blue)) 11%, white);
+  color: var(--ops-accent, var(--ops-blue));
 }
 
 .ops-board .ops-kpi-label {
   max-width: calc(100% - 2.55rem);
   min-height: 2rem;
-  color: #70817c;
+  color: #718096;
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.045em;
@@ -188,17 +211,17 @@
 }
 
 .ops-board .ops-kpi-note {
-  color: #80908b;
+  color: #8290a1;
   font-size: 0.69rem;
   line-height: 1.35;
 }
 
-.ops-kpi-appointments { --ops-accent: #167d8a; }
-.ops-kpi-admissions { --ops-accent: #287c67; }
+.ops-kpi-appointments { --ops-accent: #347ab1; }
+.ops-kpi-admissions { --ops-accent: #5979b5; }
 .ops-kpi-emergency { --ops-accent: #d16b4e; }
 .ops-kpi-review { --ops-accent: #7964b0; }
 .ops-kpi-beds { --ops-accent: #3974aa; }
-.ops-kpi-available { --ops-accent: #258a67; }
+.ops-kpi-available { --ops-accent: #5688c4; }
 .ops-kpi-occupied { --ops-accent: #d08a3a; }
 .ops-kpi-nurses { --ops-accent: #bd5f83; }
 
@@ -211,7 +234,15 @@
   border: 1px solid var(--ops-line);
   border-radius: 15px;
   padding: 1.15rem;
-  box-shadow: 0 5px 18px rgba(32, 67, 57, 0.035);
+  background: linear-gradient(150deg, #fff 65%, #f5f8fc);
+  box-shadow: 0 5px 18px rgba(42, 67, 101, 0.04);
+  transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+}
+
+.ops-board .ops-chart-card:hover {
+  transform: translateY(-2px);
+  border-color: #cbd9e8;
+  box-shadow: 0 10px 24px rgba(42, 67, 101, 0.08);
 }
 
 .ops-board .ops-chart-heading {
@@ -220,22 +251,22 @@
 }
 
 .ops-board .ops-chart-heading h3 {
-  color: #203a35;
+  color: #203752;
   font-size: 1rem;
   letter-spacing: -0.015em;
 }
 
 .ops-board .ops-chart-heading p {
-  color: #7b8b86;
+  color: #7b899b;
   line-height: 1.45;
 }
 
 .ops-board .chart-unit {
-  border: 1px solid #e5eeea;
+  border: 1px solid #e5ecf4;
   border-radius: 999px;
   padding: 0.3rem 0.56rem;
-  background: #f7faf8;
-  color: #71837d;
+  background: #f7f9fc;
+  color: #718096;
 }
 
 .ops-board .ops-chart-area {
@@ -244,7 +275,7 @@
 
 .ops-board .occupancy-chart-card {
   align-self: stretch;
-  background: linear-gradient(145deg, #fff 60%, #f4faf7);
+  background: linear-gradient(145deg, #fff 60%, #f3f7fc);
 }
 
 .ward-bed-legend {
@@ -252,7 +283,7 @@
   flex-wrap: wrap;
   gap: 0.9rem;
   margin: 0.15rem 0 0.55rem 7.4rem;
-  color: #687c75;
+  color: #687a8f;
   font-size: 0.68rem;
 }
 
@@ -270,7 +301,7 @@
   border-radius: 50%;
 }
 
-.ward-bed-dot.available { background: #35a77c; }
+.ward-bed-dot.available { background: #5688c4; }
 .ward-bed-dot.occupied { background: #e29a4a; }
 .ward-bed-dot.unavailable { background: #aab8b2; }
 
@@ -278,12 +309,12 @@
   max-height: 510px;
   overflow: auto;
   overscroll-behavior: contain;
-  border: 1px solid #edf2ef;
+  border: 1px solid #e9eef4;
   border-radius: 10px;
   background:
     linear-gradient(90deg, #fff 30%, rgba(255, 255, 255, 0)),
     #fff;
-  scrollbar-color: #b7cbc2 #f1f6f3;
+  scrollbar-color: #bdcbd9 #f1f5f9;
   scrollbar-width: thin;
 }
 
@@ -293,9 +324,9 @@
 }
 
 .ward-chart-scroll::-webkit-scrollbar-thumb {
-  border: 2px solid #f1f6f3;
+  border: 2px solid #f1f5f9;
   border-radius: 999px;
-  background: #b7cbc2;
+  background: #bdcbd9;
 }
 
 .ward-chart-canvas {
@@ -307,18 +338,18 @@
   display: grid;
   min-width: 160px;
   gap: 0.42rem;
-  border: 1px solid #e1ebe6;
+  border: 1px solid #dfe7f0;
   border-radius: 10px;
   padding: 0.75rem 0.85rem;
   background: rgba(255, 255, 255, 0.97);
-  box-shadow: 0 8px 24px rgba(22, 54, 46, 0.14);
-  color: #647872;
+  box-shadow: 0 8px 24px rgba(31, 56, 88, 0.14);
+  color: #64758c;
   font-size: 0.72rem;
 }
 
 .ward-chart-tooltip > strong {
   margin-bottom: 0.12rem;
-  color: #1d3a34;
+  color: #1d3552;
   font-size: 0.8rem;
 }
 
@@ -330,15 +361,15 @@
 
 .ward-chart-tooltip b {
   margin-left: auto;
-  color: #26433c;
+  color: #26415f;
   font-variant-numeric: tabular-nums;
 }
 
 .ward-chart-tooltip .ward-tooltip-total {
   margin-top: 0.2rem;
-  border-top: 1px solid #edf2ef;
+  border-top: 1px solid #e9eef4;
   padding-top: 0.4rem;
-  color: #405c54;
+  color: #405b78;
 }
 
 .ops-board .mix-chart-layout {
@@ -346,20 +377,36 @@
 }
 
 .ops-board .service-status-list li {
-  border-bottom-color: #edf2ef;
+  border-bottom-color: #e9eef4;
 }
 
 .ops-board .board-updated {
   margin-top: 0.85rem;
-  border-top: 1px solid #edf2ef;
+  border-top: 1px solid #e9eef4;
   padding-top: 0.8rem;
-  color: #85938e;
+  color: #7e8ba0;
 }
 
 .ops-board .ops-data-state {
   border-radius: 10px;
-  background: #f7faf8;
-  color: #788983;
+  background: #f7f9fc;
+  color: #78879b;
+}
+
+.ops-board .legend-dot.visits {
+  background: #397fbe;
+}
+
+.ops-board .board-updated .live-dot {
+  background: #4d9dde;
+  box-shadow: 0 0 0 0 rgba(77, 157, 222, 0.45);
+  animation: ops-blue-pulse 1.8s infinite;
+}
+
+@keyframes ops-blue-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(77, 157, 222, 0.45); }
+  70% { box-shadow: 0 0 0 8px rgba(77, 157, 222, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(77, 157, 222, 0); }
 }
 
 @media (max-width: 900px) {
@@ -431,7 +478,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ops-board .ops-kpi {
+  .ops-board .ops-kpi,
+  .ops-board .ops-chart-card {
     transition: none;
+  }
+
+  .ops-board .board-updated .live-dot {
+    animation: none;
   }
 }

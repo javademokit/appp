@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { apiFetch } from '../API/api';
+import { api as payrollApi } from '../payrollDesk/payrollApi';
 import { CalendarDays, Clock3, Plus, Search, Stethoscope, Trash2, X } from 'lucide-react';
 import './DoctorSchedule.css';
 
@@ -34,16 +35,62 @@ class Doctors extends Component {
 
   fetchDoctors = async () => {
     try {
-      const [doctorsResponse, employeesResponse] = await Promise.all([
+      const [doctorsResponse, employeesResponse, payrollResult] = await Promise.all([
         apiFetch('/doctors'),
         apiFetch('/doctors/employees'),
+        payrollApi.employees().then((employees) => ({ employees })).catch((error) => ({ error })),
       ]);
       if (!doctorsResponse.ok || !employeesResponse.ok) throw new Error('Could not load doctors');
-      const [doctors, doctorEmployees] = await Promise.all([
+      const [doctorProfiles, hrDoctorEmployees] = await Promise.all([
         doctorsResponse.json(),
         employeesResponse.json(),
       ]);
-      this.setState({ doctors, doctorEmployees, errorMessage: '' });
+      const payrollDoctorEmployees = (Array.isArray(payrollResult.employees) ? payrollResult.employees : [])
+        .filter((employee) => /doctor|consultant/i.test(employee.role || ''))
+        .map((employee) => ({
+          ...employee,
+          source: 'PAYROLL',
+          selectionId: `PAYROLL:${employee.id}`,
+          employeeCode: employee.code,
+          doctorName: employee.name,
+          doctorSpecialistName: employee.department || employee.role,
+          doctorMobileNo: employee.phone || '',
+          doctorDestination: employee.department || '',
+          doctorfee: '',
+        }));
+      const payrollCodes = new Set(payrollDoctorEmployees.map((employee) => employee.employeeCode));
+      const payrollDoctorRows = payrollDoctorEmployees.map((employee) => {
+        const profile = doctorProfiles.find((doctor) => doctor.payrollEmployeeCode === employee.employeeCode);
+        return {
+          ...profile,
+          id: profile?.id || `payroll-${employee.id}`,
+          payrollEmployeeCode: employee.employeeCode,
+          employeeId: employee.employeeCode,
+          doctorName: employee.doctorName,
+          doctorSpecialistName: profile?.doctorSpecialistName || employee.doctorSpecialistName,
+          doctorMobileNo: profile?.doctorMobileNo || employee.doctorMobileNo,
+          doctorDestination: profile?.doctorDestination || employee.doctorDestination,
+          doctorfee: profile?.doctorfee ?? 0,
+          doctorAvailabletime: profile?.doctorAvailabletime || [],
+        };
+      });
+      const doctors = [
+        ...payrollDoctorRows,
+        ...doctorProfiles.filter((doctor) =>
+          !doctor.payrollEmployeeCode || !payrollCodes.has(doctor.payrollEmployeeCode)),
+      ];
+      const doctorEmployees = [
+        ...hrDoctorEmployees.map((employee) => ({
+          ...employee,
+          source: 'HR',
+          selectionId: String(employee.id),
+        })),
+        ...payrollDoctorEmployees,
+      ];
+      const errorMessage = payrollResult.error
+        ? `Payroll doctors could not be loaded: ${payrollResult.error.message || 'Access is unavailable.'}`
+        : '';
+      this.setState({ doctors, doctorEmployees, errorMessage });
     } catch (error) {
       this.setState({ errorMessage: error.message || 'Could not load doctors' });
     } finally {
@@ -77,7 +124,8 @@ class Doctors extends Component {
 
   handleEmployeeChange = (event) => {
     const selectedEmployeeId = event.target.value;
-    const employee = this.state.doctorEmployees.find((item) => item.id === selectedEmployeeId);
+    const employee = this.state.doctorEmployees.find((item) =>
+      (item.selectionId || item.id) === selectedEmployeeId);
     this.setState({
       selectedEmployeeId,
       newDoctor: employee ? {
@@ -112,7 +160,9 @@ class Doctors extends Component {
   };
 
   handleCreateDoctor = async () => {
-    const { doctorType, selectedEmployeeId, newDoctor, availableSlots } = this.state;
+    const { doctorType, doctorEmployees, selectedEmployeeId, newDoctor, availableSlots } = this.state;
+    const selectedEmployee = doctorEmployees.find((item) =>
+      (item.selectionId || item.id) === selectedEmployeeId);
 
     if (!availableSlots.length) {
       this.setState({ errorMessage: 'Add at least one available time slot.' });
@@ -124,38 +174,57 @@ class Doctors extends Component {
       return;
     }
 
-    if (doctorType === 'EMPLOYEE' && !selectedEmployeeId) {
+    if (doctorType === 'EMPLOYEE' && !selectedEmployee) {
       this.setState({ errorMessage: 'Select a doctor employee first.' });
       return;
     }
 
     try {
       const employedDoctor = doctorType === 'EMPLOYEE';
-      const response = await apiFetch(
-        employedDoctor ? `/doctors/employees/${encodeURIComponent(selectedEmployeeId)}/schedule` : '/doctors',
-        {
-          method: employedDoctor ? 'PUT' : 'POST',
-          body: JSON.stringify(employedDoctor ? {
-            availableTimes: availableSlots,
-            consultationFee: newDoctor.doctorfee === '' ? null : Number(newDoctor.doctorfee),
-          } : {
-            doctorName: newDoctor.doctorName,
-            doctorMobileNo: newDoctor.doctorMobileNo,
-            doctorDestination: newDoctor.doctorDestination,
-            doctorSpecialistName: newDoctor.doctorSpecialistName,
-            doctorAvailabletime: availableSlots,
-            doctorslot: availableSlots.length,
-            doctorfee: newDoctor.doctorfee,
-          }),
-        },
-      );
+      const payrollDoctor = employedDoctor && selectedEmployee.source === 'PAYROLL';
+      const url = payrollDoctor
+        ? `/doctors/payroll-employees/${encodeURIComponent(selectedEmployee.employeeCode)}/schedule`
+        : employedDoctor
+          ? `/doctors/employees/${encodeURIComponent(selectedEmployeeId)}/schedule`
+          : '/doctors';
+      const method = employedDoctor ? 'PUT' : 'POST';
+      const body = payrollDoctor ? {
+        doctorName: selectedEmployee.doctorName,
+        doctorSpecialistName: selectedEmployee.doctorSpecialistName,
+        doctorMobileNo: selectedEmployee.doctorMobileNo,
+        doctorDestination: selectedEmployee.doctorDestination,
+        availableTimes: availableSlots,
+        consultationFee: newDoctor.doctorfee === '' ? null : Number(newDoctor.doctorfee),
+      } : employedDoctor ? {
+        availableTimes: availableSlots,
+        consultationFee: newDoctor.doctorfee === '' ? null : Number(newDoctor.doctorfee),
+      } : {
+        doctorName: newDoctor.doctorName,
+        doctorMobileNo: newDoctor.doctorMobileNo,
+        doctorDestination: newDoctor.doctorDestination,
+        doctorSpecialistName: newDoctor.doctorSpecialistName,
+        doctorAvailabletime: availableSlots,
+        doctorslot: availableSlots.length,
+        doctorfee: newDoctor.doctorfee,
+      };
+      const response = await apiFetch(url, {
+        method,
+        body: JSON.stringify(body),
+      });
       if (!response.ok) throw new Error('Failed to save doctor schedule');
       const savedDoctor = await response.json();
+      const rosterDoctor = payrollDoctor ? {
+        ...savedDoctor,
+        payrollEmployeeCode: selectedEmployee.employeeCode,
+        employeeId: selectedEmployee.employeeCode,
+      } : savedDoctor;
       this.setState((current) => {
-        const existingDoctorIndex = current.doctors.findIndex((doctor) => doctor.id === savedDoctor.id);
+        const existingDoctorIndex = current.doctors.findIndex((doctor) =>
+          doctor.id === rosterDoctor.id
+          || (payrollDoctor && doctor.payrollEmployeeCode === selectedEmployee.employeeCode));
         const doctors = [...current.doctors];
-        if (existingDoctorIndex >= 0) doctors[existingDoctorIndex] = savedDoctor;
-        else doctors.push(savedDoctor);
+        if (existingDoctorIndex >= 0) doctors[existingDoctorIndex] = rosterDoctor;
+        else doctors.push(rosterDoctor);
         return {
           doctors,
           showModal: false,
@@ -349,14 +418,15 @@ class Doctors extends Component {
               <form onSubmit={(event) => { event.preventDefault(); this.handleCreateDoctor(); }}>
                 <div className="doctor-form-grid">
                   <label>Doctor type<select aria-label="Doctor type" value={doctorType} onChange={this.handleDoctorTypeChange}>
-                    <option value="EMPLOYEE">HR doctor employee</option>
+                    <option value="EMPLOYEE">Payroll / HR doctor employee</option>
                     <option value="NON_EMPLOYEE">Non-employee doctor</option>
                   </select></label>
                   {doctorType === 'EMPLOYEE' && <label>Doctor employee<select required aria-label="Doctor employee"
                     value={selectedEmployeeId} onChange={this.handleEmployeeChange}>
                     <option value="">Select a doctor employee</option>
-                    {doctorEmployees.map((employee) => <option key={employee.id} value={employee.id}>
-                      {employee.doctorName} · {employee.employeeCode}
+                    {doctorEmployees.map((employee) => <option key={employee.selectionId || employee.id}
+                      value={employee.selectionId || employee.id}>
+                      {employee.doctorName} · {employee.employeeCode}{employee.source === 'PAYROLL' ? ' · Payroll' : ''}
                     </option>)}
                   </select></label>}
                   <label>Full name<input required name="doctorName" value={newDoctor.doctorName}

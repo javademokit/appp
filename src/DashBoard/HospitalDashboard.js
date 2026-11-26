@@ -27,6 +27,7 @@ import "./HospitalDashboard.css";
 import DoctorProfile  from "../Doctors/DoctorProfile";
 import Doctors from "../Doctors/Doctors";
 import { apiFetch } from "../API/api";
+import { getPortalPathForRoles } from "../Admin/roles";
 import PharmacyPage from "../Operations/PharmacyPage";
 import LabsDiagnosticsPage from "../Operations/LabsDiagnosticsPage";
 import EmergencyTriagePage from "../Operations/EmergencyTriagePage";
@@ -36,7 +37,7 @@ import StaffShiftsPage from "../Operations/StaffShiftsPage";
 import DischargePage from "../Operations/DischargePage";
 import WardManagement from "../NursingWardManagement/WardManagement";
 import NurseAssignmentPortal from "../NursingWardManagement/NurseAssignmentPortal";
-import PayrollRun from "../pages/payroll/PayrollRun";
+import PayrollDesk from "../payrollDesk/PayrollDesk";
 import NurseOvertimePage from "../Operations/NurseOvertimePage";
 
 const HospitalDashboard = () => {
@@ -79,6 +80,7 @@ const HospitalDashboard = () => {
   const payrollAccess = roles.some((role) => [
     "SUPER_ADMIN", "HOSPITAL_ADMIN", "CLINIC_ADMIN", "FINANCE", "HR",
   ].includes(role));
+  const homePayrollAccess = payrollAccess && getPortalPathForRoles(roles) !== "/AdminDashboard";
   const financeApprovalAccess = roles.some((role) => ["FINANCE", "CRM_EXECUTIVE"].includes(role));
   const payslipAccess = !payrollAccess && roles.some((role) => [
     "NURSE", "HEAD_NURSE", "RECEPTIONIST", "CRM_EXECUTIVE", "BILLING_EXECUTIVE",
@@ -152,9 +154,9 @@ const HospitalDashboard = () => {
         return roles.some((role) => ["NURSE", "HEAD_NURSE"].includes(role))
           ? <NurseAssignmentPortal /> : <Dashboard />;
       case "payroll":
-        return <PayrollRun />;
+        return homePayrollAccess ? <PayrollDesk initialTab="run" /> : <Dashboard />;
       case "finance-approval":
-        return financeApprovalAccess ? <PayrollRun initialPayrollView="approval" /> : <Dashboard />;
+        return financeApprovalAccess ? <PayrollDesk initialTab="run" /> : <Dashboard />;
       case "nurse-overtime":
         return overtimeAccess ? <NurseOvertimePage canApprove={overtimeApprovalAccess} /> : <Dashboard />;
       case "DoctorTimeSlots":
@@ -223,7 +225,7 @@ const HospitalDashboard = () => {
             {payslipAccess && <li className={activePage === "payroll" ? "active" : ""} aria-current={activePage === "payroll" ? "page" : undefined} onClick={() => setActivePage("payroll")}>
               <Wallet size={16} /> My payslips
             </li>}
-            {payrollAccess && <li className={activePage === "payroll" ? "active" : ""} aria-current={activePage === "payroll" ? "page" : undefined} onClick={() => setActivePage("payroll")}>
+            {homePayrollAccess && <li className={activePage === "payroll" ? "active" : ""} aria-current={activePage === "payroll" ? "page" : undefined} onClick={() => setActivePage("payroll")}>
               <Wallet size={16} /> Payroll 360
             </li>}
             {financeApprovalAccess && <li className={activePage === "finance-approval" ? "active" : ""} aria-current={activePage === "finance-approval" ? "page" : undefined} onClick={() => setActivePage("finance-approval")}>
