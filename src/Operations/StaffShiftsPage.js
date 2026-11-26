@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CalendarDays, Clock3, Plus, RefreshCw, Trash2, Users } from 'lucide-react';
 import { apiFetch } from '../API/api';
+import { api as payrollApi } from '../payrollDesk/payrollApi';
 import './Operations.css';
 
 async function readResponse(response) {
@@ -14,7 +15,6 @@ const today = (() => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 })();
 const initialForm = { staffId: '', staffName: '', staffRole: '', department: '', shiftDate: today, startTime: '08:00', endTime: '16:00', notes: '' };
-const initialWalkInForm = { firstName: '', lastName: '', mobile: '', email: '', qualification: '', licenseNumber: '', specialization: '' };
 
 const matchesEmployeeType = (role, employeeType) => (
   employeeType.name === role || employeeType.code === role
@@ -34,13 +34,9 @@ export default function StaffShiftsPage() {
   const [optionsLoading, setOptionsLoading] = useState(true);
   const [nurses, setNurses] = useState([]);
   const [nursesLoading, setNursesLoading] = useState(false);
-  const [showWalkInForm, setShowWalkInForm] = useState(false);
-  const [walkInForm, setWalkInForm] = useState(initialWalkInForm);
-  const [creatingNurse, setCreatingNurse] = useState(false);
   const selectedEmployeeType = employeeTypes.find((type) => matchesEmployeeType(form.staffRole, type));
   const isNurseRole = selectedEmployeeType?.code?.toUpperCase() === 'NURSE'
     || String(form.staffRole).toLowerCase() === 'nurse';
-  const selectedNurse = nurses.find((nurse) => nurse.employeeCode === form.staffId);
 
   const refresh = useCallback(async () => {
     setLoading(true); setError('');
@@ -78,62 +74,33 @@ export default function StaffShiftsPage() {
   }, []);
 
   useEffect(() => {
-    if (!isNurseRole) return undefined;
+    if (!isNurseRole) {
+      setNurses([]);
+      setNursesLoading(false);
+      return undefined;
+    }
     let active = true;
     setNursesLoading(true);
-    apiFetch('/nursing/nurses')
-      .then(readResponse)
+    payrollApi.employees()
       .then((result) => {
         if (active) {
-          setNurses(result.filter((nurse) => nurse.employmentActive
-            && (!nurse.profileComplete || nurse.status === 'ACTIVE')));
+          setNurses(result
+            .filter((employee) => employee.code && /\bnurse\b/i.test(employee.role || ''))
+            .map((employee) => ({
+              employeeCode: employee.code,
+              name: employee.name,
+              department: employee.department,
+            })));
         }
       })
       .catch((requestError) => {
-        if (active) setError(requestError.message || 'Could not load nurses');
+        if (active) setError(`Could not load payroll nurses: ${requestError.message || 'Request failed'}`);
       })
       .finally(() => {
         if (active) setNursesLoading(false);
       });
     return () => { active = false; };
   }, [isNurseRole]);
-
-  const createWalkInNurse = async (event) => {
-    event.preventDefault();
-    setError('');
-    setSuccess('');
-    setCreatingNurse(true);
-    try {
-      const created = await readResponse(await apiFetch('/nursing/nurses/walk-in', {
-        method: 'POST',
-        body: JSON.stringify(walkInForm),
-      }));
-      if (!created.employeeCode) throw new Error('Walk-in nurse was created without an employee ID. Please refresh the nurse directory.');
-      const nurse = {
-        employeeCode: created.employeeCode,
-        name: `${created.firstName || walkInForm.firstName} ${created.lastName || walkInForm.lastName}`.trim(),
-        employmentActive: true,
-        profileComplete: true,
-        status: 'ACTIVE',
-        walkIn: true,
-      };
-      setNurses((current) => [...current.filter((entry) => entry.employeeCode !== nurse.employeeCode), nurse]);
-      const nurseRole = employeeTypes.find((type) => type.code?.toUpperCase() === 'NURSE')?.name || 'Nurse';
-      setForm((current) => ({
-        ...current,
-        staffRole: nurseRole,
-        staffId: nurse.employeeCode,
-        staffName: nurse.name,
-      }));
-      setWalkInForm(initialWalkInForm);
-      setShowWalkInForm(false);
-      setSuccess(`Walk-in nurse ${nurse.employeeCode} created. Complete the shift details and save the shift.`);
-    } catch (requestError) {
-      setError(requestError.message || 'Could not create walk-in nurse');
-    } finally {
-      setCreatingNurse(false);
-    }
-  };
 
   const saveShift = async (event) => {
     event.preventDefault(); setError(''); setSuccess(''); setBusy(true);
@@ -179,7 +146,7 @@ export default function StaffShiftsPage() {
   return (
     <section className="workflow-page" aria-labelledby="staff-shifts-title">
       <header className="workflow-header">
-        <div><p className="workflow-eyebrow">People operations</p><h1 id="staff-shifts-title">Staff &amp; shift management</h1><p>Select an existing nurse or add a walk-in nurse, then schedule their shift.</p></div>
+        <div><p className="workflow-eyebrow">People operations</p><h1 id="staff-shifts-title">Staff &amp; shift management</h1><p>Schedule staff shifts using nurses from the payroll employee directory.</p></div>
         <button className="workflow-button primary" type="button" onClick={() => { setError(''); setShowForm((shown) => !shown); }}><Plus size={16} /> Schedule shift</button>
       </header>
 
@@ -193,56 +160,42 @@ export default function StaffShiftsPage() {
       </div>
 
       {showForm && <form className="workflow-form-panel" onSubmit={saveShift}>
-        <div className="workflow-panel-heading"><div><h2>Schedule staff shift</h2><p>Each nurse shift uses the nurse's employee ID. The same nurse can be scheduled for multiple shifts.</p></div><button className="workflow-button subtle" type="button" onClick={() => setShowForm(false)}>Cancel</button></div>
+        <div className="workflow-panel-heading"><div><h2>Schedule staff shift</h2><p>Nurse shifts use the payroll employee ID. The same nurse can be scheduled for multiple shifts.</p></div><button className="workflow-button subtle" type="button" onClick={() => setShowForm(false)}>Cancel</button></div>
         <div className="workflow-form-grid">
           {isNurseRole
             ? <label>Nurse<select required value={form.staffId} disabled={nursesLoading} onChange={(event) => {
               const nurse = nurses.find((entry) => entry.employeeCode === event.target.value);
-              setForm({ ...form, staffId: nurse?.employeeCode || '', staffName: nurse?.name || '' });
+              setForm({
+                ...form,
+                staffId: nurse?.employeeCode || '',
+                staffName: nurse?.name || '',
+                department: nurse?.department || '',
+              });
             }}>
-              <option value="">{nursesLoading ? 'Loading nurses…' : nurses.length ? 'Select an active nurse' : 'No active nurse employees found'}</option>
+              <option value="">{nursesLoading ? 'Loading payroll nurses…' : nurses.length ? 'Select a payroll nurse' : 'No payroll nurse employees found'}</option>
               {nurses.map((nurse) => <option key={nurse.employeeCode} value={nurse.employeeCode}>
-                {nurse.employeeCode} · {nurse.name}{nurse.walkIn ? ' · Walk-in' : !nurse.profileComplete ? ' · Profile setup needed' : ''}
+                {nurse.employeeCode} · {nurse.name}
               </option>)}
             </select></label>
             : <label>Staff ID<input required value={form.staffId} onChange={(event) => setForm({ ...form, staffId: event.target.value })} /></label>}
-          <label>Staff name<input required readOnly={isNurseRole && !selectedNurse?.walkIn} value={form.staffName} onChange={(event) => setForm({ ...form, staffName: event.target.value })} /></label>
+          <label>Staff name<input required readOnly={isNurseRole} value={form.staffName} onChange={(event) => setForm({ ...form, staffName: event.target.value })} /></label>
           <label>Role<select required value={form.staffRole} disabled={optionsLoading || !employeeTypes.length} onChange={(event) => {
             setForm({ ...form, staffRole: event.target.value, staffId: '', staffName: '' });
-            setShowWalkInForm(false);
           }}><option value="">{optionsLoading ? 'Loading roles…' : 'Select role'}</option>
             {employeeTypes.map((type) => <option key={type.id || type.code} value={type.name}>{type.name}</option>)}
           </select></label>
-          <label>Department<select required value={form.department} disabled={optionsLoading || !departments.length}
-            onChange={(event) => setForm({ ...form, department: event.target.value })}>
-            <option value="">{optionsLoading ? 'Loading departments…' : 'Select department'}</option>
-            {departments.map((department) => <option key={department.id || department.code} value={department.name}>{department.name}</option>)}
-          </select></label>
+          {isNurseRole
+            ? <label>Department<input required readOnly value={form.department} /></label>
+            : <label>Department<select required value={form.department} disabled={optionsLoading || !departments.length}
+              onChange={(event) => setForm({ ...form, department: event.target.value })}>
+              <option value="">{optionsLoading ? 'Loading departments…' : 'Select department'}</option>
+              {departments.map((department) => <option key={department.id || department.code} value={department.name}>{department.name}</option>)}
+            </select></label>}
           <label>Shift date<input required type="date" value={form.shiftDate} onChange={(e) => setForm({ ...form, shiftDate: e.target.value })} /></label>
           <label>Start time<input required type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} /></label>
           <label>End time<input required type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} /></label>
           <label className="workflow-form-wide">Handover notes<textarea rows="2" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></label>
         </div>
-        {isNurseRole && <div className="workflow-form-actions">
-          <button className="workflow-button subtle" type="button" onClick={() => setShowWalkInForm((shown) => !shown)}>
-            {showWalkInForm ? 'Cancel walk-in nurse' : 'Add walk-in nurse'}
-          </button>
-        </div>}
-        {showWalkInForm && isNurseRole && <section className="workflow-panel" aria-label="Add walk-in nurse">
-          <div className="workflow-panel-heading"><div><h3>Walk-in nurse details</h3><p>Creates one active nurse record with an NR-WK employee ID and no login account.</p></div></div>
-          <div className="workflow-form-grid">
-            <label>First name<input required value={walkInForm.firstName} onChange={(event) => setWalkInForm({ ...walkInForm, firstName: event.target.value })} /></label>
-            <label>Last name<input required value={walkInForm.lastName} onChange={(event) => setWalkInForm({ ...walkInForm, lastName: event.target.value })} /></label>
-            <label>Mobile number<input required type="tel" value={walkInForm.mobile} onChange={(event) => setWalkInForm({ ...walkInForm, mobile: event.target.value })} /></label>
-            <label>Email (optional)<input type="email" value={walkInForm.email} onChange={(event) => setWalkInForm({ ...walkInForm, email: event.target.value })} /></label>
-            <label>Qualification<input value={walkInForm.qualification} onChange={(event) => setWalkInForm({ ...walkInForm, qualification: event.target.value })} /></label>
-            <label>Registration number<input value={walkInForm.licenseNumber} onChange={(event) => setWalkInForm({ ...walkInForm, licenseNumber: event.target.value })} /></label>
-            <label>Specialization<input value={walkInForm.specialization} onChange={(event) => setWalkInForm({ ...walkInForm, specialization: event.target.value })} /></label>
-          </div>
-          <div className="workflow-form-actions"><button className="workflow-button primary" type="button" disabled={creatingNurse || busy} onClick={(event) => createWalkInNurse(event)}>
-            {creatingNurse ? 'Creating nurse…' : 'Create nurse and continue'}
-          </button></div>
-        </section>}
         <div className="workflow-form-actions"><button className="workflow-button primary" disabled={busy} type="submit">Save shift</button></div>
       </form>}
 

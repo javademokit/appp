@@ -1,9 +1,14 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { apiFetch } from '../API/api';
+import { api as payrollApi } from '../payrollDesk/payrollApi';
 import StaffShiftsPage from './StaffShiftsPage';
 
 jest.mock('../API/api', () => ({ apiFetch: jest.fn() }));
+jest.mock('../payrollDesk/payrollApi', () => ({
+  api: { employees: jest.fn() },
+}));
 
+beforeEach(() => payrollApi.employees.mockResolvedValue([]));
 afterEach(() => jest.clearAllMocks());
 
 const directoryResponse = (path) => {
@@ -46,16 +51,14 @@ test('records doctor check-in and check-out against the scheduled shift', async 
   expect(await screen.findByText('COMPLETED')).toBeInTheDocument();
 });
 
-test('schedules an internal or walk-in nurse using the shared nurse employee ID', async () => {
+test('schedules a payroll nurse by employee code and excludes non-nurse employees', async () => {
+  payrollApi.employees.mockResolvedValue([
+    { id: 101, code: 'NR-000101', name: 'Existing Nurse', department: 'Ward A', role: 'Nurse' },
+    { id: 102, code: 'DT-000102', name: 'Dr Example', department: 'Cardiology', role: 'Doctor' },
+  ]);
   apiFetch.mockImplementation(async (path, options = {}) => {
     const directory = directoryResponse(path);
     if (directory) return { ok: true, json: async () => directory };
-    if (path === '/nursing/nurses') {
-      return { ok: true, json: async () => [
-        { employeeCode: 'NUR-100', name: 'Existing Nurse', employmentActive: true, profileComplete: true, status: 'ACTIVE' },
-        { employeeCode: 'NR-WK-100', name: 'Walk-in Nurse', employmentActive: true, profileComplete: true, status: 'ACTIVE' },
-      ] };
-    }
     if (path === '/staff/shifts' && options.method === 'POST') {
       return { ok: true, json: async () => ({}) };
     }
@@ -64,19 +67,23 @@ test('schedules an internal or walk-in nurse using the shared nurse employee ID'
 
   render(<StaffShiftsPage />);
   fireEvent.click(await screen.findByRole('button', { name: /schedule shift/i }));
-  fireEvent.change(screen.getByLabelText('Role'), { target: { value: 'Nurse' } });
-  fireEvent.change(await screen.findByLabelText('Nurse'), { target: { value: 'NR-WK-100' } });
-  expect(screen.getByLabelText('Staff name')).toHaveValue('Walk-in Nurse');
-  fireEvent.change(screen.getByLabelText('Staff name'), { target: { value: 'Manual Walk-in Name' } });
-  fireEvent.change(screen.getByLabelText('Department'), { target: { value: 'Ward A' } });
+  fireEvent.change(await screen.findByLabelText('Nurse'), { target: { value: 'NR-000101' } });
+  expect(screen.getByLabelText('Staff name')).toHaveValue('Existing Nurse');
+  expect(screen.getByLabelText('Staff name')).toHaveAttribute('readonly');
+  expect(screen.getByLabelText('Department')).toHaveValue('Ward A');
+  expect(screen.getByLabelText('Department')).toHaveAttribute('readonly');
+  expect(screen.getByRole('option', { name: /NR-000101 · Existing Nurse/ })).toBeInTheDocument();
+  expect(screen.queryByRole('option', { name: /DT-000102/ })).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Save shift' }));
 
+  expect(payrollApi.employees).toHaveBeenCalled();
+  expect(apiFetch).not.toHaveBeenCalledWith('/nursing/nurses');
   await waitFor(() => expect(apiFetch).toHaveBeenCalledWith('/staff/shifts', expect.objectContaining({
     method: 'POST',
-    body: expect.stringContaining('"staffId":"NR-WK-100"'),
+    body: expect.stringContaining('"staffId":"NR-000101"'),
   })));
   const saveRequest = apiFetch.mock.calls.find(([path, options = {}]) => path === '/staff/shifts' && options.method === 'POST');
   expect(saveRequest[1].body).toContain('"staffRole":"Nurse"');
-  expect(saveRequest[1].body).toContain('"staffName":"Manual Walk-in Name"');
+  expect(saveRequest[1].body).toContain('"staffName":"Existing Nurse"');
   expect(saveRequest[1].body).toContain('"department":"Ward A"');
 });
